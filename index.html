@@ -313,6 +313,11 @@ body.kbig .lane{background:#000}body.kbig .lane.fin{background:#151311}
 .nl{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .ni{display:flex;gap:10px;align-items:flex-start;border-bottom:1px solid var(--line);padding:8px 0}
 .ln-note{margin:8px 4px 0}
+.ln-ing{margin:4px 2px 10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--soft)}
+.ln-ing summary{cursor:pointer}
+.ln-ing .wl{gap:6px;margin:10px 0 2px}
+.wi.wsm{font-size:16px;padding:9px 12px;border-radius:10px;gap:10px}.wi.wsm .wb{width:24px;height:24px;font-size:15px;border-radius:6px}.wi.wsm .wr{padding-left:34px;font-size:13px}
+body.kbig .wi.wsm{font-size:22px}body.kbig .ln-ing{background:#151311}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -1132,7 +1137,7 @@ function kitchen(){
   return`<div class="ks cur${s==1?' doing':''}${late?' late':''}"><div class="row" style="margin:0"><span class="ki">${e.j+1}</span><div class="grow"><div class="kn">${esc(e.n)}</div><div class="mut">${kt(e.st,d)}–${kt(e.t,d)} · ${hm(Math.round((e.t-e.st)/6e4))}${late?' · should have started':''}</div>${e.dsc?`<div class="kd">${esc(e.dsc)}</div>`:''}</div></div>
    <div class="row kx">${s==1?`${timer(e)}<span class="grow"></span><button class="g sm" onclick="kPlus(event,'${e.k}',5)">+5 min</button><button class="g sm" onclick="kSet('${e.k}',0)">Not yet</button><button class="b" onclick="kSet('${e.k}',2,true)">Done</button>`:`<span class="grow"></span><button class="g sm" onclick="kSet('${e.k}',2)">Mark done</button><button class="b" onclick="kSet('${e.k}',1)">Start</button>`}</div></div>`};
  const lane=L=>{const col=pcol(L.id),open=L.all?kOpen.has(L.id):!kShut.has(L.id),c=L.cur,stx=L.all?'✓ Finished':st(c)==1?`Doing: ${esc(c.n)}`:`Next: ${esc(c.n)} at ${hh(c.st)}`;
-  return`<section class="lane${L.busy?' on':''}${L.all?' fin':''}" style="--lc:${col}"><div class="ln-h" onclick="kTog('${L.id}',${L.all})"><div class="grow"><div class="ln-n">${esc(L.name)} <span class="ln-q">× ${L.q}</span></div><div class="ln-s">${stx} · ${L.done} of ${L.steps.length}</div></div>${L.all?'':`<button class="g sm" onclick="event.stopPropagation();goCook(${S.prods.findIndex(p=>p.id==L.id)})">Cook mode</button>`}<span class="ln-c">${open?'▴':'▾'}</span></div><div class="ln-bar"><i style="width:${L.done/L.steps.length*100}%"></i></div>${open?`<div class="ln-b">${L.steps.map(e=>stepRow(L,e)).join('')}${L.all?noteBox(L.id,'kb'):`<details class="qa ln-note"><summary>Add a bake note</summary>${noteBox(L.id,'kb')}</details>`}</div>`:''}</section>`};
+  return`<section class="lane${L.busy?' on':''}${L.all?' fin':''}" style="--lc:${col}"><div class="ln-h" onclick="kTog('${L.id}',${L.all})"><div class="grow"><div class="ln-n">${esc(L.name)} <span class="ln-q">× ${L.q}</span></div><div class="ln-s">${stx} · ${L.done} of ${L.steps.length}</div></div>${L.all?'':`<button class="g sm" onclick="event.stopPropagation();goCook(${S.prods.findIndex(p=>p.id==L.id)})">Cook mode</button>`}<span class="ln-c">${open?'▴':'▾'}</span></div><div class="ln-bar"><i style="width:${L.done/L.steps.length*100}%"></i></div>${open?`<div class="ln-b">${laneIng(L)}${L.steps.map(e=>stepRow(L,e)).join('')}${L.all?noteBox(L.id,'kb'):`<details class="qa ln-note"><summary>Add a bake note</summary>${noteBox(L.id,'kb')}</details>`}</div>`:''}</section>`};
  return`<div class="row kh"><div class="grow"><div class="mut">Kitchen board</div><h2 class="dayh">${dlab(d)}</h2></div><div class="kclock">${hh(now)}</div></div>
  <div class="row">${kbig?'<button class="g" onclick="kBig(false)">Exit big screen</button>':'<button class="b" onclick="kBig(true)">Big screen</button><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button>'}<button class="g sm" onclick="setMute(${!muted})">${muted?'Sound off':'Sound on'}</button><span class="grow"></span><span class="mut">${dn} of ${total} steps done</span><button class="g sm" onclick="kreset()">Reset</button></div>
  ${E.length?`<div class="bar"><i style="width:${total?dn/total*100:0}%"></i></div>
@@ -1191,6 +1196,26 @@ function noteBox(pid,tag){const id='nt-'+tag+'-'+pid;return`<div class="nbox"><b
 function notesList(pid,max){const L=pNotes(pid).slice(0,max||50);return L.length?`<div class="nl">${L.map(n=>`<div class="ni"><div class="grow"><span class="mut">${dlab(n.date)} · version ${n.v}</span><div>${esc(n.t)}</div></div><button class="g sm" onclick="delNote('${n.id}')">Delete</button></div>`).join('')}</div>`:''}
 
 function goCook(i){if(!S.prods[i])return;tab='Products';tpl=false;ed=null;vw=i;cook(i);window.scrollTo(0,0)}
+
+// ===== Ingredients on the kitchen board (weigh ticks shared per day) =====
+const wIs=(pid,j)=>!!(((S.wk||{})[pday()]||{})[pid+'|'+j]);
+function wTog(pid,j){S.wk=S.wk||{};const W=S.wk[pday()]=S.wk[pday()]||{},k=pid+'|'+j;if(W[k])delete W[k];else W[k]=1;save();draw()}
+function cook(i){cm=i;cs=0;ctReset();wake();draw()}
+function wRows(p,n,cls){
+ const L=calc(p).lines.map((l,j)=>({...l,j})).filter(l=>l.n&&l.g>0),one=!!S.set.oneBowl;let run=0;
+ return{L,done:L.filter(l=>wIs(p.id,l.j)).length,html:L.map(l=>{const on=wIs(p.id,l.j),u=bu(l.n),g=l.g*n;if(u!='each')run+=g;return`<button class="wi ${cls||''}${on?' on':''}" onclick="event.stopPropagation();wTog('${p.id}',${l.j})"><span class="wb">${on?'✓':''}</span><span class="grow wn">${esc(l.n)}</span><span class="wq">${fq(g,u)}</span>${one&&u!='each'?`<span class="wr">bowl ≈ ${fq(run,'g')}</span>`:''}</button>`}).join('')}}
+function wList(p,c,n){
+ const r=wRows(p,n);
+ return`<div class="mut">Making ${n} × ${esc(p.name)}</div><div class="row" style="margin:4px 0 0"><h2 class="ck1 grow" style="margin:0">Weigh</h2><label class="chip"><input type="checkbox"${S.set.oneBowl?' checked':''} onchange="S.set.oneBowl=this.checked;save();draw()"> One bowl totals</label></div>
+ <div class="mut">${r.done} of ${r.L.length} weighed · tap each one when it’s in</div><div class="wl">${r.html}</div>
+ ${r.L.length&&r.done==r.L.length?'<p class="wdone">✓ Everything weighed. Press Next for the first step.</p>':''}`}
+const kIng=new Map();
+function kIngT(pid,v){kIng.set(pid,v)}
+function laneIng(L){
+ const p=S.prods.find(x=>x.id==L.id);if(!p)return'';const r=wRows(p,L.q,'wsm');if(!r.L.length)return'';
+ const open=kIng.has(L.id)?kIng.get(L.id):(!L.all&&L.done==0)||(r.done>0&&r.done<r.L.length);
+ return`<details class="ln-ing"${open?' open':''} ontoggle="kIngT('${L.id}',this.open)"><summary><b>Ingredients</b> <span class="mut">for ${L.q} · ${r.done} of ${r.L.length} weighed</span></summary><div class="wl">${r.html}</div></details>`}
+function kreset(){snap('Board reset');const d=pday();delete S.kb[d];if(S.kbt)delete S.kbt[d];if(S.wk)delete S.wk[d];kAl=[];rAlm();save();draw()}
 
 draw();
 </script></body></html>
