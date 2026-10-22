@@ -233,6 +233,9 @@ body.kbig .kclock{font-size:88px}body.kbig .knext{font-size:28px}body.kbig .kcol
 .bkl{position:relative;overflow:hidden;cursor:pointer;display:inline-flex;align-items:center;font-size:15px;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:9px 20px;background:none}.bkl:hover{border-color:var(--fg)}
 .bkl input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .ni{margin-top:22px;border-style:dashed}
+.qrow{border:1px dashed var(--line);border-radius:12px;padding:8px;margin-top:10px}
+.box.tpl{font:inherit;color:var(--fg);text-align:left;cursor:pointer;min-height:150px}
+.box.tpl:hover{border-color:var(--fg)}
 </style></head><body>
 <header><div class="top"><h1 class="wm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -365,12 +368,12 @@ function editor(i){
  <div class="row"><label>Net weight per unit (g)${inp(P+'.unitG',p.unitG,'',1)}</label>${bt?`<label>Units per batch${inp(P+'.batch',p.batch,'',1)}</label>`:''}${pc&&bt?`<label>Flour per batch (g)${inp(P+'.flourG',p.flourG,'',1)}</label>`:''}<label>Sell price${inp(P+'.price',p.price,'',1)}</label><label>Portions per unit${inp(P+'.por',p.por||1,'',1)}</label><label>Price per portion${inp(P+'.sp',p.sp||0,'',1)}</label><label>Labour min / unit${inp(P+'.lab',p.lab,'',1)}</label><label>Units per oven tray${inp(P+'.tray',p.tray||0,'',1)}</label><label>Oven °C${inp(P+'.temp',p.temp||0,'',1)}</label></div>
  <h4>Ingredients ${pc?'(flour = 100%)':bt?'(amounts for one batch)':'(amounts for one unit)'}</h4>
  ${p.ings.map((g,j)=>`<div class="row"><select class="grow" onchange="pickI(${i},${j},this.value)">${opts(g.n)}</select>${inp(`${P}.ings.${j}.${pc?'pct':'amt'}`,pc?g.pct:g.amt,'',1)}<span class="mut">${pc?'%':bu(g.n)}</span><button class="g" onclick="del('${P}.ings',${j})">×</button></div>`).join('')}
- <button class="g" onclick="add('${P}.ings',{n:(S.ings[0]||{n:''}).n,pct:0,amt:0})">+ Ingredient</button>
- <details class="qa"><summary>Ingredient not in the list?</summary><div class="row"><input id="qn" class="grow" placeholder="Name"><input id="qp" type="number" placeholder="Pack price"><input id="qs" type="number" placeholder="Pack size"><select id="qu">${UN.map(u=>`<option>${u}</option>`).join('')}</select><button class="b" onclick="qadd(${i})">Add to recipe</button></div></details>
- <h4>Steps in order, with minutes</h4>${p.steps.map((s,j)=>`<div class="row">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${inp(`${P}.steps.${j}.mins`,s.mins,'',1)}<span class="mut">min</span><button class="g" onclick="del('${P}.steps',${j})">×</button></div><div class="row"><input class="grow" placeholder="Instructions for this step (optional)" value="${esc(s.d||'')}" onchange="up('${P}.steps.${j}.d',this.value)"></div>`).join('')}<button class="g" onclick="add('${P}.steps',{n:'',mins:30})">+ Step</button>
+ ${p.ings.length?'':'<p class="mut">No ingredients yet. Add them below.</p>'}<datalist id="ingl">${S.ings.map(g=>`<option value="${esc(g.n)}">`).join('')}</datalist>
+ <div class="row qrow"><input id="ri-n" class="grow" list="ingl" placeholder="Add ingredient: type to search" oninput="riU(this.value,${pc})" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#ri-a').focus()}"><input id="ri-a" type="number" step="any" placeholder="${pc?'%':'amount'}" onkeydown="if(event.key=='Enter'){event.preventDefault();riAdd(${i})}"><span class="mut" id="ri-u">${pc?'%':''}</span><button class="b sm" onclick="riAdd(${i})">Add</button></div>
+ <h4>Steps in order, with minutes</h4>${p.steps.map((s,j)=>`<div class="row">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${inp(`${P}.steps.${j}.mins`,s.mins,'',1)}<span class="mut">min</span><button class="g" onclick="del('${P}.steps',${j})">×</button></div><div class="row"><input class="grow" placeholder="Instructions for this step (optional)" value="${esc(s.d||'')}" onchange="up('${P}.steps.${j}.d',this.value)"></div>`).join('')}<div class="row qrow"><input id="rs-n" class="grow" placeholder="Add step, e.g. Proof" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#rs-m').focus()}"><input id="rs-m" type="number" step="any" placeholder="min" onkeydown="if(event.key=='Enter'){event.preventDefault();rsAdd(${i})}"><span class="mut">min</span><button class="b sm" onclick="rsAdd(${i})">Add</button></div>
  <h4>Notes for the person making it</h4><textarea rows="3" onchange="up('${P}.notes',this.value)">${esc(p.notes||'')}</textarea>
  <h4>Label</h4><div class="row"><label>Shelf life (days)${inp(P+'.shelf',p.shelf,'',1)}</label><label class="grow">Storage advice${inp(P+'.store',p.store)}</label></div>
- <p class="mut">Ingredients ${m(c.ing)} · cost with labour ${m(c.cost)} · margin ${p.price?((p.price-c.cost)/p.price*100).toFixed(0):0}% · price for ${+S.set.margin||0}% margin: ${m(sug)}${por(p)>1?' · '+pinfo(p):''}${c.hyd?` · hydration ${c.hyd.toFixed(0)}%`:''}</p></section>`}
+ <p class="mut">Ingredients ${m(c.ing)} · cost with labour ${m(c.cost)} · margin ${p.price?((p.price-c.cost)/p.price*100).toFixed(0):0}% · price for ${+S.set.margin||0}% margin: ${m(sug)}${por(p)>1?' · '+pinfo(p):''}${c.hyd?` · hydration ${c.hyd.toFixed(0)}%`:''}</p><div class="row" style="margin-top:14px"><button class="b" onclick="edDone(${i})">Done</button><span class="mut">Changes save automatically as you type.</span></div></section>`}
 
 function newI(){S.ings.push({n:'New ingredient',price:0,size:1,unit:'kg',al:[],waste:0});save();draw();const c=document.querySelectorAll('#v section.card'),x=c[c.length-1];if(x){const i=x.querySelector('input');i.scrollIntoView({block:'center'});i.focus();i.select()}}
 function rn(i,v){const o=S.ings[i].n;S.prods.forEach(p=>p.ings.forEach(x=>{if(key(x.n)==key(o))x.n=v}));S.ings[i].n=v;save();draw()}
@@ -826,7 +829,7 @@ G[0][1].push('Kitchen');TL.Kitchen='Kitchen board';T.Kitchen=kitchen;T.Today=tod
 const planX=T.Plan;
 T.Plan=()=>{const d=pday();let h=planX();if(sched(d).length){const mo=money(d);h+=`<h2>Expected result</h2><div class="stats card"><div><div class="big">${m(mo.rev)}</div>Expected sales</div><div><div class="big">${mo.profit<0?'−':''}${m(Math.abs(mo.profit))}</div>Expected ${mo.profit<0?'loss':'profit'}</div><div><div class="big">${m(mo.waste)}</div>Expected leftovers</div></div><p class="mut">Customer orders count as sold. Counter items use your sales history when you have 3 weeks or more${mo.guess?'; items without history are assumed to sell out':''}.</p>`+ovenHTML(d)}return h};
 function draw(){
- ens();
+ ens();if(tab!='Products')tpl=false;
  S.orders.forEach(o=>{if(!o.date)o.date=pday()});
  if(tab=='Tools'&&!S.set.tools)tab='Settings';
  const g=gof(tab)||G[0];last[g[0]]=tab;
@@ -876,6 +879,41 @@ function addNI(){
 function newForm(){
  const d=nI;
  return`<div id="ni" class="card ni"><b>Add an ingredient</b><div class="row"><label class="grow">Name<input id="ni-n" value="${esc(d.n)}" placeholder="e.g. Butter" oninput="nI.n=this.value" onkeydown="niKey(event)"></label><label>Pack price<input type="number" step="any" value="${esc(d.price)}" placeholder="0.00" oninput="nI.price=this.value" onkeydown="niKey(event)"></label><label>Pack size<input type="number" step="any" value="${esc(d.size)}" oninput="nI.size=this.value" onkeydown="niKey(event)"></label><label>Unit<select onchange="nI.unit=this.value">${UN.map(x=>`<option${x==d.unit?' selected':''}>${x}</option>`).join('')}</select></label><label>Waste %<input type="number" step="any" value="${esc(d.waste)}" oninput="nI.waste=this.value" onkeydown="niKey(event)"></label></div><details class="qa"><summary>Supplier and allergens</summary><div class="row"><label class="grow">Supplier (optional)<input value="${esc(d.sup)}" oninput="nI.sup=this.value" onkeydown="niKey(event)"></label></div><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${d.al.includes(a)?' checked':''} onchange="niAl('${a}')"> ${a}</label>`).join('')}</div></details><div class="row" style="margin-top:14px"><button class="b" onclick="addNI()">Save and add next</button><span class="mut">Tip: press Enter to save</span></div></div>`}
+
+// faster recipe entry: quick-add rows, templates, Done
+let tpl=false,tplName='';
+const TPL=[
+ {k:'bread',t:'Bread',d:'Baker’s %, weight per loaf, long ferment',p:{cat:'Bakery',mode:'pct',yt:'weight',unitG:800,lab:10,shelf:3,tray:4,temp:230},ings:[['flour',100],['water',70],['salt',2],['levain',20]],steps:[['Build levain',480],['Mix',20],['Bulk ferment',240],['Shape',20],['Cold proof',720],['Bake',45]]},
+ {k:'buns',t:'Buns and pastries',d:'Units per batch, e.g. 12 cardamom buns',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:12,unitG:90,lab:4,shelf:2,tray:12,temp:200},ings:[['flour',1000],['milk',450],['butter',150],['sugar',120],['yeast',20],['egg',2,'each']],steps:[['Mix dough',20],['First rise',60],['Shape',30],['Proof',60],['Bake',18],['Cool and glaze',20]]},
+ {k:'cookies',t:'Cookies',d:'Units per batch, e.g. 24 cookies',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:24,unitG:60,lab:2,shelf:5,tray:12,temp:180},ings:[['butter',250],['sugar',250],['egg',2,'each'],['flour',400],['chocolate',200]],steps:[['Mix dough',15],['Chill',60],['Portion',15],['Bake',12],['Cool',20]]},
+ {k:'cake',t:'Cake',d:'One cake cut into slices',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:1,unitG:1400,por:10,lab:30,shelf:3,tray:1,temp:170},ings:[['flour',300],['sugar',250],['butter',250],['egg',5,'each']],steps:[['Mix batter',20],['Bake',45],['Cool',60],['Fill and decorate',30]]},
+ {k:'drink',t:'Drink',d:'Per cup, e.g. flat white',p:{cat:'Drinks',mode:'amt',yt:'batch',batch:1,unitG:250,lab:2,shelf:0,store:''},ings:[['coffee',18],['milk',180]],steps:[['Make',3]]},
+ {k:'blank',t:'Blank',d:'Start from nothing',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:1,unitG:100,lab:0},ings:[],steps:[]}];
+function newP(){tpl=true;tplName='';ed=null;vw=null;draw();fx();setTimeout(()=>{const x=$('#tpl-n');x&&x.focus()},30)}
+function tplView(){
+ return`<div class="row"><button class="g" onclick="tpl=false;draw()">← All products</button></div><h2 style="margin:18px 0 6px">New product</h2>
+ <div class="row"><label class="grow">What are you making?<input id="tpl-n" class="big2" value="${esc(tplName)}" placeholder="e.g. Cardamom bun" oninput="tplName=this.value"></label></div>
+ <p class="mut">Pick a starting point. It sets the recipe type, yield and usual steps, and adds ingredients you already have. Change anything afterwards.</p>
+ <div class="grid">${TPL.map(x=>`<button class="box tpl" onclick="mkTpl('${x.k}')"><h3>${x.t}</h3><p class="mut">${x.d}</p>${x.steps.length?`<p class="mut">${x.steps.map(s=>s[0]).join(' · ')}</p>`:''}</button>`).join('')}</div>`}
+function mkTpl(k){
+ const x=TPL.find(z=>z.k==k),pc=x.p.mode=='pct';
+ const ings=[];x.ings.forEach(([n,v,u])=>{const g=S.ings.find(g=>key(g.n)==n)||S.ings.find(g=>key(g.n).includes(n));if(!g||ings.some(l=>key(l.n)==key(g.n)))return;const ok=pc||(u=='each')==(BASE[g.unit]=='each');ings.push({n:g.n,pct:pc?v:0,amt:pc?0:(ok?v:0)})});
+ const p=Object.assign({id:nid(),name:(tplName||'').trim()||(k=='blank'?'New product':'New '+x.t.toLowerCase()),price:0,flourG:1000,shelf:3,store:'Keep in a cool, dry place.',ings,steps:x.steps.map(([n,mins])=>({n,mins}))},JSON.parse(JSON.stringify(x.p)));
+ S.prods.push(p);ensV(p);tpl=false;ed=S.prods.length-1;save();draw();fx();
+ setTimeout(()=>{const f=(tplName||'').trim()?$('#ri-n'):document.querySelector('#v .big2');if(f){f.focus();f.select&&f.select();f.scrollIntoView({block:'center'})}},30)}
+function riU(v,pc){const u=$('#ri-u');if(u)u.textContent=pc?'%':(gi(v)?bu(v):'')}
+function riAdd(i){
+ const p=S.prods[i],pc=p.mode=='pct',n=($('#ri-n').value||'').trim(),v=+$('#ri-a').value||0;
+ if(!n){$('#ri-n').focus();return}
+ let g=gi(n);if(!g){g={n,price:0,size:1,unit:'kg',al:[],waste:0};S.ings.push(g);flash(`Added ${n} to Ingredients. Set its price there.`)}
+ const l=p.ings.find(x=>key(x.n)==key(g.n));
+ if(l){if(pc)l.pct=v;else l.amt=v;flash(`${g.n} updated`)}else p.ings.push({n:g.n,pct:pc?v:0,amt:pc?0:v});
+ save();draw();const x=$('#ri-n');x&&(x.focus(),x.scrollIntoView({block:'center'}))}
+function rsAdd(i){
+ const n=($('#rs-n').value||'').trim();if(!n){$('#rs-n').focus();return}
+ S.prods[i].steps.push({n,mins:+$('#rs-m').value||0});save();draw();const x=$('#rs-n');x&&(x.focus(),x.scrollIntoView({block:'center'}))}
+function edDone(i){const p=S.prods[i];if(p&&p.vers&&p.vers.length==1&&p.cv==1){p.vers[0].data=snapR(p);p.vers[0].date=tdy()}ed=null;vw=i;save();draw();fx();window.scrollTo(0,0);flash('Saved')}
+const prodsT=T.Products;T.Products=()=>tpl?tplView():prodsT();
 
 draw();
 </script></body></html>
