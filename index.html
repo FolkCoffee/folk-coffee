@@ -918,7 +918,7 @@ function edDone(i){const p=S.prods[i];if(p&&p.vers&&p.vers.length==1&&p.cv==1){p
 const prodsT=T.Products;T.Products=()=>tpl?tplView():prodsT();
 
 // ===== Sync between devices (Supabase) =====
-const SB_URL='',SB_KEY='';
+const SB_URL='https://gdqspzgevhtqawvcgvze.supabase.co',SB_KEY='sb_publishable_qXVAI6txJ2jn4UJbLCX4HQ_EezviPjv';
 let sb=null,sbUser=null,syncState='off',syncAt=0,syncTimer=null,pendRemote=null,sbChan=null;
 const sbCfg=()=>{if(SB_URL&&SB_KEY)return{url:SB_URL,key:SB_KEY,fixed:true};try{const c=JSON.parse(localStorage.getItem('folk-sb')||'null');if(c&&c.url&&c.key)return c}catch(e){}return null};
 const syncLabel=()=>({out:'Not signed in, not syncing',saving:'Saving…',ok:'Synced',offline:'Offline, will sync later',err:'Sync problem, will retry'})[syncState]||'';
