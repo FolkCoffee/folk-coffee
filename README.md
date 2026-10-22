@@ -19,4 +19,16 @@ Open `index.html` in a browser. You can also publish it with GitHub Pages: in **
 
 Everything you enter is saved in the browser on the device you use. It is not stored in this repository, and it does not sync between devices. In **Settings → Backup**, press **Save backup** to download a backup file, and keep it somewhere safe such as Google Drive. **Load backup** restores it, on the same device or another one. The Today screen reminds you when your last backup is more than a week old.
 
+## Syncing between devices
+
+The planner can keep your phone, tablet and laptop in step through a free [Supabase](https://supabase.com) project:
+
+1. Create a Supabase project.
+2. In the SQL Editor, run `supabase-setup.sql` from this repository. It creates one private table that only your signed-in account can read or change.
+3. Copy the project URL and the publishable key, and enter them under **Settings → Sync between devices** (or have them built into `index.html`).
+4. Create an account in the planner on your main device first, then sign in with the same email and password on the other devices.
+5. In Supabase, turn off new sign-ups once your account exists.
+
+When you sign in on a device for the first time, it switches to the synced data and keeps its earlier data, which you can restore from the sync settings. If two devices change something at the same moment, the latest change wins.
+
 Food labelling and allergen requirements in Ireland are set by the FSAI. Check your labels and allergen sheet with them or your local environmental health officer before selling.

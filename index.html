@@ -236,6 +236,8 @@ body.kbig .kclock{font-size:88px}body.kbig .knext{font-size:28px}body.kbig .kcol
 .qrow{border:1px dashed var(--line);border-radius:12px;padding:8px;margin-top:10px}
 .box.tpl{font:inherit;color:var(--fg);text-align:left;cursor:pointer;min-height:150px}
 .box.tpl:hover{border-color:var(--fg)}
+.sst{font-size:12px;color:var(--mut);margin-top:6px;min-height:1em}
+@media(max-width:899px){.sst{display:none}}
 </style></head><body>
 <header><div class="top"><h1 class="wm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -250,7 +252,7 @@ prods:[{id:'p1',name:'Country loaf',unitG:800,price:6,lab:10,ings:[{n:'Flour',pc
 let S,tab='Plan';
 try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
 S=S||def();
-const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+const save=()=>{if(window.__sbReady)S._ts=Date.now();try{localStorage.setItem(K,JSON.stringify(S))}catch(e){};if(window.__sbReady&&typeof syncSoon=='function')syncSoon()};
 const at=(p)=>p.split('.').reduce((o,k)=>o[k],S);
 function up(p,v,num){const k=p.split('.'),l=k.pop();at(k.join('.'))[l]=num?(+v||0):v;save();draw()}
 function add(p,x){at(p).push(x);save();draw()}
@@ -914,6 +916,74 @@ function rsAdd(i){
  S.prods[i].steps.push({n,mins:+$('#rs-m').value||0});save();draw();const x=$('#rs-n');x&&(x.focus(),x.scrollIntoView({block:'center'}))}
 function edDone(i){const p=S.prods[i];if(p&&p.vers&&p.vers.length==1&&p.cv==1){p.vers[0].data=snapR(p);p.vers[0].date=tdy()}ed=null;vw=i;save();draw();fx();window.scrollTo(0,0);flash('Saved')}
 const prodsT=T.Products;T.Products=()=>tpl?tplView():prodsT();
+
+// ===== Sync between devices (Supabase) =====
+const SB_URL='',SB_KEY='';
+let sb=null,sbUser=null,syncState='off',syncAt=0,syncTimer=null,pendRemote=null,sbChan=null;
+const sbCfg=()=>{if(SB_URL&&SB_KEY)return{url:SB_URL,key:SB_KEY,fixed:true};try{const c=JSON.parse(localStorage.getItem('folk-sb')||'null');if(c&&c.url&&c.key)return c}catch(e){}return null};
+const syncLabel=()=>({out:'Not signed in, not syncing',saving:'Saving…',ok:'Synced',offline:'Offline, will sync later',err:'Sync problem, will retry'})[syncState]||'';
+function sst(t){syncState=t;const e=document.getElementById('sst');if(e)e.textContent=syncLabel()}
+const busy=()=>{const a=document.activeElement;return!!a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!='checkbox'&&a.type!='file'};
+function loadSb(){return new Promise((res,rej)=>{if(window.supabase&&window.supabase.createClient)return res();const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';s.onload=()=>res();s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)})}
+async function sbInit(){
+ const c=sbCfg();if(!c){sst('off');return}
+ try{await loadSb();sb=window.supabase.createClient(c.url,c.key)}catch(e){sb=null;sst('offline');draw();return}
+ let ses=null;try{ses=(await sb.auth.getSession()).data.session}catch(e){}
+ sbUser=ses&&ses.user||null;
+ sb.auth.onAuthStateChange((ev,s)=>{const u=s&&s.user||null;if((u&&u.id)==(sbUser&&sbUser.id))return;sbUser=u;if(u)afterLogin();else{unsub();sst('out')}draw()});
+ if(sbUser)afterLogin();else sst('out');draw()}
+async function afterLogin(){await pull(true);sub()}
+async function pull(first){
+ if(!sb||!sbUser)return;
+ let res;try{res=await sb.from('planner_state').select('data,updated_at').eq('owner',sbUser.id).maybeSingle()}catch(e){res={error:e}}
+ if(res.error){sst(navigator.onLine===false?'offline':'err');return}
+ if(!res.data){try{localStorage.setItem('folk-synced-'+sbUser.id,'1')}catch(e){}await push();return}
+ const r=res.data.data||{},rt=+r._ts||0,lt=+S._ts||0,fk='folk-synced-'+sbUser.id;let seen=null;try{seen=localStorage.getItem(fk)}catch(e){}
+ if(first&&!seen){try{localStorage.setItem('folk-before-sync',JSON.stringify(S));localStorage.setItem(fk,'1')}catch(e){}adopt(r);flash('Loaded your synced data');return}
+ if(rt>lt)adopt(r,first);else if(lt>rt)await push();else{syncAt=Date.now();sst('ok');if(tab=='Settings')draw()}}
+function adopt(r,first){
+ if(busy()){pendRemote=r;return}
+ pendRemote=null;
+ S=JSON.parse(JSON.stringify(r));mig();try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}
+ syncAt=Date.now();sst('ok');draw()}
+async function push(){
+ if(!sb||!sbUser)return;clearTimeout(syncTimer);
+ if(navigator.onLine===false){sst('offline');return}
+ if(!S._ts)S._ts=Date.now();const ts=S._ts;sst('saving');
+ let res;try{res=await sb.from('planner_state').upsert({owner:sbUser.id,data:S,updated_at:new Date().toISOString()})}catch(e){res={error:e}}
+ if(res.error){sst(navigator.onLine===false?'offline':'err');syncTimer=setTimeout(push,30000);return}
+ syncAt=Date.now();if(S._ts>ts)syncSoon();else sst('ok')}
+function syncSoon(){if(!sb||!sbUser)return;clearTimeout(syncTimer);sst('saving');syncTimer=setTimeout(push,1200)}
+function sub(){if(!sb||!sbUser)return;unsub();try{sbChan=sb.channel('state-'+sbUser.id).on('postgres_changes',{event:'*',schema:'public',table:'planner_state',filter:'owner=eq.'+sbUser.id},p=>{const r=p&&p.new&&p.new.data;if(r&&(+r._ts||0)>(+S._ts||0))adopt(r)}).subscribe()}catch(e){}}
+function unsub(){if(sb&&sbChan){try{sb.removeChannel(sbChan)}catch(e){}sbChan=null}}
+async function sbIn(up){
+ const e=($('#sb-e').value||'').trim(),p=$('#sb-p').value||'';if(!e||!p){flash('Enter your email and password');return}
+ if(up&&p.length<8){flash('Use a password of at least 8 characters');return}
+ let r;try{r=up?await sb.auth.signUp({email:e,password:p}):await sb.auth.signInWithPassword({email:e,password:p})}catch(x){r={error:x}}
+ if(r.error){flash(r.error.message||'Could not sign in');return}
+ if(up&&!(r.data&&r.data.session)){flash('Check your email to confirm the account, then sign in');return}
+ flash('Signed in, syncing')}
+async function sbOut(){try{await sb.auth.signOut()}catch(e){}sbUser=null;unsub();sst('out');draw();flash('Signed out. Your data stays on this device.')}
+function sbSaveCfg(){const u=($('#sb-u').value||'').trim().replace(/\/+$/,''),k=($('#sb-k').value||'').trim();if(!/^https:\/\/.+/.test(u)||!k){flash('Enter the project URL and the publishable key');return}try{localStorage.setItem('folk-sb',JSON.stringify({url:u,key:k}))}catch(e){}flash('Connecting…');sbInit()}
+function sbForget(){unsub();try{localStorage.removeItem('folk-sb')}catch(e){}sb=null;sbUser=null;sst('off');draw()}
+function syncUI(){
+ const c=sbCfg(),h='<h2 style="margin-top:0">Sync between devices</h2>';
+ if(!c)return h+`<div class="card"><p class="mut">Connect your Supabase project to keep your phone, tablet and laptop in step.</p><div class="row"><label class="grow">Project URL<input id="sb-u" placeholder="https://xxxx.supabase.co"></label><label class="grow">Publishable key<input id="sb-k" placeholder="sb_publishable_…"></label><button class="b" onclick="sbSaveCfg()">Connect</button></div></div>`;
+ if(!sb)return h+`<div class="card"><p class="mut">Connecting… If this doesn’t change, check your internet connection and reload the page.</p>${c.fixed?'':'<button class="g sm" onclick="sbForget()">Disconnect project</button>'}</div>`;
+ if(!sbUser)return h+`<div class="card"><p class="mut">Sign in with the same email and password on every device. Your data on this device stays here until you sign in.</p><div class="row"><label class="grow">Email<input id="sb-e" type="email" autocomplete="username"></label><label class="grow">Password<input id="sb-p" type="password" autocomplete="current-password" onkeydown="if(event.key=='Enter')sbIn(false)"></label></div><div class="row"><button class="b" onclick="sbIn(false)">Sign in</button><button class="g" onclick="sbIn(true)">Create account</button>${c.fixed?'':'<span class="grow"></span><button class="g sm" onclick="sbForget()">Disconnect project</button>'}</div></div>`;
+ return h+`<div class="card"><div class="row"><div class="grow"><b>${esc(sbUser.email||'Signed in')}</b><div class="mut">${syncLabel()}${syncAt?` · last synced ${hh(syncAt)}`:''}</div></div><button class="g sm" onclick="pull()">Sync now</button><button class="g sm" onclick="sbOut()">Sign out</button></div><p class="mut" style="margin-bottom:0">Changes reach your other signed-in devices within a few seconds. If two devices change something at the same moment, the latest change wins. Keep saving a backup now and then.</p>${hasPrev()?`<details class="qa"><summary>Data this device had before you signed in</summary><p class="mut">When you first signed in here, this device switched to your synced data. Its earlier data was kept. Use it only if it is the right version: it replaces the synced data on all your devices.</p><button class="g sm" onclick="usePrev()">Use this device’s earlier data</button></details>`:''}</div>`}
+const hasPrev=()=>{try{return!!localStorage.getItem('folk-before-sync')}catch(e){return false}};
+function usePrev(){let x=null;try{x=JSON.parse(localStorage.getItem('folk-before-sync'))}catch(e){}if(!x||!Array.isArray(x.prods)){flash('Nothing to restore');return}snap('Switched to this device’s earlier data');S=x;mig();save();try{localStorage.removeItem('folk-before-sync')}catch(e){}draw()}
+function sbNag(){return sbCfg()&&sb&&!sbUser?`<div class="card noprint"><div class="row"><div class="grow"><b>Not syncing</b><div class="mut">Sign in to share your data with your other devices.</div></div><button class="b" onclick="go('Settings')">Sign in</button></div></div>`:''}
+const settingsS=T.Settings;T.Settings=()=>syncUI()+settingsS();
+const todayS=T.Today;T.Today=()=>sbNag()+todayS();
+function rst(){snap(sbUser?'Everything was reset, on all your devices':'Everything was reset');S=def();mig();save();draw()}
+document.querySelector('header .top').insertAdjacentHTML('afterend','<div id="sst" class="sst"></div>');
+setInterval(()=>{if(pendRemote&&!busy()&&(+pendRemote._ts||0)>(+S._ts||0))adopt(pendRemote)},2000);
+window.addEventListener('online',()=>{if(sbUser)pull()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&sbUser)pull()});
+sbInit();
+window.__sbReady=true;
 
 draw();
 </script></body></html>
