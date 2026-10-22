@@ -247,6 +247,24 @@ body.kbig .kclock{font-size:88px}body.kbig .knext{font-size:28px}body.kbig .kcol
 .box.tpl:hover{border-color:var(--fg)}
 .sst{font-size:12px;color:var(--mut);margin-top:6px;min-height:1em}
 @media(max-width:899px){.sst{display:none}}
+.kc{cursor:pointer;user-select:none}
+.kx{margin-top:6px;align-items:center}
+.kcd{font:300 34px/1.1 "Saira Condensed","Helvetica Neue",Arial,sans-serif;font-variant-numeric:tabular-nums}
+.kcd.over{font-weight:500;text-decoration:underline}
+body.kbig .kcd{font-size:60px}
+.kc.s1 .g{border-color:#5b4b42;color:#000}
+#alm{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;gap:10px;width:min(560px,calc(100% - 32px))}
+.al{display:flex;gap:14px;align-items:center;background:#000;color:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 6px 30px rgba(0,0,0,.25);font-size:17px}
+.al.st{background:#ecd7c6;color:#000;border:3px solid #000;animation:alp 1s ease-in-out infinite alternate}
+.al .b{background:#fff;color:#000;border-color:#fff}.al.st .b{background:#000;color:#fff;border-color:#000}
+body.kbig .al{font-size:26px;padding:22px 26px}
+@keyframes alp{to{transform:scale(1.02)}}
+@media(prefers-reduced-motion:reduce){.al.st{animation:none}}
+#tbar{position:fixed;right:16px;top:12px;z-index:30;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:899px){#tbar{top:auto;bottom:calc(76px + env(safe-area-inset-bottom,0px));right:12px}}
+.tp{font:inherit;font-size:14px;border:1px solid #000;border-radius:999px;padding:7px 14px;background:#ecd7c6;color:#000;cursor:pointer;font-variant-numeric:tabular-nums}
+.tp.over{background:#000;color:#fff}
+@media print{#alm,#tbar{display:none}}
 </style></head><body>
 <header><div class="top"><h1 class="wm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -993,6 +1011,46 @@ window.addEventListener('online',()=>{if(sbUser)pull()});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&sbUser)pull()});
 sbInit();
 window.__sbReady=true;
+
+// ===== Kitchen board timers and alarms =====
+let actx=null,muted=false,kAl=[];const fired=new Set();
+try{muted=localStorage.getItem('folk-mute')=='1'}catch(e){}
+document.addEventListener('pointerdown',()=>{try{if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();if(actx.state=='suspended')actx.resume()}catch(e){}},{passive:true,capture:true});
+function tone(n,f){if(muted||!actx)return;try{for(let i=0;i<n;i++){const o=actx.createOscillator(),g=actx.createGain(),t=actx.currentTime+i*.45;o.frequency.value=f;o.connect(g);g.connect(actx.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.5,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.35);o.start(t);o.stop(t+.4)}}catch(e){}}
+function buzz(strong){try{navigator.vibrate&&navigator.vibrate(strong?[400,150,400,150,400]:[200,100,200])}catch(e){}}
+function setMute(v){muted=v;try{localStorage.setItem('folk-mute',v?'1':'0')}catch(e){}if(!v)tone(1,660);draw()}
+const tEnd=(e,T)=>T.s+(e.t-e.st)+(+T.x||0)*6e4;
+function runTimers(){const out=[];Object.keys(S.kbt||{}).forEach(d=>{const T=S.kbt[d],E=sched(d);Object.keys(T).forEach(k=>{const e=E.find(x=>x.k==k);if(e&&T[k]&&T[k].s)out.push({d,k,e,end:tEnd(e,T[k])})})});return out.sort((a,b)=>a.end-b.end)}
+function kmv(i){
+ const d=pday(),e=sched(d)[i];if(!e)return;
+ const M=S.kb[d]=S.kb[d]||{};S.kbt=S.kbt||{};const T=S.kbt[d]=S.kbt[d]||{},n=((M[e.k]||0)+1)%3;
+ M[e.k]=n;if(n==1)T[e.k]={s:Date.now(),x:0};else delete T[e.k];if(!Object.keys(T).length)delete S.kbt[d];
+ kAl=kAl.filter(a=>a.k!=e.k);rAlm();save();draw()}
+function kext(ev,i,min){ev.stopPropagation();const d=pday(),e=sched(d)[i],T=e&&S.kbt&&S.kbt[d]&&S.kbt[d][e.k];if(T){T.x=(+T.x||0)+min;kAl=kAl.filter(a=>a.k!=e.k);rAlm();save();draw()}}
+function kreset(){snap('Board reset');delete S.kb[pday()];if(S.kbt)delete S.kbt[pday()];kAl=[];rAlm();save();draw()}
+function ring(t,e,strong){kAl.push({id:Date.now()+Math.random(),k:e.k,t,sub:e.ps.map(p=>`${bakeN(p.id,p.q)} × ${p.name}`).join(', '),strong,n:1,last:Date.now()});tone(strong?4:2,strong?880:660);buzz(strong);rAlm()}
+function rAlm(){const el=document.getElementById('alm');if(el)el.innerHTML=kAl.map(a=>`<div class="al${a.strong?' st':''}"><div class="grow"><b>${esc(a.t)}</b><div>${esc(a.sub)}</div></div><button class="b" onclick="okAl(${a.id})">OK</button></div>`).join('')}
+function okAl(id){kAl=kAl.filter(a=>a.id!=id);rAlm()}
+function tick(){
+ const now=Date.now();
+ document.querySelectorAll('[data-end]').forEach(el=>{const r=Math.round((+el.dataset.end-now)/1000);el.textContent=r>=0?fmt(r)+' left':'Over by '+fmt(-r);el.classList.toggle('over',r<0)});
+ const R=runTimers();
+ R.forEach(t=>{const id='e|'+t.d+'|'+t.k+'|'+t.end;if(now>=t.end&&now-t.end<180000&&!fired.has(id)){fired.add(id);ring(`${t.e.n} is done`,t.e,true)}});
+ const d=pday(),M=(S.kb||{})[d]||{};sched(d).forEach(e=>{const id='s|'+d+'|'+e.k;if(!M[e.k]&&now>=e.st&&now-e.st<180000&&!fired.has(id)){fired.add(id);ring(`Time to start: ${e.n}`,e,false)}});
+ kAl.forEach(a=>{if(a.strong&&a.n<6&&now-a.last>20000){a.n++;a.last=now;tone(3,880);buzz(true)}});
+ const tb=document.getElementById('tbar');
+ if(tb){const show=R.length&&!(tab=='Kitchen');const h=show?R.slice(0,3).map(t=>{const r=Math.round((t.end-now)/1000);return`<button class="tp${r<0?' over':''}" onclick="go('Kitchen')">${esc(t.e.n)} <b>${r>=0?fmt(r):'+'+fmt(-r)}</b></button>`}).join(''):'';if(tb.innerHTML!=h)tb.innerHTML=h}}
+function kitchen(){
+ const d=pday(),E=sched(d),M=S.kb[d]||{},TT=(S.kbt||{})[d]||{},now=Date.now(),st=e=>M[e.k]||0,nxt=E.find(e=>st(e)==0),done=E.filter(e=>st(e)==2).length;
+ const card=(e,i)=>{const s=st(e),T=TT[e.k],end=s==1&&T?tEnd(e,T):0,late=s==0&&e.st<now,r=end?Math.round((end-now)/1000):0;
+  return`<div class="kc s${s}${late?' late':''}${e==nxt?' nx':''}" role="button" tabindex="0" onclick="kmv(${i})" onkeydown="if(event.key=='Enter')kmv(${i})"><span class="kt">${kt(e.st,d)}–${kt(e.t,d)}${late?' · should have started':''}</span><span class="kn">${s==2?'✓ ':''}${esc(e.n)}</span><span class="kp">${e.ps.map(p=>`${bakeN(p.id,p.q)} × ${esc(p.name)}`).join(', ')}</span>${end?`<div class="row kx"><span class="kcd${r<0?' over':''}" data-end="${end}">${r>=0?fmt(r)+' left':'Over by '+fmt(-r)}</span><span class="grow"></span><button class="g sm" onclick="kext(event,${i},5)">+5 min</button></div>`:''}</div>`};
+ const col=(s,t)=>{const c=E.map((e,i)=>[e,i]).filter(([e])=>st(e)==s);return`<div class="kcol"><h3>${t} <span class="mut">${c.length}</span></h3>${c.map(([e,i])=>card(e,i)).join('')||'<p class="mut">—</p>'}</div>`};
+ return`<div class="row kh"><div class="grow"><div class="mut">Kitchen board</div><h2 class="dayh">${dlab(d)}</h2></div><div class="kclock">${hh(now)}</div></div>
+ <div class="row">${kbig?'<button class="g" onclick="kBig(false)">Exit big screen</button>':'<button class="b" onclick="kBig(true)">Big screen</button><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button>'}<button class="g sm" onclick="setMute(${!muted})">${muted?'Sound off':'Sound on'}</button><span class="grow"></span><span class="mut">${done} of ${E.length} steps done · tap a card to move it along</span><button class="g sm" onclick="kreset()">Reset</button></div>
+ ${E.length?`<div class="bar"><i style="width:${done/E.length*100}%"></i></div><p class="knext">${nxt?`Next: <b>${esc(nxt.n)}</b> at ${hh(nxt.st)}`:'<b>All done.</b>'}</p><p class="mut">Moving a card to Doing starts its timer. You’ll hear an alarm when it’s done and when a step is due to start. Tap anywhere once so the sound can play, and keep this screen open.</p><div class="kb">${col(0,'To do')}${col(1,'Doing')}${col(2,'Done')}</div>`:'<div class="card"><p class="chalk">Nothing on the board</p><p class="mut">Add orders or daily targets for this day.</p></div>'}`}
+T.Kitchen=kitchen;
+document.body.insertAdjacentHTML('beforeend','<div id="alm"></div><div id="tbar"></div>');
+setInterval(tick,1000);
 
 draw();
 </script></body></html>
