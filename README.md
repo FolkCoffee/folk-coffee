@@ -21,7 +21,7 @@ On a phone or tablet, open that address and choose **Add to Home Screen** (iPhon
 
 ## Your data
 
-Everything you enter is saved in the browser on the device you use. It is not stored in this repository, and it does not sync between devices. In **Settings → Backup**, press **Save backup** to download a backup file, and keep it somewhere safe such as Google Drive. **Load backup** restores it, on the same device or another one. The Today screen reminds you when your last backup is more than a week old.
+Everything you enter is saved in the browser on the device you use, and never in this repository. To share it between your phone, tablet and laptop, sign in to sync (see below). In **Settings → Backup**, press **Save backup** to download a backup file, and keep it somewhere safe such as Google Drive. **Load backup** restores it, on the same device or another one. The Today screen reminds you when your last backup is more than a week old.
 
 ## Syncing between devices
 
