@@ -230,6 +230,8 @@ body.kbig .kc{padding:18px 20px}body.kbig .kc .kn{font-size:32px}body.kbig .kc .
 body.kbig .kclock{font-size:88px}body.kbig .knext{font-size:28px}body.kbig .kcol h3{font-size:16px}body.kbig .dayh{font-size:56px}
 .ver{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0;background:var(--bg)}
 .ver summary{cursor:pointer}
+.bkl{position:relative;overflow:hidden;cursor:pointer;display:inline-flex;align-items:center;font-size:15px;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:9px 20px;background:none}.bkl:hover{border-color:var(--fg)}
+.bkl input{position:absolute;inset:0;opacity:0;cursor:pointer}
 </style></head><body>
 <header><div class="top"><h1 class="wm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -418,7 +420,10 @@ function settings(){
  return`<div class="card"><div class="row"><label class="grow">Business name${inp('set.biz',S.set.biz)}</label><label>Currency${inp('set.cur',S.set.cur)}</label><label>Labour rate / hour${inp('set.labor',S.set.labor,'',1)}</label><label>Target margin %${inp('set.margin',S.set.margin,'',1)}</label></div><label>Business address (printed on labels)${inp('set.addr',S.set.addr)}</label><label style="margin-top:8px">May-contain text${inp('set.may',S.set.may)}</label></div>
  <p><label class="chip"><input type="checkbox"${S.set.tools?' checked':''} onchange="S.set.tools=this.checked;save();draw()"> Show Tools tab (dough temperature and levain calculators, for sourdough)</label></p>
  <h2>Oven and forecast</h2><div class="card"><div class="row"><label>Trays per oven load${inp('set.trays',S.set.trays,'',1)}</label><label>Minutes between loads${inp('set.chg',S.set.chg,'',1)}</label><label>Forecast extra %${inp('set.buf',S.set.buf,'',1)}</label></div><p class="mut">Set “units per oven tray” and the oven temperature on each recipe so the oven check works. The bake step is the one with “bake” or “oven” in its name. Forecast extra is a small buffer on top of average demand.</p></div>
- <h2>Backup</h2><p class="mut">Data is stored only in this browser. Copy the text below as a backup, or paste a backup and load it.</p><textarea id="bk" rows="5">${esc(JSON.stringify(S))}</textarea><p><button class="b" onclick="try{S=JSON.parse($('#bk').value);mig();save();draw()}catch(e){alert('That backup could not be read.')}">Load backup</button> <button class="g" onclick="rst()">Reset</button></p>
+ <h2>Backup</h2><p class="mut">Your data is stored only in this browser. Save a backup file regularly and keep it on Google Drive. To move your data to another phone, tablet or computer, save a backup here and load it there.</p>
+ <div class="card"><div class="row"><button class="b" onclick="bkSave()">Save backup</button><label class="g bkl">Load backup<input type="file" accept=".json,application/json" onchange="bkLoad(this)"></label><span class="grow"></span><span class="mut">${bkAge()==null?'No backup saved yet':bkAge()==0?'Last backup: today':`Last backup: ${bkAge()} day${bkAge()==1?'':'s'} ago`}</span></div><p class="mut" style="margin-bottom:0">Loading a backup replaces everything in this browser with the backup. You can undo it straight after.</p></div>
+ <details class="qa"><summary>Copy as text instead</summary><textarea id="bk" rows="5">${esc(JSON.stringify(S))}</textarea><p><button class="g" onclick="bkText()">Load from text</button></p></details>
+ <p><button class="g" onclick="rst()">Reset everything</button></p>
  <h2>Cost sheet (CSV)</h2><textarea rows="5" readonly>${esc(csv)}</textarea>`}
 function rst(){if(confirm('Reset everything?')){S=def();mig();save();draw()}}
 function go(t){if(t=='Products'&&tab=='Products')ed=null;tab=t;draw()}
@@ -832,6 +837,24 @@ function draw(){
  cl.toggle('plab',tab=='Labels');cl.toggle('pal',tab=='Allergens');cl.toggle('pbd',tab=='Board');cl.toggle('prec',pr&&vw!=null&&!!S.prods[vw]);cl.toggle('cooking',pr&&cm!=null&&!!S.prods[cm]);cl.toggle('kbig',tab=='Kitchen'&&kbig);
  if(tab=='Tools')tl()}
 setInterval(()=>{if(tab=='Kitchen'&&!document.querySelector('input:focus'))draw()},30000);
+
+// backup files
+const bkAge=()=>S.set.lastBk?Math.round((new Date(tdy()+'T12:00')-new Date(S.set.lastBk+'T12:00'))/864e5):null;
+function bkSave(){
+ S.set.lastBk=tdy();save();
+ const name=`folk-backup-${tdy()}.json`,blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
+ try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);flash('Backup saved: '+name)}
+ catch(e){flash('Could not save the file here. Use “Copy as text” instead.')}
+ draw()}
+function bkLoad(el){
+ const f=el.files&&el.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{const x=JSON.parse(r.result);if(!x||!Array.isArray(x.prods)||!Array.isArray(x.orders)||!x.set)throw 0;snap('Backup loaded');S=x;mig();save();draw();flash(`Backup loaded: ${S.prods.length} product${S.prods.length==1?'':'s'}, ${S.ings.length} ingredient${S.ings.length==1?'':'s'}`)}catch(e){flash('That file is not a planner backup.')}el.value=''};
+ r.readAsText(f)}
+function bkText(){try{const x=JSON.parse($('#bk').value);if(!x||!Array.isArray(x.prods))throw 0;snap('Backup loaded');S=x;mig();save();draw();flash('Backup loaded')}catch(e){flash('That backup could not be read.')}}
+function bkNag(){
+ const a=bkAge();if(!S.prods.length||(a!=null&&a<7)||S.set.bkHide==tdy())return'';
+ return`<div class="card noprint"><div class="row"><div class="grow"><b>${a==null?'No backup yet':`Last backup ${a} days ago`}</b><div class="mut">Your data lives only in this browser. Save a backup file and keep it on Google Drive.</div></div><button class="b" onclick="bkSave()">Save backup</button><button class="g sm" onclick="S.set.bkHide=tdy();save();draw()">Later</button></div></div>`}
+const todayB=T.Today;T.Today=()=>bkNag()+todayB();
 
 draw();
 </script></body></html>

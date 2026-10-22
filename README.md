@@ -17,6 +17,6 @@ Open `index.html` in a browser. You can also publish it with GitHub Pages: in **
 
 ## Your data
 
-Everything you enter is saved in the browser on the device you use. It is not stored in this repository, and it does not sync between devices. Use **Settings → Backup** regularly to copy your data out, and paste it back in on another device.
+Everything you enter is saved in the browser on the device you use. It is not stored in this repository, and it does not sync between devices. In **Settings → Backup**, press **Save backup** to download a backup file, and keep it somewhere safe such as Google Drive. **Load backup** restores it, on the same device or another one. The Today screen reminds you when your last backup is more than a week old.
 
 Food labelling and allergen requirements in Ireland are set by the FSAI. Check your labels and allergen sheet with them or your local environmental health officer before selling.
