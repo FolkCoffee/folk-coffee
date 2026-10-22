@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FOLk Coffee Bake & Cost Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@300;400&family=Caveat:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--fg:#000;--mut:#666;--line:#d8d8d8;--soft:#f3f3f3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--fg:#fff;--mut:#999;--line:#333;--soft:#161616;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000;--fg:#fff;--mut:#999;--line:#333;--soft:#161616;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:20px 16px 0;max-width:960px;margin:0 auto}
+h1{font:700 30px/1 Georgia,"Times New Roman",serif;letter-spacing:-.5px;margin:0}
+h1 small{display:block;font:400 14px system-ui,sans-serif;color:var(--mut);margin-top:6px;letter-spacing:0}
+nav{display:flex;gap:4px;overflow-x:auto;margin-top:16px;border-bottom:2px solid var(--fg)}
+nav button{border:0;background:none;color:var(--fg);padding:10px 14px;font:inherit;cursor:pointer;white-space:nowrap}
+nav button.on{background:var(--fg);color:var(--bg);font-weight:600}
+main{max-width:960px;margin:0 auto;padding:16px}
+h2{font:700 22px Georgia,serif;margin:28px 0 8px}h3{margin:0 0 6px}h4{margin:14px 0 6px}
+.card{border:1px solid var(--line);padding:14px;margin:0 0 14px;background:var(--soft)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:6px 0}
+.grow{flex:1;min-width:120px}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:2px}
+input,select,textarea{font:inherit;padding:7px 8px;border:1px solid var(--fg);background:var(--bg);color:var(--fg);border-radius:0;min-width:0;width:100%}
+input[type=number]{width:96px}
+button.b{font:inherit;padding:7px 12px;border:1px solid var(--fg);background:var(--fg);color:var(--bg);cursor:pointer}
+button.g{font:inherit;padding:6px 10px;border:1px solid var(--fg);background:none;color:var(--fg);cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--mut);outline-offset:1px}
+.mut{color:var(--mut)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.big{font:700 26px Georgia,serif}
+.stats{display:flex;gap:24px;flex-wrap:wrap}
+.lbl{border:2px solid var(--fg);padding:12px;width:260px;background:var(--bg);font-size:12px;line-height:1.4;break-inside:avoid}
+.lbls{display:flex;gap:12px;flex-wrap:wrap}
+:root{--line:#e7e7e5;--soft:#f7f7f6}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--line:#2a2a2a;--soft:#141414}}
+:root[data-theme="dark"]{--line:#2a2a2a;--soft:#141414}
+body{font:300 15px/1.6 "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:.01em}
+header{padding:44px 24px 0}
+h1,h2,.big{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:200}
+h1{font-size:40px;letter-spacing:-1px}
+h1 small{font-weight:300;margin-top:10px}
+h2{font-size:24px;margin:44px 0 14px}
+nav{border-bottom:1px solid var(--line);gap:26px}
+nav button{padding:12px 2px;background:none;border-bottom:2px solid transparent;font-weight:400;margin-bottom:-1px}
+nav button.on{background:none;color:var(--fg);border-bottom-color:var(--fg);font-weight:500}
+main{padding:30px 24px 72px;max-width:1000px}
+.card,.box{border:1px solid var(--line);border-radius:16px;background:var(--soft);padding:22px}
+.card{margin-bottom:20px}
+input,select,textarea{border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+input:focus,select:focus,textarea:focus{border-color:var(--fg)}
+button.b,button.g{border-radius:999px;padding:9px 20px}
+button.g{border-color:var(--line)}
+th{font-weight:400;color:var(--mut);font-size:13px}
+td,th{padding:11px 12px}
+.lbl{border:1px solid var(--fg);border-radius:12px;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px;margin-top:22px}
+.box{display:flex;flex-direction:column;gap:6px;min-height:190px}
+.box h3{font-size:21px;font-weight:300;margin:0}
+.box p{margin:0}
+.kv{display:flex;gap:22px;margin:12px 0 16px}
+.kv span{display:flex;flex-direction:column;font-size:12px;color:var(--mut)}
+.kv b{font-size:19px;font-weight:300;color:var(--fg)}
+.box .row{margin-top:auto}
+.box.add{border-style:dashed;background:none;align-items:center;justify-content:center;color:var(--mut);font-size:17px;font-family:inherit;font-weight:300;cursor:pointer;text-align:center}
+.box.add:hover{color:var(--fg);border-color:var(--fg)}
+.big2{font-size:24px;font-weight:300}
+@media print{header,.noprint{display:none!important}:root{--bg:#fff;--fg:#000;--mut:#444;--line:#aaa;--soft:#fff}body{color:#000;background:#fff}.card{border:0;padding:0}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{flex-direction:row;align-items:center;gap:6px;color:var(--fg);font-size:13px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--bg);width:auto}
+.chip input{width:auto}
+details summary{cursor:pointer;margin-top:6px}
+.lsheet{overflow-x:auto;margin-top:20px}
+.lg{display:grid}
+.lb{border:1px dashed #bbb;padding:3mm;font-size:8pt;line-height:1.25;overflow:hidden;background:#fff;color:#000;break-inside:avoid}
+.lb .ln{font-size:12pt;display:block;margin-bottom:1mm}
+.lb .biz{margin-top:1mm;font-size:7pt}
+.lb .pr{font-weight:700;font-size:12pt}
+.roll .lb{width:100mm;height:62mm;page-break-after:always}
+.a8{grid-template-columns:repeat(2,99mm)}.a8 .lb{height:67mm}
+.a21{grid-template-columns:repeat(3,64mm)}.a21 .lb{height:38mm;font-size:6pt;padding:2mm}.a21 .lb .ln{font-size:8pt}
+@media print{body.plab main>:not(.lsheet){display:none!important}body.plab main{padding:0}.lsheet{margin:0;overflow:visible}.lb{border:0}}
+#cf{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;pointer-events:none;z-index:20}
+.toast{pointer-events:auto;display:flex;gap:14px;align-items:center;background:var(--fg);color:var(--bg);padding:8px 10px 8px 18px;border-radius:999px}
+.toast button{background:none;color:var(--bg);border-color:var(--bg)}
+@media print{#cf{display:none}}
+[hidden]{display:none!important}
+.ir{border-bottom:1px solid var(--line)}
+.ir>summary{list-style:none;display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;padding:14px 6px;cursor:pointer;margin:0}
+.ir>summary::-webkit-details-marker{display:none}
+.ir>summary:hover{background:var(--soft)}
+.ir .nm{font-size:16px;font-weight:400}.ir .sub{color:var(--mut);font-size:13px}
+.ir .body{padding:6px 6px 20px}
+.ir[open]>summary .mut{transform:rotate(180deg)}
+button.g.on{background:var(--fg);color:var(--bg)}
+.ph{width:96px;height:96px;object-fit:cover;border-radius:12px;display:block}
+.box .ph{width:100%;height:130px;margin-bottom:6px}
+.qa{margin-top:14px}
+.fx{animation:fx .28s ease-out}
+@keyframes fx{from{opacity:0;transform:translateY(6px)}}
+@media(prefers-reduced-motion:reduce){.fx{animation:none}}
+.pt{display:none}
+@media print{.pt{display:block;font:200 22pt "Helvetica Neue",Helvetica,Arial,sans-serif;margin-bottom:8mm}}
+.recipe{max-width:720px}
+.rt{font:200 40px/1.1 "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-1px;margin:4px 0 14px}
+.rph{width:100%;max-height:320px;object-fit:cover;border-radius:14px;margin:8px 0 16px;display:block}
+.recipe h3{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--mut);margin:30px 0 8px;font-weight:500}
+.recipe table td{font-size:18px;padding:10px 4px}
+.steps{list-style:none;padding:0;margin:0;counter-reset:s}
+.steps li{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line);font-size:18px;line-height:1.45;counter-increment:s}
+.steps li::before{content:counter(s);font:200 30px/1 "Helvetica Neue",Arial,sans-serif;min-width:30px;color:var(--mut)}
+.bx{flex:none;width:22px;height:22px;border:2px solid var(--fg);border-radius:5px;margin-top:3px;cursor:pointer}
+.bx.done{background:var(--fg)}
+button.b,button.g{transition:opacity .15s,border-color .15s}
+button.b:hover{opacity:.82}button.g:hover{border-color:var(--fg)}
+.sm{padding:5px 14px!important;font-size:13px}
+.box{transition:border-color .2s}.box:hover{border-color:var(--fg)}
+h3.lk{cursor:pointer}
+.stats{gap:56px;padding:26px 28px}
+h2{letter-spacing:-.3px}
+th{letter-spacing:.05em;text-transform:uppercase;font-size:11px}
+tr:hover td{background:var(--soft)}
+@media print{body.prec main>:not(.recipe){display:none!important}body.prec main{padding:0}.recipe{max-width:none}.rt{font-size:30pt}.recipe table td,.steps li{font-size:13pt}.bx.done{background:none}tr:hover td{background:none}}
+nav{overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none}
+nav::-webkit-scrollbar{display:none}
+button:disabled{opacity:.35;cursor:default}
+button.b:disabled:hover{opacity:.35}
+.week{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:16px}
+.day{border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--soft)}
+.day.on{border-color:var(--fg)}.day p{margin:0}.dl{min-height:64px;font-size:14px}
+.seg{margin-bottom:18px}
+.ck{width:20px;height:20px;accent-color:var(--fg)}
+td.wrap{white-space:normal;min-width:120px}
+.tq{width:64px}
+.am td,.am th{padding:6px 4px}
+th.v{height:120px;vertical-align:bottom;text-align:center;padding:4px 2px;text-transform:none;letter-spacing:0}
+th.v span{writing-mode:vertical-rl;transform:rotate(180deg);display:inline-block;white-space:nowrap;font-size:12px}
+.cc{text-align:center;font-size:16px}
+.cat{background:var(--soft);text-align:left;font-size:12px}
+.sr{position:absolute;left:-9999px}
+@media print{body.pal main>:not(.asheet){display:none!important}body.pal main{padding:0}.am{font-size:10pt}}
+:root{--soft:#f7f1ec;--line:#e8dccf}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--soft:#181513;--line:#2f2a26}}
+:root[data-theme="dark"]{--soft:#181513;--line:#2f2a26}
+header .top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+h1.wm{display:flex;flex-direction:column;gap:7px;margin:0}
+.wm1{font:300 60px/.9 "Saira Condensed","Arial Narrow","Helvetica Neue",Arial,sans-serif;letter-spacing:1px}
+.wm2{font:400 13px/1 "Saira Condensed","Helvetica Neue",Arial,sans-serif;letter-spacing:.07em}
+#sub{color:var(--mut);font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding-bottom:4px}
+.pw{display:none;flex-direction:column;gap:4px;margin-bottom:6mm}
+.pw .wm1{font-size:34px}
+@media print{:root{--soft:#fff;--line:#aaa}.pw{display:flex}}
+nav{display:flex;flex-direction:column;gap:2px;margin-top:28px;border:0;overflow:visible}
+nav button.nv{display:flex;align-items:center;gap:12px;padding:11px 14px;margin:0;background:none;border:0;border-radius:12px;color:var(--fg);font-size:15px;font-weight:400;text-align:left;width:100%}
+nav button.nv:hover{background:var(--soft)}
+nav button.nv.on{background:#ecd7c6;color:#000;font-weight:500}
+nav .nv svg{width:22px;height:22px;flex:none;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.sub{margin:0 0 22px}
+.sub .g.on{background:#ecd7c6;color:#000;border-color:#ecd7c6}
+@media(max-width:899px){
+ nav{position:fixed;left:0;right:0;bottom:0;flex-direction:row;justify-content:space-around;margin:0;gap:0;background:var(--bg);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:15}
+ nav button.nv{flex-direction:column;gap:3px;padding:6px 2px;font-size:11px;text-align:center;justify-content:center;width:auto;flex:1}
+ nav .nv svg{width:24px;height:24px}
+ main{padding:20px 16px 110px}
+ header{padding:18px 16px 0}.wm1{font-size:40px}#sub{display:none}
+}
+@media(min-width:900px){
+ body{display:grid;grid-template-columns:250px minmax(0,1fr)}
+ header{position:sticky;top:0;align-self:start;height:100vh;padding:36px 20px;border-right:1px solid var(--line);margin:0;max-width:none;overflow-y:auto}
+ header .top{flex-direction:column;align-items:flex-start;gap:8px}
+ main{max-width:1000px;width:100%;margin:0;padding:36px 44px 72px}
+}
+body.cooking{display:block}body.cooking header{display:none}body.cooking main{max-width:none;padding:20px 16px 40px}
+.dayh{font:300 44px/1.05 "Saira Condensed","Helvetica Neue",Arial,sans-serif;margin:2px 0 0}
+.hero{background:#ecd7c6;color:#000;border:0;padding:26px 30px}.hero .mut{color:#5b4b42}
+.hbig{font:300 96px/1 "Saira Condensed","Helvetica Neue",Arial,sans-serif;letter-spacing:1px}
+.chalk{font:500 30px "Caveat","Bradley Hand",cursive;color:var(--mut);margin:0 0 6px}
+.bar{height:6px;background:var(--line);border-radius:6px;margin:8px 0 12px}.bar i{display:block;height:100%;background:var(--fg);border-radius:6px}
+.trow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.chip.chk{border:0;background:none;padding:2px 0;font-size:17px}
+.cook{max-width:760px;margin:0 auto;min-height:85vh;display:flex;flex-direction:column;gap:18px}
+.ck1{font:300 56px/1.05 "Saira Condensed","Helvetica Neue",Arial,sans-serif;margin:6px 0}
+.ck2{font-size:26px;line-height:1.4;margin:0}
+.timer{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:12px}
+.tmv{font:300 84px/1 "Saira Condensed",Arial,sans-serif;font-variant-numeric:tabular-nums}
+.cnav{margin-top:auto;position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);padding-top:8px}
+button.big{padding:18px 28px;font-size:20px;border-radius:999px}
+.dots{display:flex;gap:8px}.dots i{width:10px;height:10px;border-radius:50%;border:1px solid var(--fg)}.dots i.on{background:var(--fg)}.dots i.dn{background:var(--mut);border-color:var(--mut)}
+table.bg td{font-size:26px;padding:14px 4px}
+.board{background:#0b0b0b;color:#fff;border-radius:16px;padding:40px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.board.w{background:#fff;color:#000;border:1px solid #000}
+.bh{display:flex;flex-direction:column;gap:6px;margin-bottom:26px}
+.bcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:34px}
+.board h3{font:300 30px "Saira Condensed",Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;border-bottom:1px solid currentColor;padding-bottom:6px}
+.bi{display:flex;align-items:baseline;gap:8px;font:500 24px/1.5 "Caveat","Bradley Hand",cursive}
+.bi i{flex:1;border-bottom:1px dotted currentColor;opacity:.5}.bi sup{font:400 11px sans-serif;opacity:.8}
+.bl{font-size:11px;opacity:.8;margin:26px 0 0}
+@media print{body{display:block}body.pbd main>:not(.board){display:none!important}body.pbd main{padding:0}.board{border-radius:0}}
+.rcg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0 0 22px}
+.rc{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--bg);display:flex;flex-direction:column;gap:4px;font:inherit;color:var(--fg);text-align:left;cursor:pointer}
+.rc:hover{border-color:var(--fg)}.rc .q{font-size:12px;color:var(--mut)}.rc .a{font-size:17px}.rc .mut{font-size:13px}
+.rc.warn{border:2px solid var(--fg)}
+.fcg{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-top:14px}
+.fc{border:1px solid var(--line);border-radius:16px;padding:18px;background:var(--soft);display:flex;flex-direction:column;gap:6px}
+.fc h3{margin:0;font-weight:300;font-size:21px}
+.fbig{font:300 46px/1 "Saira Condensed","Helvetica Neue",Arial,sans-serif}
+.spark{display:flex;align-items:flex-end;gap:3px;height:40px;margin:4px 0}
+.spark i{flex:1;background:var(--fg);opacity:.55;border-radius:2px 2px 0 0}.spark i:last-child{opacity:1}
+.kh{align-items:flex-end}
+.kclock{font:300 48px/1 "Saira Condensed","Helvetica Neue",Arial,sans-serif;font-variant-numeric:tabular-nums}
+.knext{font-size:17px;margin:6px 0 4px}
+.kb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:10px}
+@media(max-width:700px){.kb{grid-template-columns:1fr}}
+.kcol{background:var(--soft);border-radius:16px;padding:12px;min-height:120px;display:flex;flex-direction:column;gap:10px}
+.kcol h3{margin:4px 4px 2px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:500}
+.kc{display:flex;flex-direction:column;gap:4px;text-align:left;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+.kc .kt{font-size:12px;color:var(--mut)}.kc .kn{font-size:19px}.kc .kp{font-size:13px;color:var(--mut)}
+.kc.s1{background:#ecd7c6;color:#000;border-color:#ecd7c6}.kc.s1 .kt,.kc.s1 .kp{color:#5b4b42}
+.kc.s2{opacity:.55}.kc.s2 .kn{text-decoration:line-through}
+.kc.late{border:2px solid var(--fg)}.kc.nx{box-shadow:0 0 0 3px var(--fg)}
+body.kbig{--bg:#000;--fg:#fff;--mut:#aaa39c;--line:#333;--soft:#151311;display:block;background:#000;color:#fff}
+body.kbig header,body.kbig .sub{display:none}
+body.kbig main{max-width:none;padding:22px 28px 30px}
+body.kbig .kc{padding:18px 20px}body.kbig .kc .kn{font-size:32px}body.kbig .kc .kt,body.kbig .kc .kp{font-size:18px}
+body.kbig .kclock{font-size:88px}body.kbig .knext{font-size:28px}body.kbig .kcol h3{font-size:16px}body.kbig .dayh{font-size:56px}
+.ver{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0;background:var(--bg)}
+.ver summary{cursor:pointer}
+</style></head><body>
+<header><div class="top"><h1 class="wm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
+<nav id="nav"></nav></header>
+<main id="v"></main>
+<script>
+const $=s=>document.querySelector(s),K='folk-planner-v1';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tz=d=>new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16);
+const def=()=>{const d=new Date(Date.now()+864e5);d.setHours(7,0,0,0);return{set:{biz:'FOLk Coffee',cur:'€',foot:'Made in a kitchen that also handles milk, gluten, nuts and eggs.',labor:15,ready:tz(d)},
+prices:{flour:{p:1.2,a:'gluten'},water:{p:0,a:''},salt:{p:0.8,a:''},levain:{p:1,a:'gluten'}},
+prods:[{id:'p1',name:'Country loaf',unitG:800,price:6,lab:10,ings:[{n:'Flour',pct:100},{n:'Water',pct:72},{n:'Salt',pct:2},{n:'Levain',pct:20}],steps:[{n:'Build levain',mins:480},{n:'Mix',mins:30},{n:'Bulk ferment',mins:240},{n:'Shape',mins:30},{n:'Cold proof',mins:720},{n:'Bake',mins:45}]}],orders:[]}};
+let S,tab='Plan';
+try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+S=S||def();
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+const at=(p)=>p.split('.').reduce((o,k)=>o[k],S);
+function up(p,v,num){const k=p.split('.'),l=k.pop();at(k.join('.'))[l]=num?(+v||0):v;save();draw()}
+function add(p,x){at(p).push(x);save();draw()}
+function del(p,i){at(p).splice(i,1);save();draw()}
+function pr(n,f,v){const k=n.toLowerCase();S.prices[k]=S.prices[k]||{p:0,a:''};S.prices[k][f]=f=='p'?(+v||0):v;save();draw()}
+const m=v=>S.set.cur+(+v||0).toFixed(2);
+const key=n=>n.trim().toLowerCase();
+function calc(p){const sum=p.ings.reduce((a,i)=>a+(+i.pct||0),0)||1;const fl=p.unitG*100/sum;
+ const lines=p.ings.map(i=>({n:i.n,g:fl*(+i.pct||0)/100}));
+ const ing=lines.reduce((a,l)=>a+l.g/1000*((S.prices[key(l.n)]||{}).p||0),0);
+ const cost=ing+(+p.lab||0)/60*S.set.labor;
+ const w=p.ings.filter(i=>/water/i.test(i.n)).reduce((a,i)=>a+(+i.pct||0),0);
+ const f=p.ings.filter(i=>/flour/i.test(i.n)).reduce((a,i)=>a+(+i.pct||0),0)||100;
+ return{lines,cost,ing,sum,hyd:w/f*100}}
+const fm=t=>new Date(t).toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'});
+const inp=(p,v,cls,num)=>`<input class="${cls||''}" ${num?'type=number step=any':''} value="${esc(v)}" onchange="up('${p}',this.value,${num?1:0})">`;
+
+function plan(){
+ const q={};dO().forEach(o=>q[o.pid]=(q[o.pid]||0)+o.qty);
+ const act=S.prods.filter(p=>q[p.id]>0);
+ let h=`<div class="row noprint"><label>Ready at<input type="datetime-local" value="${esc(S.set.ready)}" onchange="up('set.ready',this.value)"></label><button class="b" onclick="print()">Print the whole plan</button></div>`;
+ if(!act.length)return h+`<p class="mut">No orders for <b>${dlab(pday())}</b>. Add orders or daily targets on the Orders tab, or change the Ready at date above.</p>`;
+ const end=new Date(S.set.ready).getTime(),ev={};
+ act.forEach(p=>{let t=end;[...p.steps].reverse().forEach(s=>{const st=t-(+s.mins||0)*6e4,k=st+'|'+key(s.n)+'|'+t;(ev[k]=ev[k]||{st,t,n:s.n,ps:[]}).ps.push(p.name);t=st})});
+ const rows=Object.values(ev).sort((a,b)=>a.st-b.st||a.t-b.t);
+ let rev=0,cost=0,shop={};
+ act.forEach(p=>{const c=calc(p);rev+=q[p.id]*p.price;cost+=q[p.id]*c.cost;c.lines.forEach(l=>{const k=key(l.n);shop[k]=shop[k]||{n:l.n,g:0};shop[k].g+=l.g*q[p.id]})});
+ h+=`<p class="mut noprint">Showing orders for <b>${dlab(pday())}</b>. Change the date above to see another day.</p><div class="pt">${esc(S.set.biz)} · Production plan · ${fm(end)}</div><div class="stats card"><div><div class="big">${m(rev)}</div>Revenue</div><div><div class="big">${m(cost)}</div>Cost incl. labour</div><div><div class="big">${rev?((rev-cost)/rev*100).toFixed(0):0}%</div>Margin</div></div>`;
+ h+=`<h2>Bake schedule</h2><div class="scroll"><table><tr><th>Start</th><th>Finish</th><th>Step</th><th>For</th></tr>${rows.map(r=>`<tr><td>${fm(r.st)}</td><td>${fm(r.t)}</td><td>${esc(r.n)}</td><td>${esc(r.ps.join(', '))}</td></tr>`).join('')}</table></div>`;
+ h+='<h2>Scaled formulas</h2>'+act.map(p=>{const c=calc(p);return`<h4>${esc(p.name)} × ${q[p.id]} (${(q[p.id]*p.unitG/1000).toFixed(2)} kg dough, hydration ${c.hyd.toFixed(0)}%)</h4><div class="scroll"><table>${c.lines.map(l=>`<tr><td>${esc(l.n)}</td><td class="n">${Math.round(l.g*q[p.id])} g</td></tr>`).join('')}</table></div>`}).join('');
+ h+=`<h2>Shopping list</h2><div class="scroll"><table>${Object.values(shop).map(s=>{const pc=((S.prices[key(s.n)]||{}).p||0)*s.g/1000;return`<tr><td>${esc(s.n)}</td><td class="n">${(s.g/1000).toFixed(2)} kg</td><td class="n">${m(pc)}</td></tr>`}).join('')}</table></div>`;
+ const by={};dO().forEach(o=>(by[o.cust]=by[o.cust]||[]).push(o));
+ h+='<h2>Packing lists</h2><div class="lbls">'+Object.keys(by).map(c=>`<div class="lbl"><b>${esc(c)}</b>${by[c][0].time?' · '+esc(by[c][0].time):''}<br>${by[c].map(o=>`☐ ${o.qty} × ${esc((S.prods.find(p=>p.id==o.pid)||{}).name)}${o.note?' — '+esc(o.note):''}`).join('<br>')}</div>`).join('')+'</div>';
+ h+='<h2>Labels</h2><div class="lbls">'+act.map(p=>{const c=calc(p).lines.filter(l=>l.n).sort((a,b)=>b.g-a.g);const al=[...new Set(c.map(l=>(S.prices[key(l.n)]||{}).a).filter(Boolean))];
+  return`<div class="lbl"><b>${esc(p.name)}</b><br>Ingredients: ${c.map(l=>esc(l.n)).join(', ')}.<br>${al.length?`<b>Contains: ${esc(al.join(', '))}</b><br>`:''}Net weight: ${p.unitG} g<br>${esc(S.set.foot)}<br><b>${esc(S.set.biz)}</b></div>`}).join('')+'</div>';
+ return h}
+
+function orders(){
+ if(!S.prods.length)return'<p class="mut">Add a product first.</p>';
+ let h=`<div class="card"><div class="row"><label class="grow">Customer<input id="oc"></label><label>Product<select id="op">${S.prods.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Qty<input id="oq" type="number" value="1" min="1"></label><button class="b" onclick="addO()">Add order</button></div></div>`;
+ h+=S.orders.length?`<div class="scroll"><table>${S.orders.map((o,i)=>`<tr><td>${esc(o.cust)}</td><td>${esc((S.prods.find(p=>p.id==o.pid)||{name:'(deleted)'}).name)}</td><td class="n">${o.qty}</td><td><button class="g" onclick="del('orders',${i})">Remove</button></td></tr>`).join('')}</table></div><p><button class="g" onclick="if(confirm('Clear all orders?')){S.orders=[];save();draw()}">Clear this week</button></p>`:'<p class="mut">No orders yet.</p>';
+ return h}
+function addO(){const c=$('#oc').value.trim()||'Walk-in',q=+$('#oq').value||1;add('orders',{cust:c,pid:$('#op').value,qty:q})}
+
+function editor(i){
+ return [S.prods[i]].map(p=>{const c=calc(p),P=`prods.${i}`;
+ return`<section class="card"><div class="row"><button class="g" onclick="ed=null;draw()">← All products</button><span class="grow"></span><button class="g" onclick="dupP(${i})">Duplicate</button><button class="g" onclick="delP(${i})">Delete</button></div><div class="row">${inp(P+'.name',p.name,'grow big2')}</div>
+ <div class="row"><label>Unit weight (g)${inp(P+'.unitG',p.unitG,'',1)}</label><label>Sell price${inp(P+'.price',p.price,'',1)}</label><label>Labour min / unit${inp(P+'.lab',p.lab,'',1)}</label></div>
+ <h4>Formula in baker’s % (flour = 100)</h4>${p.ings.map((g,j)=>`<div class="row">${inp(`${P}.ings.${j}.n`,g.n,'grow')}${inp(`${P}.ings.${j}.pct`,g.pct,'',1)}<span class="mut">%</span><button class="g" onclick="del('${P}.ings',${j})">×</button></div>`).join('')}<button class="g" onclick="add('${P}.ings',{n:'',pct:0})">+ Ingredient</button>
+ <h4>Steps in order, with minutes</h4>${p.steps.map((s,j)=>`<div class="row">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${inp(`${P}.steps.${j}.mins`,s.mins,'',1)}<span class="mut">min</span><button class="g" onclick="del('${P}.steps',${j})">×</button></div>`).join('')}<button class="g" onclick="add('${P}.steps',{n:'',mins:30})">+ Step</button>
+ <p class="mut">Total ${c.sum.toFixed(0)}% · hydration ${c.hyd.toFixed(0)}% · ingredients ${m(c.ing)} · cost with labour ${m(c.cost)} · margin ${p.price?((p.price-c.cost)/p.price*100).toFixed(0):0}%</p></section>`}).join('')}
+let ed=null;
+const nid=()=>'p'+Date.now()+Math.random().toString(36).slice(2,5);
+function newP(){S.prods.push({id:nid(),name:'New product',unitG:500,price:0,lab:0,ings:[{n:'Flour',pct:100}],steps:[{n:'Mix',mins:30},{n:'Bake',mins:30}]});ed=S.prods.length-1;save();draw()}
+function dupP(i){const c=JSON.parse(JSON.stringify(S.prods[i]));c.id=nid();c.name+=' (copy)';S.prods.splice(i+1,0,c);ed=i+1;save();draw()}
+function delP(i){if(!confirm('Delete "'+S.prods[i].name+'"? Existing orders for it will show as deleted.'))return;S.prods.splice(i,1);ed=null;save();draw()}
+function prods(){
+ if(ed!=null&&S.prods[ed])return editor(ed);
+ const cards=S.prods.map((p,i)=>{const c=calc(p),mg=p.price?(p.price-c.cost)/p.price*100:0;return`<article class="box"><h3>${esc(p.name)}</h3><p class="mut">${p.unitG} g · ${p.ings.length} ingredients · ${p.steps.length} steps</p><div class="kv"><span>Price<b>${m(p.price)}</b></span><span>Cost<b>${m(c.cost)}</b></span><span>Margin<b>${mg.toFixed(0)}%</b></span></div><div class="row"><button class="b" onclick="ed=${i};draw()">Edit</button><button class="g" onclick="dupP(${i})">Duplicate</button><button class="g" onclick="delP(${i})">Delete</button></div></article>`}).join('');
+ return`<div class="row"><h2 class="grow" style="margin:0">Products</h2><button class="b" onclick="newP()">+ New product</button></div><div class="grid">${cards}<button class="box add" onclick="newP()">+<br>Add product</button></div>`}
+
+function tools(){
+ return`<div class="card"><h3>Dough temperature</h3><p class="mut">Water temperature that hits your target dough temperature (°C).</p><div class="row"><label>Target${tn('t1',24)}</label><label>Flour${tn('t2',20)}</label><label>Room${tn('t3',22)}</label><label>Levain${tn('t4',24)}</label><label>Friction${tn('t5',0)}</label></div><p class="big" id="r1"></p></div>
+ <div class="card"><h3>Levain builder</h3><p class="mut">Starter : flour : water ratio.</p><div class="row"><label>Levain needed (g)${tn('l1',200)}</label><label>Starter${tn('l2',1)}</label><label>Flour${tn('l3',5)}</label><label>Water${tn('l4',5)}</label></div><p id="r2"></p></div>`}
+const tn=(id,v)=>`<input id="${id}" type="number" value="${v}" oninput="tl()">`;
+function tl(){const g=i=>+$('#'+i).value||0;
+ $('#r1').textContent=(3*g('t1')-g('t2')-g('t3')-g('t4')-g('t5')).toFixed(1)+' °C water';
+ const s=g('l2')+g('l3')+g('l4')||1,t=g('l1');
+ $('#r2').textContent=`Starter ${Math.round(t*g('l2')/s)} g · flour ${Math.round(t*g('l3')/s)} g · water ${Math.round(t*g('l4')/s)} g`}
+
+function settings(){
+ const names={};S.prods.forEach(p=>p.ings.forEach(i=>{if(i.n.trim())names[key(i.n)]=i.n}));
+ return`<div class="card"><div class="row"><label class="grow">Business name${inp('set.biz',S.set.biz)}</label><label>Currency${inp('set.cur',S.set.cur)}</label><label>Labour rate / hour${inp('set.labor',S.set.labor,'',1)}</label></div><label>Label footer${inp('set.foot',S.set.foot)}</label></div>
+ <h2>Ingredient prices and allergens</h2><div class="scroll"><table><tr><th>Ingredient</th><th>Price per kg</th><th>Allergen</th></tr>${Object.keys(names).map(k=>{const x=S.prices[k]||{p:0,a:''},n=esc(names[k]).replace(/'/g,'&#39;');return`<tr><td>${esc(names[k])}</td><td><input type=number step=any value="${x.p}" onchange="pr('${n}','p',this.value)"></td><td><input value="${esc(x.a)}" placeholder="e.g. milk" onchange="pr('${n}','a',this.value)"></td></tr>`}).join('')}</table></div>
+ <h2>Backup</h2><p class="mut">Data is stored only in this browser. Copy the text below to keep a backup, or paste a backup and load it.</p><textarea id="bk" rows="5">${esc(JSON.stringify(S))}</textarea><p><button class="b" onclick="try{S=JSON.parse($('#bk').value);save();draw()}catch(e){alert('That backup could not be read.')}">Load backup</button> <button class="g" onclick="if(confirm('Reset everything?')){S=def();save();draw()}">Reset</button></p>`}
+
+const AL=['Celery','Gluten','Crustaceans','Eggs','Fish','Lupin','Milk','Molluscs','Mustard','Nuts','Peanuts','Sesame','Soya','Sulphites'];
+const UN=['g','kg','ml','l','each'],FAC={g:1,kg:1000,ml:1,l:1000,each:1},BASE={g:'g',kg:'g',ml:'ml',l:'ml',each:'each'};
+const gi=n=>S.ings.find(g=>key(g.n)==key(n));
+const wf=g=>1-Math.min(+(g||{}).waste||0,90)/100;
+const ppu=g=>g?(+g.price||0)/((+g.size||1)*FAC[g.unit]):0;
+const bu=n=>{const g=gi(n);return g?BASE[g.unit]:'g'};
+const fq=(v,u)=>u=='each'?(Math.round(v*10)/10)+' pcs':v>=1000?(v/1000).toFixed(2)+(u=='g'?' kg':' l'):Math.round(v)+' '+u;
+const sel=(p,o,v)=>`<select onchange="up('${p}',this.value)">${o.map(x=>`<option value="${x[0]}"${x[0]==v?' selected':''}>${x[1]}</option>`).join('')}</select>`;
+const dstr=d=>d.toLocaleDateString('en-IE');
+function mig(){
+ S.ings=S.ings||[];
+ const seen={};S.ings.forEach(g=>seen[key(g.n)]=1);
+ const nm=s=>AL.find(x=>x.toLowerCase()==s.toLowerCase())||s;
+ S.prods.forEach(p=>{
+  p.ings.forEach(i=>{const k=key(i.n);if(k&&!seen[k]){seen[k]=1;const x=(S.prices||{})[k]||{p:0,a:''};S.ings.push({n:i.n,price:x.p||0,size:1,unit:'kg',al:x.a?x.a.split(/[,;]\s*/).filter(Boolean).map(nm):[],waste:0})}if(i.amt==null)i.amt=0});
+  p.mode=p.mode||'pct';p.yt=p.yt||'weight';p.batch=p.batch||1;p.flourG=p.flourG||1000;p.shelf=p.shelf||3;if(p.store==null)p.store='Keep in a cool, dry place.'});
+ const s=S.set;s.addr=s.addr||'';s.may=s.may||'May contain traces of nuts, milk, gluten, eggs and soya.';s.margin=s.margin||65;
+ S.lab=S.lab||{pid:'all',copies:0,size:'a8',made:new Date().toISOString().slice(0,10),code:'',price:false};
+}
+mig();save();
+function calc(p){
+ const b=Math.max(+p.batch||1,1),pc=p.mode=='pct',sum=p.ings.reduce((a,i)=>a+(+i.pct||0),0)||1;
+ const f=pc?(p.yt=='batch'?(+p.flourG||0)/b:p.unitG*100/sum):1;
+ const lines=p.ings.map(i=>({n:i.n,g:pc?f*(+i.pct||0)/100:(+i.amt||0)/(p.yt=='batch'?b:1)}));
+ const ing=lines.reduce((a,l)=>{const g=gi(l.n);return a+l.g*ppu(g)/wf(g)},0);
+ const cost=ing+(+p.lab||0)/60*S.set.labor;
+ const w=lines.filter(l=>/water/i.test(l.n)).reduce((a,l)=>a+l.g,0),fl=lines.filter(l=>/flour/i.test(l.n)).reduce((a,l)=>a+l.g,0);
+ return{lines,cost,ing,sum,hyd:fl?w/fl*100:0}}
+function newP(){S.prods.push({id:nid(),name:'New product',unitG:100,price:0,lab:0,mode:'amt',yt:'batch',batch:1,flourG:1000,shelf:3,store:'Keep in a cool, dry place.',ings:[{n:(S.ings[0]||{n:''}).n,pct:100,amt:0}],steps:[{n:'Make',mins:30},{n:'Bake',mins:30}]});ed=S.prods.length-1;save();draw()}
+function pickI(i,j,v){if(v=='__new'){const n='New ingredient '+(S.ings.length+1);S.ings.push({n,price:0,size:1,unit:'kg',al:[],waste:0});S.prods[i].ings[j].n=n;tab='Ingredients'}else S.prods[i].ings[j].n=v;save();draw()}
+function editor(i){
+ const p=S.prods[i],c=calc(p),P=`prods.${i}`,pc=p.mode=='pct',bt=p.yt=='batch';
+ const opts=v=>S.ings.map(g=>`<option${key(g.n)==key(v)?' selected':''}>${esc(g.n)}</option>`).join('');
+ const sug=Math.ceil(c.cost/(1-Math.min(+S.set.margin||0,95)/100)*20)/20;
+ return`<section class="card"><div class="row"><button class="g" onclick="ed=null;draw()">← All products</button><button class="g" onclick="ed=null;vw=${i};draw()">View recipe</button><span class="grow"></span><button class="g" onclick="dupP(${i})">Duplicate</button><button class="g" onclick="delP(${i})">Delete</button></div>
+ <div class="row">${inp(P+'.name',p.name,'grow big2')}</div>
+ <div class="row">${p.img?`<img class="ph" src="${p.img}" alt="">`:''}<label class="chip">Photo<input type="file" accept="image/*" onchange="photo(${i},this)"></label>${p.img?`<button class="g" onclick="up('prods.${i}.img','')">Remove photo</button>`:''}</div>
+ ${verUI(i)}<div class="row"><label>Category${sel(P+'.cat',[['Bakery','Bakery'],['Drinks','Drinks'],['Other','Other']],p.cat||'Bakery')}</label><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label><label>Yield defined by${sel(P+'.yt',[['weight','Weight per unit'],['batch','Units per batch']],p.yt)}</label></div>
+ <div class="row"><label>Net weight per unit (g)${inp(P+'.unitG',p.unitG,'',1)}</label>${bt?`<label>Units per batch${inp(P+'.batch',p.batch,'',1)}</label>`:''}${pc&&bt?`<label>Flour per batch (g)${inp(P+'.flourG',p.flourG,'',1)}</label>`:''}<label>Sell price${inp(P+'.price',p.price,'',1)}</label><label>Portions per unit${inp(P+'.por',p.por||1,'',1)}</label><label>Price per portion${inp(P+'.sp',p.sp||0,'',1)}</label><label>Labour min / unit${inp(P+'.lab',p.lab,'',1)}</label><label>Units per oven tray${inp(P+'.tray',p.tray||0,'',1)}</label><label>Oven °C${inp(P+'.temp',p.temp||0,'',1)}</label></div>
+ <h4>Ingredients ${pc?'(flour = 100%)':bt?'(amounts for one batch)':'(amounts for one unit)'}</h4>
+ ${p.ings.map((g,j)=>`<div class="row"><select class="grow" onchange="pickI(${i},${j},this.value)">${opts(g.n)}</select>${inp(`${P}.ings.${j}.${pc?'pct':'amt'}`,pc?g.pct:g.amt,'',1)}<span class="mut">${pc?'%':bu(g.n)}</span><button class="g" onclick="del('${P}.ings',${j})">×</button></div>`).join('')}
+ <button class="g" onclick="add('${P}.ings',{n:(S.ings[0]||{n:''}).n,pct:0,amt:0})">+ Ingredient</button>
+ <details class="qa"><summary>Ingredient not in the list?</summary><div class="row"><input id="qn" class="grow" placeholder="Name"><input id="qp" type="number" placeholder="Pack price"><input id="qs" type="number" placeholder="Pack size"><select id="qu">${UN.map(u=>`<option>${u}</option>`).join('')}</select><button class="b" onclick="qadd(${i})">Add to recipe</button></div></details>
+ <h4>Steps in order, with minutes</h4>${p.steps.map((s,j)=>`<div class="row">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${inp(`${P}.steps.${j}.mins`,s.mins,'',1)}<span class="mut">min</span><button class="g" onclick="del('${P}.steps',${j})">×</button></div><div class="row"><input class="grow" placeholder="Instructions for this step (optional)" value="${esc(s.d||'')}" onchange="up('${P}.steps.${j}.d',this.value)"></div>`).join('')}<button class="g" onclick="add('${P}.steps',{n:'',mins:30})">+ Step</button>
+ <h4>Notes for the person making it</h4><textarea rows="3" onchange="up('${P}.notes',this.value)">${esc(p.notes||'')}</textarea>
+ <h4>Label</h4><div class="row"><label>Shelf life (days)${inp(P+'.shelf',p.shelf,'',1)}</label><label class="grow">Storage advice${inp(P+'.store',p.store)}</label></div>
+ <p class="mut">Ingredients ${m(c.ing)} · cost with labour ${m(c.cost)} · margin ${p.price?((p.price-c.cost)/p.price*100).toFixed(0):0}% · price for ${+S.set.margin||0}% margin: ${m(sug)}${por(p)>1?' · '+pinfo(p):''}${c.hyd?` · hydration ${c.hyd.toFixed(0)}%`:''}</p></section>`}
+
+function newI(){S.ings.push({n:'New ingredient',price:0,size:1,unit:'kg',al:[],waste:0});save();draw();const c=document.querySelectorAll('#v section.card'),x=c[c.length-1];if(x){const i=x.querySelector('input');i.scrollIntoView({block:'center'});i.focus();i.select()}}
+function rn(i,v){const o=S.ings[i].n;S.prods.forEach(p=>p.ings.forEach(x=>{if(key(x.n)==key(o))x.n=v}));S.ings[i].n=v;save();draw()}
+function tg(i,a,el){const l=S.ings[i].al,k=l.indexOf(a);k<0?l.push(a):l.splice(k,1);save();el.closest('details').firstElementChild.textContent='Allergens'+(l.length?': '+l.join(', '):' (none)')}
+const used=n=>S.prods.filter(p=>p.ings.some(x=>key(x.n)==key(n))).length;
+function delI(i){const n=used(S.ings[i].n);if(!confirm(n?`"${S.ings[i].n}" is used in ${n} product(s). Delete anyway?`:'Delete this ingredient?'))return;S.ings.splice(i,1);save();draw()}
+function ingredients(){
+ return`<div class="row"><h2 class="grow" style="margin:0">Ingredients</h2></div><p class="mut">Enter what you buy: pack price, pack size and unit. Recipes pick from this list, and changing a price updates every recipe.</p>`+(S.ings.length?S.ings.map((g,i)=>{const pp=ppu(g),u=BASE[g.unit];return`<section class="card"><div class="row"><label class="grow">Name<input value="${esc(g.n)}" onchange="rn(${i},this.value)"></label><label>Pack price${inp(`ings.${i}.price`,g.price,'',1)}</label><label>Pack size${inp(`ings.${i}.size`,g.size,'',1)}</label><label>Unit${sel(`ings.${i}.unit`,UN.map(x=>[x,x]),g.unit)}</label><label>Waste %${inp(`ings.${i}.waste`,g.waste,'',1)}</label></div><p class="mut">${u=='each'?m(pp)+' each':m(pp*1000)+' per '+(u=='g'?'kg':'l')} · used in ${used(g.n)} product(s)</p><details><summary>Allergens${g.al.length?': '+esc(g.al.join(', ')):' (none)'}</summary><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${g.al.includes(a)?' checked':''} onchange="tg(${i},'${a}',this)"> ${a}</label>`).join('')}</div></details><p><button class="g" onclick="delI(${i})">Delete</button></p></section>`}).join(''):'<p class="mut">No ingredients yet. Add the ones you buy.</p>')+'<p><button class="b" onclick="newI()">+ New ingredient</button></p>'}
+
+function plan(){
+ const q={};dO().forEach(o=>q[o.pid]=(q[o.pid]||0)+o.qty);
+ const act=S.prods.filter(p=>q[p.id]>0);
+ let h=`<div class="row noprint"><label>Ready at<input type="datetime-local" value="${esc(S.set.ready)}" onchange="up('set.ready',this.value)"></label><button class="b" onclick="print()">Print the whole plan</button></div>`;
+ if(!act.length)return h+`<p class="mut">No orders for <b>${dlab(pday())}</b>. Add orders or daily targets on the Orders tab, or change the Ready at date above.</p>`;
+ const bs=p=>Math.max(+p.batch||1,1),bq=p=>p.yt=='batch'?Math.ceil(q[p.id]/bs(p))*bs(p):q[p.id];
+ const end=new Date(S.set.ready).getTime(),ev={};
+ act.forEach(p=>{let t=end;[...p.steps].reverse().forEach(s=>{const st=t-(+s.mins||0)*6e4,k=st+'|'+key(s.n)+'|'+t;(ev[k]=ev[k]||{st,t,n:s.n,ps:[]}).ps.push(p.name);t=st})});
+ const rows=Object.values(ev).sort((a,b)=>a.st-b.st||a.t-b.t);
+ let rev=0,cost=0,tot=0,shop={};
+ act.forEach(p=>{const c=calc(p);rev+=q[p.id]*p.price;cost+=q[p.id]*c.cost;c.lines.forEach(l=>{const k=key(l.n),g=gi(l.n),x=l.g*bq(p);shop[k]=shop[k]||{n:l.n,g:0,u:bu(l.n),c:0};shop[k].g+=x;shop[k].c+=x*ppu(g)/wf(g)})});
+ Object.values(shop).forEach(s=>tot+=s.c);
+ h+=`<p class="mut noprint">Showing orders for <b>${dlab(pday())}</b>. Change the date above to see another day.</p><div class="pt">${esc(S.set.biz)} · Production plan · ${fm(end)}</div><div class="stats card"><div><div class="big">${m(rev)}</div>Revenue</div><div><div class="big">${m(cost)}</div>Cost incl. labour</div><div><div class="big">${rev?((rev-cost)/rev*100).toFixed(0):0}%</div>Margin</div></div>`;
+ h+=`<h2>Bake schedule</h2><div class="scroll"><table><tr><th>Start</th><th>Finish</th><th>Step</th><th>For</th></tr>${rows.map(r=>`<tr><td>${fm(r.st)}</td><td>${fm(r.t)}</td><td>${esc(r.n)}</td><td>${esc(r.ps.join(', '))}</td></tr>`).join('')}</table></div>`;
+ h+='<h2>Scaled formulas</h2>'+act.map(p=>{const c=calc(p),n=bq(p);return`<h4>${esc(p.name)} × ${q[p.id]}${n>q[p.id]?` — bake ${n} (${n/bs(p)} batches, ${n-q[p.id]} extra)`:''}</h4><div class="scroll"><table>${c.lines.map(l=>`<tr><td>${esc(l.n)}</td><td class="n">${fq(l.g*n,bu(l.n))}</td></tr>`).join('')}</table></div>${c.hyd?`<p class="mut">Hydration ${c.hyd.toFixed(0)}%</p>`:''}`}).join('');
+ const sl=Object.values(shop).map(s=>({...s,sup:sg(s.n).sup||''})).sort((a,b)=>a.sup.localeCompare(b.sup)||a.n.localeCompare(b.n)),hs=sl.some(s=>s.sup);
+ h+=`<h2>Shopping list</h2><div class="scroll"><table><tr><th>Item</th>${hs?'<th>Supplier</th>':''}<th class="n">Amount</th><th class="n">Cost</th></tr>${sl.map(s=>`<tr><td>${esc(s.n)}</td>${hs?`<td>${esc(s.sup)}</td>`:''}<td class="n">${fq(s.g,s.u)}</td><td class="n">${m(s.c)}</td></tr>`).join('')}<tr><th>Total</th>${hs?'<th></th>':''}<th></th><th class="n">${m(sl.reduce((a,s)=>a+s.c,0))}</th></tr></table></div>`;
+ const by={};dO().forEach(o=>(by[o.cust]=by[o.cust]||[]).push(o));
+ h+='<h2>Packing lists</h2><div class="lbls">'+Object.keys(by).map(c=>`<div class="lbl"><b>${esc(c)}</b>${by[c][0].time?' · '+esc(by[c][0].time):''}<br>${by[c].map(o=>`☐ ${o.qty} × ${esc((S.prods.find(p=>p.id==o.pid)||{}).name)}${o.note?' — '+esc(o.note):''}`).join('<br>')}</div>`).join('')+'</div>';
+ return h}
+
+function labels(){
+ const L=S.lab,q={};dO().forEach(o=>q[o.pid]=(q[o.pid]||0)+o.qty);
+ const list=L.pid=='all'?S.prods.filter(p=>q[p.id]>0):S.prods.filter(p=>p.id==L.pid);
+ const made=new Date(L.made+'T12:00'),code=L.code||L.made.replace(/-/g,'').slice(2);
+ const one=p=>{const c=calc(p).lines.filter(l=>l.n&&l.g>0).sort((a,b)=>b.g-a.g);
+  const A=n=>(gi(n)||{al:[]}).al,al=[...new Set(c.flatMap(l=>A(l.n)))],bb=new Date(made.getTime()+(+p.shelf||0)*864e5);
+  return`<div class="lb"><b class="ln">${esc(p.name)}</b><div>Ingredients: ${c.map(l=>esc(l.n)+(A(l.n).length?' (<b>'+esc(A(l.n).join(', ').toUpperCase())+'</b>)':'')).join(', ')}.</div>${al.length?`<div><b>Contains: ${esc(al.join(', '))}</b></div>`:''}${S.set.may?`<div>${esc(S.set.may)}</div>`:''}<div>Net weight ${p.unitG} g · Baked ${dstr(made)} · <b>Best before ${dstr(bb)}</b></div>${p.store?`<div>${esc(p.store)}</div>`:''}<div>Batch ${esc(code)}</div><div class="biz">${esc(S.set.biz)}${S.set.addr?', '+esc(S.set.addr):''}</div>${L.price?`<div class="pr">${m(p.price)}</div>`:''}</div>`};
+ const sheet=list.flatMap(p=>Array(Math.max(+L.copies||q[p.id]||1,1)).fill(one(p))).join('');
+ return`<div class="noprint"><div class="row"><h2 class="grow" style="margin:0">Labels</h2><button class="b" onclick="print()">Print labels</button></div>
+ <div class="card"><div class="row"><label>Product<select onchange="up('lab.pid',this.value)"><option value="all"${L.pid=='all'?' selected':''}>All products in this week’s orders</option>${S.prods.map(p=>`<option value="${p.id}"${L.pid==p.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+ <label>Copies each (0 = ordered qty)${inp('lab.copies',L.copies,'',1)}</label><label>Label size${sel('lab.size',[['roll','Roll 100 × 62 mm'],['a8','A4 sheet, 8 labels'],['a21','A4 sheet, 21 labels']],L.size)}</label>
+ <label>Baked on<input type="date" value="${esc(L.made)}" onchange="up('lab.made',this.value)"></label><label>Batch code${inp('lab.code',L.code)}</label>
+ <label class="chip"><input type="checkbox"${L.price?' checked':''} onchange="S.lab.price=this.checked;save();draw()"> Show price</label></div>
+ <p class="mut">Best before is baked date plus the shelf life set on each product. In the print dialog, choose your paper size and set margins to none. Check labelling rules with the FSAI or your local environmental health officer before selling.</p></div>`+(list.length?`<div class="lsheet"><div class="lg ${L.size}">${sheet}</div></div>`:'<p class="mut">Nothing to print. Add orders, or choose a product.</p>')}
+
+function settings(){
+ const csv='Product,Unit weight g,Cost per unit,Sell price,Margin %\n'+S.prods.map(p=>{const c=calc(p);return[p.name,p.unitG,c.cost.toFixed(2),(+p.price||0).toFixed(2),p.price?((p.price-c.cost)/p.price*100).toFixed(0):0].map(x=>/[",\n]/.test(x)?'"'+String(x).replace(/"/g,'""')+'"':x).join(',')}).join('\n');
+ return`<div class="card"><div class="row"><label class="grow">Business name${inp('set.biz',S.set.biz)}</label><label>Currency${inp('set.cur',S.set.cur)}</label><label>Labour rate / hour${inp('set.labor',S.set.labor,'',1)}</label><label>Target margin %${inp('set.margin',S.set.margin,'',1)}</label></div><label>Business address (printed on labels)${inp('set.addr',S.set.addr)}</label><label style="margin-top:8px">May-contain text${inp('set.may',S.set.may)}</label></div>
+ <p><label class="chip"><input type="checkbox"${S.set.tools?' checked':''} onchange="S.set.tools=this.checked;save();draw()"> Show Tools tab (dough temperature and levain calculators, for sourdough)</label></p>
+ <h2>Oven and forecast</h2><div class="card"><div class="row"><label>Trays per oven load${inp('set.trays',S.set.trays,'',1)}</label><label>Minutes between loads${inp('set.chg',S.set.chg,'',1)}</label><label>Forecast extra %${inp('set.buf',S.set.buf,'',1)}</label></div><p class="mut">Set “units per oven tray” and the oven temperature on each recipe so the oven check works. The bake step is the one with “bake” or “oven” in its name. Forecast extra is a small buffer on top of average demand.</p></div>
+ <h2>Backup</h2><p class="mut">Data is stored only in this browser. Copy the text below as a backup, or paste a backup and load it.</p><textarea id="bk" rows="5">${esc(JSON.stringify(S))}</textarea><p><button class="b" onclick="try{S=JSON.parse($('#bk').value);mig();save();draw()}catch(e){alert('That backup could not be read.')}">Load backup</button> <button class="g" onclick="rst()">Reset</button></p>
+ <h2>Cost sheet (CSV)</h2><textarea rows="5" readonly>${esc(csv)}</textarea>`}
+function rst(){if(confirm('Reset everything?')){S=def();mig();save();draw()}}
+function go(t){if(t=='Products'&&tab=='Products')ed=null;tab=t;draw()}
+function draw(){
+ $('#nav').innerHTML=Object.keys(T).map(t=>`<button class="${t==tab?'on':''}" onclick="go('${t}')">${t}</button>`).join('');
+ $('#v').innerHTML=T[tab]();document.title=S.set.biz+' Bake & Cost Planner';
+ document.body.classList.toggle('plab',tab=='Labels');document.body.classList.toggle('pal',tab=='Allergens');if(tab=='Tools')tl()}
+document.body.insertAdjacentHTML('beforeend','<div id="cf"></div>');
+let lastS=null,tmr;
+function snap(msg){lastS=JSON.stringify(S);$('#cf').innerHTML=`<div class="toast"><span>${esc(msg)}</span><button class="g" onclick="undo()">Undo</button></div>`;clearTimeout(tmr);tmr=setTimeout(()=>{$('#cf').innerHTML=''},8000)}
+function undo(){if(lastS){S=JSON.parse(lastS);lastS=null;$('#cf').innerHTML='';save();draw()}}
+function del(p,i){snap('Removed');at(p).splice(i,1);save();draw()}
+function delP(i){snap(`Deleted "${S.prods[i].name}"`);S.prods.splice(i,1);ed=null;save();draw()}
+function delI(i){snap(`Deleted "${S.ings[i].n}"`);S.ings.splice(i,1);save();draw()}
+function rst(){snap('Everything was reset');S=def();mig();save();draw()}
+function clrO(){snap('Orders cleared');S.orders=[];save();draw()}
+function orders(){
+ if(!S.prods.length)return'<p class="mut">Add a product first.</p>';
+ let h=`<div class="card"><div class="row"><label class="grow">Customer<input id="oc"></label><label>Product<select id="op">${S.prods.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Qty<input id="oq" type="number" value="1" min="1"></label><button class="b" onclick="addO()">Add order</button></div></div>`;
+ h+=S.orders.length?`<div class="scroll"><table>${S.orders.map((o,i)=>`<tr><td>${esc(o.cust)}</td><td>${esc((S.prods.find(p=>p.id==o.pid)||{name:'(deleted)'}).name)}</td><td class="n">${o.qty}</td><td><button class="g" onclick="del('orders',${i})">Remove</button></td></tr>`).join('')}</table></div><p><button class="g" onclick="clrO()">Clear this week</button></p>`:'<p class="mut">No orders yet.</p>';
+ return h}
+let iq='',isort='name',pq='',pcat='All';const opn=new Set();
+const sg=n=>gi(n)||{};
+const mg=p=>{const c=calc(p).cost;return p.price?(p.price-c)/p.price*100:0};
+function flt(s,q){q=q.toLowerCase();document.querySelectorAll(s).forEach(e=>e.hidden=!e.dataset.n.includes(q))}
+function fx(){const v=$('#v');v.classList.remove('fx');void v.offsetWidth;v.classList.add('fx')}
+function go(t){if(t=='Products'&&tab=='Products')ed=null;tab=t;draw();fx()}
+function openP(i){ed=i;draw();fx()}
+function pc(i,v){const g=S.ings[i];v=+v||0;if(v!=g.price){g.prev=g.price;g.pdate=new Date().toISOString().slice(0,10);g.price=v}save();draw()}
+function dis(i){S.ings[i].prev=null;save();draw()}
+function tg(i,a){const l=S.ings[i].al,k=l.indexOf(a);k<0?l.push(a):l.splice(k,1);save();draw()}
+function delI(i){snap(`Deleted "${S.ings[i].n}"`);S.ings.splice(i,1);opn.clear();save();draw()}
+function qadd(i){const n=$('#qn').value.trim();if(!n)return;S.ings.push({n,price:+$('#qp').value||0,size:+$('#qs').value||1,unit:$('#qu').value,al:[],waste:0});S.prods[i].ings.push({n,pct:0,amt:0});save();draw()}
+function newI(){S.ings.push({n:'New ingredient',price:0,size:1,unit:'kg',al:[],waste:0});const k=S.ings.length-1;opn.add(k);iq='';save();draw();const r=document.querySelector(`.ir[data-i="${k}"]`);if(r){r.scrollIntoView({block:'center'});const x=r.querySelector('.body input');x.focus();x.select()}}
+function photo(i,el){const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,480/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.prods[i].img=c.toDataURL('image/jpeg',.7);save();draw()};im.src=r.result};r.readAsDataURL(f)}
+
+function ingredients(){
+ const I=S.ings,ord=I.map((g,i)=>i).filter(i=>I[i].n.toLowerCase().includes(iq.toLowerCase()));
+ const by={name:(a,b)=>I[a].n.localeCompare(I[b].n),used:(a,b)=>used(I[b].n)-used(I[a].n)||I[a].n.localeCompare(I[b].n),changed:(a,b)=>(I[b].pdate||'').localeCompare(I[a].pdate||'')};
+ ord.sort(by[isort]);
+ const rows=ord.map(i=>{const g=I[i],pp=ppu(g),u=BASE[g.unit];return`<details class="ir" data-i="${i}" data-n="${esc(g.n.toLowerCase())}"${opn.has(i)?' open':''} ontoggle="this.open?opn.add(${i}):opn.delete(${i})"><summary><div><span class="nm">${esc(g.n)}</span><br><span class="sub">${g.al.length?esc(g.al.join(', ')):'No allergens'} · used in ${used(g.n)}${g.sup?' · '+esc(g.sup):''}</span></div><span>${u=='each'?m(pp)+' each':m(pp*1000)+' / '+(u=='g'?'kg':'l')}</span><span class="mut">▾</span></summary><div class="body"><div class="row"><label class="grow">Name<input value="${esc(g.n)}" onchange="rn(${i},this.value)"></label><label>Pack price<input type="number" step="any" value="${g.price}" onchange="pc(${i},this.value)"></label><label>Pack size${inp(`ings.${i}.size`,g.size,'',1)}</label><label>Unit${sel(`ings.${i}.unit`,UN.map(x=>[x,x]),g.unit)}</label><label>Waste %${inp(`ings.${i}.waste`,g.waste,'',1)}</label></div><div class="row"><label class="grow">Supplier${inp(`ings.${i}.sup`,g.sup||'')}</label><label>In stock (${g.unit})${inp(`ings.${i}.stock`,g.stock||0,'',1)}</label></div><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${g.al.includes(a)?' checked':''} onchange="tg(${i},'${a}')"> ${a}</label>`).join('')}</div><p><button class="g" onclick="delI(${i})">Delete</button></p></div></details>`}).join('');
+ return`<h2 style="margin:0 0 6px">Ingredients</h2><p class="mut">What you buy: pack price, size and unit. Recipes pick from this list, and a price change flows into every recipe.</p><div class="row"><input class="grow" placeholder="Search ingredients" value="${esc(iq)}" oninput="iq=this.value;flt('.ir',iq)"><label>Sort<select onchange="isort=this.value;draw()">${[['name','Name'],['used','Most used'],['changed','Price changed']].map(x=>`<option value="${x[0]}"${x[0]==isort?' selected':''}>${x[1]}</option>`).join('')}</select></label></div><div>${rows||'<p class="mut">No ingredients match.</p>'}</div><p><button class="b" onclick="newI()">+ New ingredient</button></p>`}
+
+function prods(){
+ if(ed!=null&&S.prods[ed])return editor(ed);
+ const cats=['All',...new Set(S.prods.map(p=>p.cat||'Bakery'))];
+ const cards=S.prods.map((p,i)=>[p,i]).filter(([p])=>(pcat=='All'||(p.cat||'Bakery')==pcat)&&p.name.toLowerCase().includes(pq.toLowerCase())).map(([p,i])=>{const c=calc(p);return`<article class="box" data-n="${esc(p.name.toLowerCase())}">${p.img?`<img class="ph" src="${p.img}" alt="">`:''}<h3>${esc(p.name)}</h3><p class="mut">${esc(p.cat||'Bakery')} · ${p.unitG} g · ${p.ings.length} ingredients</p>${por(p)>1?`<p class="mut">${esc(pinfo(p))}</p>`:''}<div class="kv"><span>Price<b>${m(p.price)}</b></span><span>Cost<b>${m(c.cost)}</b></span><span>Margin<b>${mg(p).toFixed(0)}%</b></span></div><div class="row"><button class="b" onclick="openP(${i})">Edit</button><button class="g" onclick="dupP(${i})">Duplicate</button><button class="g" onclick="delP(${i})">Delete</button></div></article>`}).join('');
+ return`<h2 style="margin:0 0 6px">Products</h2><div class="row"><input class="grow" placeholder="Search products" value="${esc(pq)}" oninput="pq=this.value;flt('.box[data-n]',pq)">${cats.map(c=>`<button class="g${c==pcat?' on':''}" onclick="pcat='${c}';draw()">${c}</button>`).join('')}</div><div class="grid">${cards}<button class="box add" onclick="newP()">+<br>Add product</button></div>`}
+
+function alerts(){
+ const out=S.ings.map((g,i)=>[g,i]).filter(([g])=>g.prev!=null&&g.prev!=g.price).map(([g,i])=>{
+  const aff=S.prods.filter(p=>p.ings.some(x=>key(x.n)==key(g.n))),cur=g.price;g.price=g.prev;const b=aff.map(mg);g.price=cur;const a=aff.map(mg);
+  return`<div class="card"><div class="row"><b class="grow">${esc(g.n)}: ${m(g.prev)} → ${m(g.price)} per pack</b><button class="g" onclick="dis(${i})">Dismiss</button></div>${aff.map((p,k)=>`<div class="mut">${esc(p.name)}: margin ${b[k].toFixed(0)}% → ${a[k].toFixed(0)}%</div>`).join('')||'<div class="mut">Not used in any product.</div>'}</div>`}).join('');
+ return out?`<h2>Price changes</h2>${out}`:''}
+function menu(){
+ const T0=+S.set.margin||0,rows=S.prods.map(p=>{const c=calc(p);return{p,c,g:mg(p),sug:Math.ceil(c.cost/(1-Math.min(T0,95)/100)*20)/20}}).sort((a,b)=>a.g-b.g);
+ return alerts()+`<h2>Menu margins</h2><p class="mut">Lowest margin first. Your target is ${T0}%.</p><div class="scroll"><table><tr><th>Item</th><th>Category</th><th class="n">Cost</th><th class="n">Price</th><th class="n">Margin</th><th class="n">Suggested price</th></tr>${rows.map(r=>`<tr><td>${esc(r.p.name)}${por(r.p)>1?`<br><span class="mut">${esc(pinfo(r.p))}</span>`:''}</td><td>${esc(r.p.cat||'Bakery')}</td><td class="n">${m(r.c.cost)}</td><td class="n">${m(r.p.price)}</td><td class="n">${r.g.toFixed(0)}%${r.g<T0?' ▾ below target':''}</td><td class="n">${m(r.sug)}</td></tr>`).join('')}</table></div>`}
+function guide(){
+ if(S.set.noguide)return'';
+ const st=[[S.ings.some(g=>g.price>0),'Add your ingredients with prices','Ingredients'],[S.prods.some(p=>p.ings.length&&calc(p).cost>0),'Build a product from them','Products'],[S.orders.length>0||Object.keys(S.par||{}).length>0,'Add orders or daily targets','Orders']];
+ if(st.every(x=>x[0]))return'';
+ return`<div class="card noprint"><div class="row"><b class="grow">Get started</b><button class="g" onclick="S.set.noguide=1;save();draw()">Hide</button></div>${st.map(x=>`<div class="row"><span>${x[0]?'✓':'○'}</span><span class="grow${x[0]?' mut':''}">${x[1]}</span>${x[0]?'':`<button class="g" onclick="go('${x[2]}')">Open</button>`}</div>`).join('')}</div>`}
+const plan0=plan;
+const T={Plan:()=>guide()+plan0(),Orders:orders,Products:prods,Ingredients:ingredients,Menu:menu,Labels:labels,Allergens:allergens,Tools:tools,Settings:settings};
+
+
+function draw(){
+ $('#nav').innerHTML=Object.keys(T).map(t=>`<button class="${t==tab?'on':''}" onclick="tab='${t}';ed=null;draw()">${t}</button>`).join('');
+ $('#v').innerHTML=T[tab]();document.title=S.set.biz+' Bake & Cost Planner';
+ $('#sub').textContent='Bake and cost planner';if(tab=='Tools')tl()}
+let vw=null;const vq={};
+const pday=()=>(S.set.ready||'').slice(0,10);
+const dO=()=>dOf(pday());
+const dlab=d=>new Date(d+'T12:00').toLocaleDateString('en-IE',{weekday:'short',day:'numeric',month:'short'});
+const hm=x=>x>=60?Math.floor(x/60)+' h'+(x%60?' '+x%60+' min':''):x+' min';
+function addO(){add('orders',{cust:$('#oc').value.trim()||'Walk-in',pid:$('#op').value,qty:+$('#oq').value||1,date:$('#od').value||pday()})}
+function setDay(d){S.set.ready=d+'T'+(S.set.ready||'T07:00').slice(11,16);save();draw()}
+function orders(){
+ if(!S.prods.length)return'<p class="mut">Add a product first.</p>';
+ const ds=[...new Set(S.orders.map(o=>o.date))].sort();
+ let h=`<div class="card"><div class="row"><label class="grow">Customer<input id="oc"></label><label>Product<select id="op">${S.prods.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Qty<input id="oq" type="number" value="1" min="1"></label><label>For day<input id="od" type="date" value="${pday()}"></label><button class="b" onclick="addO()">Add order</button></div></div>`;
+ h+=ds.length?ds.map(d=>`<div class="row" style="margin-top:22px"><h3 class="grow" style="margin:0">${dlab(d)}${d==pday()?' · in the plan':''}</h3>${d==pday()?'':`<button class="g sm" onclick="setDay('${d}')">Plan this day</button>`}</div><div class="scroll"><table>${S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).map(([o,i])=>`<tr><td>${esc(o.cust)}</td><td>${esc((S.prods.find(p=>p.id==o.pid)||{name:'(deleted)'}).name)}</td><td class="n">${o.qty}</td><td class="n"><button class="g sm" onclick="del('orders',${i})">Remove</button></td></tr>`).join('')}</table></div>`).join(''):'<p class="mut">No orders yet.</p>';
+ return h+(S.orders.length?'<p><button class="g sm" onclick="clrO()">Clear all orders</button></p>':'')}
+
+function recipe(i){
+ const p=S.prods[i],c=calc(p),b=Math.max(+p.batch||1,1),bt=p.yt=='batch';
+ const oq=dO().filter(o=>o.pid==p.id).reduce((a,o)=>a+o.qty,0),want=vq[p.id]||oq||(bt?b:1),n=bt?Math.ceil(want/b)*b:want;
+ let t=new Date(S.set.ready).getTime();const st=[...p.steps].reverse().map(s=>t-=(+s.mins||0)*6e4).reverse();
+ const total=p.steps.reduce((a,s)=>a+(+s.mins||0),0);
+ return`<div class="recipe"><div class="noprint row"><button class="g" onclick="vw=null;draw()">← All products</button><span class="grow"></span><button class="g" onclick="vw=null;ed=${i};draw()">Edit</button><button class="b" onclick="cook(${i})">Cook mode</button><button class="g" onclick="print()">Print recipe</button></div>
+ <div class="pw"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></div><p class="mut">${esc(p.cat||'Bakery')} · version ${p.cv||1}</p><h2 class="rt">${esc(p.name)}</h2>${p.img?`<img class="rph" src="${p.img}" alt="">`:''}
+ <div class="noprint row"><label>Making (units)<input type="number" min="1" value="${want}" onchange="vq['${p.id}']=+this.value||1;draw()"></label></div>
+ <p>Makes <b>${n}</b> × ${p.unitG} g${por(p)>1?` (cut into ${por(p)} portions)`:''}${bt?` (${n/b} batch${n/b>1?'es':''})`:''}${total?` · total time ${hm(total)}`:''}</p>
+ <h3>Ingredients</h3><table>${c.lines.map((l,k)=>`<tr><td>${esc(l.n)}</td><td class="n">${fq(l.g*n,bu(l.n))}</td>${p.mode=='pct'?`<td class="n mut">${p.ings[k].pct}%</td>`:''}</tr>`).join('')}</table>
+ <h3>Method</h3><ol class="steps">${p.steps.map((s,j)=>`<li><span class="bx" onclick="this.classList.toggle('done')"></span><div><b>${esc(s.n)}</b> <span class="mut">${hm(+s.mins||0)} · start ${fm(st[j])}</span>${s.d?`<div>${esc(s.d)}</div>`:''}</div></li>`).join('')}</ol>
+ ${p.notes?`<h3>Notes</h3><p style="white-space:pre-wrap">${esc(p.notes)}</p>`:''}${p.store?`<p class="mut">Storage: ${esc(p.store)} · shelf life ${p.shelf} days</p>`:''}</div>`}
+
+function prods(){
+ if(cm!=null&&S.prods[cm])return cookv(cm);
+ if(vw!=null&&S.prods[vw])return recipe(vw);
+ if(ed!=null&&S.prods[ed])return editor(ed);
+ const cats=['All',...new Set(S.prods.map(p=>p.cat||'Bakery'))];
+ const cards=S.prods.map((p,i)=>[p,i]).filter(([p])=>(pcat=='All'||(p.cat||'Bakery')==pcat)&&p.name.toLowerCase().includes(pq.toLowerCase())).map(([p,i])=>{const c=calc(p);return`<article class="box" data-n="${esc(p.name.toLowerCase())}">${p.img?`<img class="ph" src="${p.img}" alt="">`:''}<h3 class="lk" onclick="vw=${i};draw();fx()">${esc(p.name)}</h3><p class="mut">${esc(p.cat||'Bakery')} · ${p.unitG} g · ${p.ings.length} ingredients</p>${por(p)>1?`<p class="mut">${esc(pinfo(p))}</p>`:''}<div class="kv"><span>Price<b>${m(p.price)}</b></span><span>Cost<b>${m(c.cost)}</b></span><span>Margin<b>${mg(p).toFixed(0)}%</b></span></div><div class="row"><button class="b" onclick="vw=${i};draw();fx()">Open recipe</button><button class="g" onclick="openP(${i})">Edit</button></div><div class="row"><button class="g sm" onclick="dupP(${i})">Duplicate</button><button class="g sm" onclick="delP(${i})">Delete</button></div></article>`}).join('');
+ return`<h2 style="margin:0 0 6px">Products</h2><div class="row"><input class="grow" placeholder="Search products" value="${esc(pq)}" oninput="pq=this.value;flt('.box[data-n]',pq)">${cats.map(c=>`<button class="g${c==pcat?' on':''}" onclick="pcat='${c}';draw()">${c}</button>`).join('')}</div><div class="grid">${cards}<button class="box add" onclick="newP()">+<br>Add product</button></div>`}
+
+function go(t){if(t=='Products'&&tab=='Products'){ed=null;vw=null}tab=t;draw();fx()}
+const tabs=()=>Object.keys(T).filter(t=>t!='Tools'||S.set.tools);
+function draw(){
+ S.orders.forEach(o=>{if(!o.date)o.date=pday()});
+ if(!tabs().includes(tab))tab='Plan';
+ $('#nav').innerHTML=tabs().map(t=>`<button class="${t==tab?'on':''}" onclick="go('${t}')">${t}</button>`).join('');
+ $('#v').innerHTML=T[tab]();document.title=S.set.biz+' Bake & Cost Planner';
+ document.body.classList.toggle('plab',tab=='Labels');document.body.classList.toggle('pal',tab=='Allergens');document.body.classList.toggle('prec',tab=='Products'&&vw!=null&&!!S.prods[vw]);if(tab=='Tools')tl()}
+
+const idr={};
+const dg=i=>idr[i]||(idr[i]={...S.ings[i],al:[...S.ings[i].al]});
+const en=i=>document.querySelectorAll(`.ir[data-i="${i}"] .sv`).forEach(b=>b.disabled=false);
+function dr(i,f,v){dg(i)[f]=v;en(i)}
+function dal(i,a){const l=dg(i).al,k=l.indexOf(a);k<0?l.push(a):l.splice(k,1);en(i)}
+function cnI(i){delete idr[i];draw()}
+function svI(i){
+ const d=idr[i],g=S.ings[i];if(!d)return;
+ const nn=d.n.trim()||g.n;
+ if(key(nn)!=key(g.n))S.prods.forEach(p=>p.ings.forEach(x=>{if(key(x.n)==key(g.n))x.n=nn}));
+ const np=+d.price||0;if(np!=(+g.price||0)){g.prev=g.price;g.pdate=new Date().toISOString().slice(0,10)}
+ Object.assign(g,{n:nn,price:np,size:+d.size||1,unit:d.unit,waste:+d.waste||0,sup:d.sup||'',al:[...d.al]});
+ delete idr[i];save();draw()}
+function delI(i){snap(`Deleted "${S.ings[i].n}"`);S.ings.splice(i,1);opn.clear();for(const k in idr)delete idr[k];save();draw()}
+function ingredients(){
+ const I=S.ings,ord=I.map((g,i)=>i).filter(i=>I[i].n.toLowerCase().includes(iq.toLowerCase()));
+ const by={name:(a,b)=>I[a].n.localeCompare(I[b].n),used:(a,b)=>used(I[b].n)-used(I[a].n)||I[a].n.localeCompare(I[b].n),changed:(a,b)=>(I[b].pdate||'').localeCompare(I[a].pdate||'')};
+ ord.sort(by[isort]);
+ const rows=ord.map(i=>{const g=I[i],d=idr[i]||g,pp=ppu(g),u=BASE[g.unit],dis=idr[i]?'':' disabled';return`<details class="ir" data-i="${i}" data-n="${esc(g.n.toLowerCase())}"${opn.has(i)?' open':''} ontoggle="this.open?opn.add(${i}):opn.delete(${i})"><summary><div><span class="nm">${esc(g.n)}</span><br><span class="sub">${g.al.length?esc(g.al.join(', ')):'No allergens'} · used in ${used(g.n)}${g.sup?' · '+esc(g.sup):''}</span></div><span>${u=='each'?m(pp)+' each':m(pp*1000)+' / '+(u=='g'?'kg':'l')}</span><span class="mut">▾</span></summary><div class="body"><div class="row"><label class="grow">Name<input value="${esc(d.n)}" oninput="dr(${i},'n',this.value)"></label><label>Pack price<input type="number" step="any" value="${d.price}" oninput="dr(${i},'price',this.value)"></label><label>Pack size<input type="number" step="any" value="${d.size}" oninput="dr(${i},'size',this.value)"></label><label>Unit<select onchange="dr(${i},'unit',this.value)">${UN.map(x=>`<option${x==d.unit?' selected':''}>${x}</option>`).join('')}</select></label><label>Waste %<input type="number" step="any" value="${d.waste||0}" oninput="dr(${i},'waste',this.value)"></label></div><div class="row"><label class="grow">Supplier (optional)<input value="${esc(d.sup||'')}" oninput="dr(${i},'sup',this.value)"></label></div><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${d.al.includes(a)?' checked':''} onchange="dal(${i},'${a}')"> ${a}</label>`).join('')}</div><div class="row" style="margin-top:16px"><button class="b sv"${dis} onclick="svI(${i})">Save</button><button class="g sv"${dis} onclick="cnI(${i})">Cancel</button><span class="grow"></span><button class="g sm" onclick="delI(${i})">Delete</button></div></div></details>`}).join('');
+ return`<h2 style="margin:0 0 6px">Ingredients</h2><p class="mut">What you buy: pack price, size and unit. Open an ingredient, make your changes and press Save. A price change flows into every recipe.</p><div class="row"><input class="grow" placeholder="Search ingredients" value="${esc(iq)}" oninput="iq=this.value;flt('.ir',iq)"><label>Sort<select onchange="isort=this.value;draw()">${[['name','Name'],['used','Most used'],['changed','Price changed']].map(x=>`<option value="${x[0]}"${x[0]==isort?' selected':''}>${x[1]}</option>`).join('')}</select></label></div><div>${rows||'<p class="mut">No ingredients match.</p>'}</div><p><button class="b" onclick="newI()">+ New ingredient</button></p>`}
+
+S.par=S.par||{};
+let ov='week',wk=0,odate='';
+const DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const dow=d=>(new Date(d+'T12:00').getDay()+6)%7;
+const por=p=>Math.max(+p.por||1,1),pprice=p=>+p.sp||(p.price/por(p));
+const pinfo=p=>{const c=calc(p).cost/por(p),pp=pprice(p);return`per portion: cost ${m(c)}, price ${m(pp)}, margin ${pp?((pp-c)/pp*100).toFixed(0):0}%`};
+function dOf(d){
+ const r=S.orders.filter(o=>o.date==d);
+ S.prods.forEach(p=>{const q=+((S.par||{})[p.id]||{})[dow(d)]||0;if(q>0)r.push({cust:'Counter (daily target)',pid:p.id,qty:q,date:d,par:true})});
+ return r}
+function pd(d){S.set.ready=d+'T'+(S.set.ready||'T07:00').slice(11,16);tab='Plan';save();draw();fx()}
+function tgo(i,f,v){S.orders[i][f]=v;save();draw()}
+function setPar(id,k,v){S.par=S.par||{};(S.par[id]=S.par[id]||{})[k]=+v||0;save()}
+function addO(){const o={cust:$('#oc').value.trim()||'Walk-in',pid:$('#op').value,qty:+$('#oq').value||1,date:$('#od').value||pday(),time:$('#ot').value||'',note:$('#on').value.trim(),packed:false,done:false};odate='';add('orders',o)}
+
+function targets(){
+ return`<p class="mut">How many of each item you want ready on each weekday. They are added to that day’s plan automatically as “Counter”.</p><div class="scroll"><table><tr><th>Item</th>${DN.map(d=>`<th class="n">${d}</th>`).join('')}</tr>${S.prods.map(p=>`<tr><td>${esc(p.name)}</td>${DN.map((d,k)=>`<td class="n"><input class="tq" type="number" min="0" value="${((S.par||{})[p.id]||{})[k]||''}" onchange="setPar('${p.id}',${k},this.value)"></td>`).join('')}</tr>`).join('')}</table></div>`}
+
+function weekv(){
+ const b=new Date(pday()+'T12:00'),mon=new Date(b);mon.setDate(b.getDate()-dow(pday())+wk*7);
+ const ds=[...Array(7)].map((_,k)=>{const d=new Date(mon);d.setDate(mon.getDate()+k);return d.toISOString().slice(0,10)});
+ const card=d=>{const tot={};dOf(d).forEach(o=>tot[o.pid]=(tot[o.pid]||0)+o.qty);const n=S.orders.filter(o=>o.date==d).length,on=d==pday();
+  return`<div class="day${on?' on':''}"><b>${dlab(d)}</b>${on?'<span class="mut"> · planned</span>':''}<p class="mut">${n} order${n==1?'':'s'}</p><div class="dl">${Object.keys(tot).map(id=>`${tot[id]} × ${esc((S.prods.find(p=>p.id==id)||{name:'?'}).name)}`).join('<br>')||'<span class="mut">Nothing planned</span>'}</div><div class="row"><button class="${on?'g':'b'} sm" onclick="pd('${d}')">Plan this day</button><button class="g sm" onclick="odate='${d}';ov='orders';draw()">+ Order</button></div></div>`};
+ return`<div class="row"><button class="g sm" onclick="wk--;draw()">← Previous</button><button class="g sm" onclick="wk=0;draw()">Planned week</button><button class="g sm" onclick="wk++;draw()">Next →</button></div><div class="week">${ds.map(card).join('')}</div>`}
+
+function ordl(){
+ if(!S.prods.length)return'<p class="mut">Add a product first.</p>';
+ const ds=[...new Set(S.orders.map(o=>o.date))].sort();
+ let h=`<div class="card"><div class="row"><label class="grow">Customer<input id="oc"></label><label>Product<select id="op">${S.prods.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Qty<input id="oq" type="number" value="1" min="1"></label></div><div class="row"><label>For day<input id="od" type="date" value="${odate||pday()}"></label><label>Pickup time<input id="ot" type="time"></label><label class="grow">Note<input id="on" placeholder="e.g. no nuts, birthday message"></label><button class="b" onclick="addO()">Add order</button></div></div>`;
+ h+=ds.length?ds.map(d=>`<div class="row" style="margin-top:22px"><h3 class="grow" style="margin:0">${dlab(d)}${d==pday()?' · in the plan':''}</h3>${d==pday()?'':`<button class="g sm" onclick="pd('${d}')">Plan this day</button>`}</div><div class="scroll"><table><tr><th>Time</th><th>Customer</th><th>Item</th><th class="n">Qty</th><th>Note</th><th>Packed</th><th>Collected</th><th></th></tr>${S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).sort((a,b)=>(a[0].time||'99').localeCompare(b[0].time||'99')).map(([o,i])=>`<tr><td>${esc(o.time||'')}</td><td>${esc(o.cust)}</td><td>${esc((S.prods.find(p=>p.id==o.pid)||{name:'(deleted)'}).name)}</td><td class="n">${o.qty}</td><td class="wrap">${esc(o.note||'')}</td><td><input type="checkbox" class="ck"${o.packed?' checked':''} onchange="tgo(${i},'packed',this.checked)"></td><td><input type="checkbox" class="ck"${o.done?' checked':''} onchange="tgo(${i},'done',this.checked)"></td><td class="n"><button class="g sm" onclick="del('orders',${i})">Remove</button></td></tr>`).join('')}</table></div>`).join(''):'<p class="mut">No customer orders yet.</p>';
+ return h+(S.orders.length?'<p><button class="g sm" onclick="clrO()">Clear all orders</button></p>':'')}
+function orders(){
+ const t=[['week','Week'],['orders','Orders'],['targets','Daily targets']];
+ return`<div class="row seg">${t.map(x=>`<button class="g${ov==x[0]?' on':''}" onclick="ov='${x[0]}';draw()">${x[1]}</button>`).join('')}</div>`+(ov=='week'?weekv():ov=='targets'?targets():ordl())}
+
+function allergens(){
+ const rows=S.prods.map(p=>({p,al:new Set(calc(p).lines.flatMap(l=>sg(l.n).al||[]))})).sort((a,b)=>(a.p.cat||'Bakery').localeCompare(b.p.cat||'Bakery')||a.p.name.localeCompare(b.p.name));
+ let last='';
+ return`<div class="asheet"><div class="noprint row"><h2 class="grow" style="margin:0">Allergens</h2><button class="b" onclick="print()">Print sheet</button></div><p class="mut noprint">Allergens come from the ingredients you ticked on the Ingredients tab, so keep those up to date. Check with the FSAI or your local environmental health officer whether you need to display a sheet like this.</p><h2>${esc(S.set.biz)} · Allergen information</h2><div class="scroll"><table class="am"><tr><th>Item</th>${AL.map(a=>`<th class="v"><span>${a}</span></th>`).join('')}</tr>${rows.map(r=>{const c=r.p.cat||'Bakery',h=c!=last?`<tr><th colspan="15" class="cat">${esc(c)}</th></tr>`:'';last=c;return h+`<tr><td>${esc(r.p.name)}</td>${AL.map(a=>`<td class="cc">${r.al.has(a)?'●<span class="sr"> contains</span>':''}</td>`).join('')}</tr>`}).join('')}</table></div><p>● = contains. ${esc(S.set.may)}</p><p class="mut">Updated ${dstr(new Date())}</p></div>`}
+
+const tdy=()=>tz(new Date()).slice(0,10);
+if(pday()&&pday()<tdy())S.set.ready=tdy()+'T'+S.set.ready.slice(11,16);
+tab='Today';
+const svg=p=>`<svg viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
+const IC={Today:svg('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>'),
+ Orders:svg('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4v2h6V4M9 11h6M9 15h6"/>'),
+ Recipes:svg('<path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v13c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v13"/>'),
+ Costs:svg('<path d="M4 12l8-8h7v7l-8 8z"/><circle cx="15" cy="9" r="1"/>'),
+ Print:svg('<path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2"/><rect x="7" y="14" width="10" height="6"/>'),
+ Settings:svg('<path d="M5 8h9M18 8h1M5 16h1M10 16h9"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/>')};
+const G=[['Today',['Today']],['Orders',['Orders']],['Recipes',['Products']],['Costs',['Ingredients','Menu']],['Print',['Plan','Labels','Allergens','Board']],['Settings',['Settings','Tools']]];
+const TL={Today:'Today',Orders:'Orders',Products:'Recipes',Ingredients:'Ingredients',Menu:'Margins',Plan:'Bake plan',Labels:'Labels',Allergens:'Allergens',Board:'Menu board',Settings:'Settings',Tools:'Tools'};
+const last={};
+function shd(k){const d=new Date((k?pday():tdy())+'T12:00');if(k)d.setDate(d.getDate()+k);S.set.ready=d.toISOString().slice(0,10)+'T'+S.set.ready.slice(11,16);save();draw()}
+function dn(id,v){S.done=S.done||{};S.done[pday()+'|'+id]=v;save();draw()}
+function today(){
+ const d=pday(),tot={};dOf(d).forEach(o=>tot[o.pid]=(tot[o.pid]||0)+o.qty);
+ const act=S.prods.filter(p=>tot[p.id]>0),end=new Date(S.set.ready).getTime();
+ let first=Infinity;act.forEach(p=>{first=Math.min(first,end-p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4)});
+ S.done=S.done||{};const nd=act.filter(p=>S.done[d+'|'+p.id]).length,low=act.filter(p=>mg(p)<(+S.set.margin||0));
+ const picks=S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).sort((a,b)=>(a[0].time||'99').localeCompare(b[0].time||'99'));
+ return guide()+`<div class="row"><div class="grow"><div class="mut">${d==tdy()?'Today':'Planned day'}</div><h2 class="dayh">${dlab(d)}</h2></div><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button></div>`+
+ (act.length?`<div class="card hero"><div class="mut">First start</div><div class="hbig">${new Date(first).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div><div class="mut">to have everything ready by ${esc(S.set.ready.slice(11,16))}</div></div>
+ <div class="row"><b class="grow">To make</b><span class="mut">${nd} of ${act.length} done</span></div><div class="bar"><i style="width:${nd/act.length*100}%"></i></div>
+ ${act.map(p=>{const i=S.prods.indexOf(p),x=S.done[d+'|'+p.id];return`<div class="trow"><label class="chip chk"><input type="checkbox"${x?' checked':''} onchange="dn('${p.id}',this.checked)"> <span class="${x?'mut':''}">${tot[p.id]} × ${esc(p.name)}</span></label><button class="g sm" onclick="vw=${i};go('Products')">Recipe</button></div>`}).join('')}`
+ :`<div class="card"><p class="chalk">Nothing baking yet</p><p class="mut">Add orders or daily targets and this day fills in.</p><div class="row"><button class="b" onclick="ov='targets';go('Orders')">Set daily targets</button><button class="g" onclick="ov='orders';go('Orders')">Add an order</button></div></div>`)+
+ (picks.length?`<h2>Pickups</h2><div class="scroll"><table>${picks.map(([o,i])=>`<tr><td>${esc(o.time||'—')}</td><td>${esc(o.cust)}</td><td>${o.qty} × ${esc((S.prods.find(p=>p.id==o.pid)||{name:'?'}).name)}</td><td class="wrap">${esc(o.note||'')}</td><td><label class="chip chk"><input type="checkbox"${o.packed?' checked':''} onchange="tgo(${i},'packed',this.checked)"> Packed</label></td><td><label class="chip chk"><input type="checkbox"${o.done?' checked':''} onchange="tgo(${i},'done',this.checked)"> Collected</label></td></tr>`).join('')}</table></div>`:'')+
+ (low.length?`<p class="mut">Margin below your ${+S.set.margin||0}% target: ${low.slice(0,3).map(p=>esc(p.name)).join(', ')}.</p>`:'')+
+ (act.length?`<p><button class="g" onclick="go('Plan')">Open the full bake plan</button></p>`:'')}
+
+let cm=null,cs=0,tL=0,tR=false,tI=null,wl=null;
+const fmt=s=>Math.floor(Math.abs(s)/60)+':'+String(Math.abs(s)%60).padStart(2,'0');
+async function wake(){try{wl=await navigator.wakeLock.request('screen')}catch(e){}}
+function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator();o.connect(c.destination);o.frequency.value=880;o.start();setTimeout(()=>o.stop(),700);navigator.vibrate&&navigator.vibrate([300,100,300])}catch(e){}}
+function tmUI(){const a=$('#tm'),b=$('#tb');if(a)a.textContent=tL<=0&&!tR&&tL<0?'Done':fmt(tL);if(b)b.textContent=tR?'Pause':'Start timer'}
+function ctReset(){clearInterval(tI);tR=false;const s=S.prods[cm]&&S.prods[cm].steps[cs-1];tL=s?(+s.mins||0)*60:0}
+function ctTog(){if(tR){clearInterval(tI);tR=false}else{tR=true;tI=setInterval(()=>{tL--;if(tL<=0){clearInterval(tI);tR=false;beep()}tmUI()},1000)}tmUI()}
+function cook(i){cm=i;cs=0;ctReset();wake();draw()}
+function cookX(){clearInterval(tI);tR=false;cm=null;try{wl&&wl.release()}catch(e){}draw()}
+function cmGo(k){if(cm==null||!S.prods[cm])return;const N=S.prods[cm].steps.length;if(cs+k>N)return cookX();cs=Math.max(0,cs+k);ctReset();draw()}
+function cookv(i){
+ const p=S.prods[i],c=calc(p),N=p.steps.length,b=Math.max(+p.batch||1,1),bt=p.yt=='batch';
+ const oq=dO().filter(o=>o.pid==p.id).reduce((a,o)=>a+o.qty,0),want=vq[p.id]||oq||(bt?b:1),n=bt?Math.ceil(want/b)*b:want,s=cs?p.steps[cs-1]:null;
+ const body=cs==0?`<div class="mut">Making ${n} × ${esc(p.name)}</div><h2 class="ck1">Ingredients</h2><table class="bg">${c.lines.map(l=>`<tr><td>${esc(l.n)}</td><td class="n">${fq(l.g*n,bu(l.n))}</td></tr>`).join('')}</table>`
+ :`<div class="mut">Step ${cs} of ${N}</div><h2 class="ck1">${esc(s.n)}</h2>${s.d?`<p class="ck2">${esc(s.d)}</p>`:''}${+s.mins?`<div class="timer"><div id="tm" class="tmv">${fmt(tL)}</div><button class="b big" id="tb" onclick="ctTog()">Start timer</button><button class="g" onclick="ctReset();tmUI()">Reset</button></div>`:''}${cs==N&&p.notes?`<p class="mut" style="white-space:pre-wrap">${esc(p.notes)}</p>`:''}`;
+ return`<div class="cook"><div class="row"><button class="g" onclick="cookX()">Exit</button><span class="grow"></span><span class="mut">${esc(p.name)}</span></div><div class="dots">${[...Array(N+1)].map((_,k)=>`<i class="${k==cs?'on':k<cs?'dn':''}"></i>`).join('')}</div>${body}<div class="row cnav"><button class="g big" onclick="cmGo(-1)"${cs?'':' disabled'}>Back</button><button class="b big grow" onclick="cmGo(1)">${cs==N?'Finish':'Next'}</button></div></div>`}
+
+function board(){
+ const items=S.prods.filter(p=>+p.price>0||+p.sp>0),cats=[...new Set(items.map(p=>p.cat||'Bakery'))];
+ const codes=p=>[...new Set(calc(p).lines.flatMap(l=>sg(l.n).al||[]))].map(a=>AL.indexOf(a)+1).filter(x=>x>0).sort((a,b)=>a-b).join(',');
+ return`<div class="noprint row"><h2 class="grow" style="margin:0">Menu board</h2><label class="chip"><input type="checkbox"${S.set.white?' checked':''} onchange="S.set.white=this.checked;save();draw()"> Print on white</label><button class="b" onclick="print()">Print menu</button></div><p class="mut noprint">Prices come from your products (the price per portion when a product is cut into portions). Allergen numbers come from the ingredients you ticked. Check with the FSAI or your local environmental health officer what you need to show.</p><div class="board${S.set.white?' w':''}"><div class="bh"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></div>${cats.length?`<div class="bcols">${cats.map(c=>`<div><h3>${esc(c)}</h3>${items.filter(p=>(p.cat||'Bakery')==c).map(p=>`<div class="bi"><span>${esc(p.name)}${codes(p)?` <sup>${codes(p)}</sup>`:''}</span><i></i><b>${m(por(p)>1?pprice(p):p.price)}</b></div>`).join('')}</div>`).join('')}</div>`:'<p class="chalk">Add prices to your products and the menu appears here</p>'}<p class="bl">Allergens: ${AL.map((a,k)=>`${k+1} ${a}`).join(' · ')}</p></div>`}
+
+T.Today=today;T.Board=board;
+const gof=t=>G.find(g=>g[1].includes(t));
+function draw(){
+ S.orders.forEach(o=>{if(!o.date)o.date=pday()});
+ if(tab=='Tools'&&!S.set.tools)tab='Settings';
+ const g=gof(tab)||G[0];last[g[0]]=tab;
+ $('#nav').innerHTML=G.map(x=>`<button class="nv${x==g?' on':''}" onclick="go('${last[x[0]]||x[1][0]}')" aria-label="${x[0]}">${IC[x[0]]}<span>${x[0]}</span></button>`).join('');
+ const sb=g[1].filter(t=>t!='Tools'||S.set.tools);
+ $('#v').innerHTML=(sb.length>1?`<div class="row sub noprint">${sb.map(t=>`<button class="g${t==tab?' on':''}" onclick="go('${t}')">${TL[t]}</button>`).join('')}</div>`:'')+T[tab]();
+ document.title=S.set.biz+' Bake & Cost Planner';
+ const cl=document.body.classList,pr=tab=='Products';
+ cl.toggle('plab',tab=='Labels');cl.toggle('pal',tab=='Allergens');cl.toggle('pbd',tab=='Board');cl.toggle('prec',pr&&vw!=null&&!!S.prods[vw]);cl.toggle('cooking',pr&&cm!=null&&!!S.prods[cm]);
+ if(tab=='Tools')tl()}
+
+// ===== V2: sales, forecast, kitchen board, versions, oven, money =====
+let fdate=null,sdate=null,kbig=false,hvOpen=false;
+const ens=()=>{S.sales=S.sales||{};S.kb=S.kb||{};S.have=S.have||{};S.adj=S.adj||{};S.par=S.par||{};S.done=S.done||{};const s=S.set;if(s.buf==null)s.buf=10;if(s.trays==null)s.trays=4;if(s.chg==null)s.chg=5;S.prods.forEach(ensV)};
+const addD=(d,k)=>{const x=new Date(d+'T12:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)};
+const DNL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const hh=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+const endOf=d=>new Date(d+'T'+(S.set.ready||'T07:00').slice(11,16)).getTime();
+function flash(t){$('#cf').innerHTML=`<div class="toast"><span>${esc(t)}</span></div>`;clearTimeout(tmr);tmr=setTimeout(()=>{$('#cf').innerHTML=''},2500)}
+const bakeN=(pid,q)=>{const p=S.prods.find(x=>x.id==pid)||{},b=Math.max(+p.batch||1,1);return p.yt=='batch'?Math.ceil(q/b)*b:q};
+
+// sales records: {made, left, out} or imported {sold, made:null}
+const rs=r=>r.made==null&&r.sold!=null?+r.sold:Math.max((+r.made||0)-(+r.left||0),0);
+const rdem=r=>r.out?Math.max(rs(r),+r.made||0)*1.15:rs(r);
+const hist=pid=>Object.keys(S.sales).filter(d=>S.sales[d][pid]).sort().map(d=>({d,r:S.sales[d][pid]}));
+function fcast(pid,date){
+ const H=hist(pid).filter(h=>h.d<date),wd=dow(date),same=H.filter(h=>dow(h.d)==wd).slice(-8),n=same.length;
+ let avg=0,ws=0;same.forEach((h,k)=>{avg+=rdem(h.r)*(k+1);ws+=k+1});if(ws)avg/=ws;
+ const plain=n?same.reduce((a,h)=>a+rs(h.r),0)/n:0;
+ const ly=addD(date,-364),win=(a,b)=>H.filter(h=>h.d>=addD(ly,a)&&h.d<=addD(ly,b)).map(h=>rdem(h.r)),av=x=>x.reduce((a,b)=>a+b,0)/x.length;
+ const A=win(-14,14),B=win(-70,-15);let sea=1;if(A.length>=5&&B.length>=5&&av(B)>0)sea=Math.min(1.6,Math.max(.6,av(A)/av(B)));
+ const adj=1+(+S.adj[date]||0)/100,rec=n?Math.ceil(avg*sea*adj*(1+(+S.set.buf||0)/100)):0;
+ return{n,avg,plain,sea,adj,rec,outs:same.filter(h=>h.r.out).length,vals:same.map(h=>rs(h.r))}}
+
+function dOf(d){
+ const r=S.orders.filter(o=>o.date==d);
+ S.prods.forEach(p=>{let q=+((S.par||{})[p.id]||{})[dow(d)]||0,c='Counter (daily target)';
+  if(S.set.useFc&&S.sales){const f=fcast(p.id,d);if(f.n>=3){q=f.rec;c='Counter (forecast)'}}
+  if(q>0)r.push({cust:c,pid:p.id,qty:q,date:d,par:true})});
+ return r}
+const totOf=d=>{const t={};dOf(d).forEach(o=>t[o.pid]=(t[o.pid]||0)+o.qty);return t};
+function sched(d){
+ const tot=totOf(d),end=endOf(d),ev={};
+ S.prods.filter(p=>tot[p.id]>0).forEach(p=>{let t=end;[...p.steps].reverse().forEach(s=>{const st=t-(+s.mins||0)*6e4,k=st+'|'+key(s.n)+'|'+t;(ev[k]=ev[k]||{k,st,t,n:s.n,ps:[]}).ps.push({id:p.id,name:p.name,q:tot[p.id]});t=st})});
+ return Object.values(ev).sort((a,b)=>a.st-b.st||a.t-b.t)}
+function need(d){const tot=totOf(d),sh={};S.prods.filter(p=>tot[p.id]>0).forEach(p=>{const n=bakeN(p.id,tot[p.id]);calc(p).lines.forEach(l=>{if(!l.n||!l.g)return;const k=key(l.n);sh[k]=sh[k]||{n:l.n,g:0,u:bu(l.n)};sh[k].g+=l.g*n})});return Object.values(sh).sort((a,b)=>a.n.localeCompare(b.n))}
+function setHave(i,v){const x=need(pday())[i];if(x){S.have[pday()+'|'+key(x.n)]=v;save();draw()}}
+
+// oven
+const isBake=s=>/bake|oven|pec/i.test(s.n||'');
+function oven(d){
+ const tot=totOf(d),cap=Math.max(+S.set.trays||1,1),miss=[],grp={};
+ S.prods.filter(p=>tot[p.id]>0).forEach(p=>{const b=[...p.steps].reverse().find(isBake);if(!b)return;if(!(+p.tray>0)){miss.push(p.name);return}const n=bakeN(p.id,tot[p.id]);(grp[+p.temp||0]=grp[+p.temp||0]||[]).push({p,tr:Math.ceil(n/p.tray),mins:+b.mins||0})});
+ const loads=[];Object.keys(grp).sort((a,b)=>b-a).forEach(t=>{let cur=null;grp[t].sort((a,b)=>b.mins-a.mins).forEach(x=>{let left=x.tr;while(left>0){if(!cur||cur.used>=cap){cur={t:+t,used:0,mins:0,items:[]};loads.push(cur)}const put=Math.min(left,cap-cur.used);cur.used+=put;cur.mins=Math.max(cur.mins,x.mins);cur.items.push({name:x.p.name,tr:put});left-=put}})});
+ const totm=loads.reduce((a,l)=>a+l.mins,0)+Math.max(loads.length-1,0)*(+S.set.chg||0);
+ return{loads,totm,extra:Math.max(0,totm-Math.max(0,...loads.map(l=>l.mins))),miss,cap}}
+function ovenHTML(d){
+ const o=oven(d);if(!o.loads.length&&!o.miss.length)return'';
+ const end=endOf(d),ch=+S.set.chg||0;let t=end-o.totm*6e4;
+ const rows=o.loads.map((l,k)=>{const s=t;t+=(l.mins+ch)*6e4;return`<tr><td>Load ${k+1}</td><td>${hh(s)}–${hh(s+l.mins*6e4)}</td><td>${l.t?l.t+' °C':''}</td><td class="wrap">${l.items.map(x=>`${x.tr} tray${x.tr>1?'s':''} ${esc(x.name)}`).join(', ')}</td></tr>`}).join('');
+ return`<h2>Oven</h2><p>${o.loads.length>1?`Needs <b>${o.loads.length} loads</b> (${o.cap} trays at a time), about ${hm(o.totm)} of baking. Start the first load at <b>${hh(end-o.totm*6e4)}</b>, ${hm(o.extra)} earlier than the bake times in the schedule.`:o.loads.length?'Everything fits in one load.':''}</p>${rows?`<div class="scroll"><table>${rows}</table></div>`:''}${o.miss.length?`<p class="mut">Set “units per oven tray” on: ${o.miss.map(esc).join(', ')}.</p>`:''}`}
+
+// money
+function money(d){
+ const tot={},ord={};dOf(d).forEach(o=>{tot[o.pid]=(tot[o.pid]||0)+o.qty;if(!o.par)ord[o.pid]=(ord[o.pid]||0)+o.qty});
+ let rev=0,cost=0,waste=0,guess=false;
+ S.prods.filter(p=>tot[p.id]>0).forEach(p=>{const n=bakeN(p.id,tot[p.id]),uc=calc(p).cost,o=ord[p.id]||0,c=n-o,f=fcast(p.id,d);let sell=c;if(c>0){if(f.n>=3)sell=Math.min(c,Math.round(f.avg*f.sea*f.adj));else guess=true}rev+=(o+sell)*(+p.price||0);cost+=n*uc;waste+=(c-sell)*uc});
+ return{rev,cost,profit:rev-cost,waste,guess}}
+function waste28(){const from=addD(tdy(),-28),pc={};Object.keys(S.sales).filter(d=>d>=from).forEach(d=>Object.entries(S.sales[d]).forEach(([id,r])=>{const p=S.prods.find(x=>x.id==id);if(p&&+r.left>0)pc[p.name]=(pc[p.name]||0)+(+r.left)*calc(p).cost}));const top=Object.entries(pc).map(([n,c])=>({n,c})).sort((a,b)=>b.c-a.c);return{tot:top.reduce((a,x)=>a+x.c,0),top:top.slice(0,3)}}
+
+// forecast view
+function fT(pid,wd,v){(S.par[pid]=S.par[pid]||{})[wd]=v;save();draw();flash('Daily target updated')}
+function fAll(d){const wd=dow(d);let k=0;S.prods.forEach(p=>{const f=fcast(p.id,d);if(f.n>=3){(S.par[p.id]=S.par[p.id]||{})[wd]=f.rec;k++}});save();draw();flash(k?`${k} targets updated`:'Not enough sales history yet')}
+function sample(){const t=tdy();S.prods.forEach((p,k)=>{const base=8+(k*7)%15;for(let i=1;i<=56;i++){const d=addD(t,-i),f=[.8,.7,.8,.9,1.2,1.6,1.3][dow(d)],dm=Math.round(base*f*(.85+Math.random()*.3)),made=Math.round(base*f*1.05);(S.sales[d]=S.sales[d]||{})[p.id]={made,left:Math.max(made-dm,0),out:dm>=made,s:1}}});save();draw();flash('Sample sales added')}
+function unsample(){Object.keys(S.sales).forEach(d=>{const r=S.sales[d];Object.keys(r).forEach(k=>{if(r[k].s)delete r[k]});if(!Object.keys(r).length)delete S.sales[d]});save();draw();flash('Sample sales removed')}
+function fview(){
+ const d=fdate||pday(),wd=dow(d),R=S.prods.map(p=>({p,f:fcast(p.id,d),t:+((S.par[p.id]||{})[wd])||0})),H=R.filter(r=>r.f.n>0),no=R.filter(r=>!r.f.n);
+ const smp=Object.values(S.sales).some(r=>Object.values(r).some(x=>x.s)),w=waste28();
+ return`<div class="row"><label>Forecast for<input type="date" value="${d}" onchange="fdate=this.value;draw()"></label><label>Special day %<input type="number" value="${S.adj[d]||''}" placeholder="0" onchange="S.adj['${d}']=+this.value||0;save();draw()"></label><label class="chip"><input type="checkbox"${S.set.useFc?' checked':''} onchange="S.set.useFc=this.checked;save();draw()"> Use forecast in the plan</label></div>
+ <p class="mut">Based on the last 8 ${DNL[wd]}s you recorded, weighted toward recent weeks, plus ${+S.set.buf||0}% extra so you rarely run out. Days you sold out count as higher demand. Use “Special day %” for a market or event, for example 30. With a year of sales it also follows the season. When “Use forecast in the plan” is on, items with at least 3 weeks of sales use the forecast instead of the daily target.</p>
+ ${H.length?`<div class="row"><span class="grow"></span><button class="b sm" onclick="fAll('${d}')">Set all as ${DN[wd]} targets</button></div><div class="fcg">${H.map(({p,f,t})=>{const mx=Math.max(...f.vals,1),sea=Math.round((f.sea-1)*100);return`<div class="fc"><h3>${esc(p.name)}</h3><div>Average ${DNL[wd]} sales: <b>${Math.round(f.plain)}</b> pieces</div><div class="spark" title="Last ${f.n} ${DNL[wd]}s, oldest first">${f.vals.map(v=>`<i style="height:${Math.max(v/mx*100,4)}%"></i>`).join('')}</div><div class="mut">Recommended bake</div><div class="fbig">${f.rec}</div><div class="mut">${f.n} ${DNL[wd]}${f.n>1?'s':''} of data${f.n<3?' · not enough yet':''}${f.outs?` · sold out ${f.outs}×`:''}${sea?` · season ${sea>0?'+':''}${sea}%`:''}${f.adj!=1?` · special day ${Math.round((f.adj-1)*100)}%`:''}</div><div class="row"><span class="grow mut">${DN[wd]} target: ${t||'not set'}</span>${t==f.rec?'<span class="mut">✓ matches</span>':`<button class="g sm" onclick="fT('${p.id}',${wd},${f.rec})">Use ${f.rec}</button>`}</div></div>`}).join('')}</div>`
+ :`<div class="card"><p class="chalk">No sales recorded yet</p><p class="mut">At the end of each day, record what you made and what was left over (the Sales tab, or “Record sales” on Today). After two or three weeks the forecast starts to work.</p>${smp?'':`<button class="g" onclick="sample()">Try it with sample sales</button>`}</div>`}
+ ${H.length&&no.length?`<p class="mut">No ${DNL[wd]} sales recorded yet for: ${no.map(r=>esc(r.p.name)).join(', ')}.</p>`:''}
+ ${w.tot>0.005?`<h2>Leftovers, last 4 weeks</h2><p>Unsold items cost you about <b>${m(w.tot)}</b>${w.top.length?`, mostly ${w.top.map(x=>`${esc(x.n)} (${m(x.c)})`).join(', ')}`:''}.</p>`:''}
+ ${smp?`<p><button class="g sm" onclick="unsample()">Remove sample sales</button></p>`:''}`}
+
+// sales log
+function salesFor(d){sdate=d;ov='sales';go('Orders')}
+function saveDay(){const d=$('#sd').value||sdate||pday(),old=S.sales[d]||{},r={};S.prods.forEach((p,i)=>{const mv=$('#sm'+i).value,lv=$('#sl'+i).value,o=!!$('#so'+i).checked;if(mv===''&&old[p.id]&&old[p.id].made==null){r[p.id]=old[p.id];return}if(mv===''&&lv===''&&!o)return;const made=+mv||0;r[p.id]={made,left:Math.min(+lv||0,made),out:o}});if(Object.keys(r).length)S.sales[d]=r;else delete S.sales[d];sdate=d;save();draw();flash('Sales saved')}
+function delDay(x){snap('Day deleted');delete S.sales[x];save();draw()}
+function impS(){const bad=[];let ok=0;$('#imp').value.split(/\n/).forEach(line=>{const c=line.split(/[,;\t]/).map(x=>x.trim());if(c.length<3)return;let d=c[0];const a=d.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/);if(a)d=`${a[3]}-${a[2].padStart(2,'0')}-${a[1].padStart(2,'0')}`;if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return;const p=S.prods.find(x=>key(x.name)==key(c[1]));if(!p){bad.push(c[1]);return}const sold=+c[2]||0,made=c[3]!=null&&c[3]!==''?+c[3]:null;(S.sales[d]=S.sales[d]||{})[p.id]=made==null?{sold,made:null,left:0,out:false}:{made,left:Math.max(made-sold,0),out:made<=sold};ok++});save();draw();flash(`Imported ${ok} row${ok==1?'':'s'}`+(bad.length?`. Not found: ${[...new Set(bad)].slice(0,4).join(', ')}`:''))}
+function slog(){
+ const d=sdate||pday(),rec=S.sales[d]||{},cnt={};dOf(d).filter(o=>o.par).forEach(o=>cnt[o.pid]=(cnt[o.pid]||0)+o.qty);
+ const days=Object.keys(S.sales).sort().reverse().slice(0,21);
+ return`<div class="row"><label>Day<input id="sd" type="date" value="${d}" onchange="sdate=this.value;draw()"></label></div>
+ <p class="mut">Count only what you made for the counter, not customer orders. Leave a row empty if you didn’t make it. Tick “sold out” if it ran out before closing, so the forecast knows demand was higher.</p>
+ <div class="scroll"><table><tr><th>Item</th><th class="n">Made</th><th class="n">Left over</th><th>Sold out</th><th class="n">Sold</th></tr>${S.prods.map((p,i)=>{const r=rec[p.id],mv=r?(r.made==null?'':r.made):(cnt[p.id]?bakeN(p.id,cnt[p.id]):'');return`<tr><td>${esc(p.name)}</td><td class="n"><input id="sm${i}" class="tq" type="number" min="0" value="${mv}"></td><td class="n"><input id="sl${i}" class="tq" type="number" min="0" value="${r&&r.made!=null?(+r.left||0):''}"></td><td><input id="so${i}" class="ck" type="checkbox"${r&&r.out?' checked':''}></td><td class="n">${r?rs(r):''}</td></tr>`}).join('')}</table></div>
+ <p><button class="b" onclick="saveDay()">Save ${dlab(d)}</button></p>
+ ${days.length?`<h2>Recorded days</h2><div class="scroll"><table><tr><th>Day</th><th class="n">Sold</th><th class="n">Left over</th><th></th></tr>${days.map(x=>{const v=Object.values(S.sales[x]);return`<tr><td>${dlab(x)}</td><td class="n">${v.reduce((a,r)=>a+rs(r),0)}</td><td class="n">${v.reduce((a,r)=>a+(+r.left||0),0)}</td><td class="n"><button class="g sm" onclick="sdate='${x}';draw()">Edit</button> <button class="g sm" onclick="delDay('${x}')">Delete</button></td></tr>`}).join('')}</table></div>`:''}
+ <details class="qa"><summary>Import past sales</summary><p class="mut">Paste one line per item: date, product name, sold, and optionally made. For example: 17/10/2026, Cardamom bun, 43, 48</p><textarea id="imp" rows="5"></textarea><p><button class="b" onclick="impS()">Import</button></p></details>`}
+
+function orders(){
+ const t=[['week','Week'],['orders','Orders'],['targets','Daily targets'],['forecast','Forecast'],['sales','Sales']];
+ return`<div class="row seg">${t.map(x=>`<button class="g${ov==x[0]?' on':''}" onclick="ov='${x[0]}';draw()">${x[1]}</button>`).join('')}</div>`+(ov=='week'?weekv():ov=='targets'?targets():ov=='forecast'?fview():ov=='sales'?slog():ordl())}
+
+// kitchen board
+const kt=(t,d)=>tz(new Date(t)).slice(0,10)==d?hh(t):new Date(t).toLocaleDateString('en-IE',{weekday:'short'})+' '+hh(t);
+function kmv(i){const d=pday(),e=sched(d)[i];if(!e)return;const M=S.kb[d]=S.kb[d]||{};M[e.k]=((M[e.k]||0)+1)%3;save();draw()}
+function kreset(){snap('Board reset');delete S.kb[pday()];save();draw()}
+function kBig(on){kbig=on;try{if(on){const r=document.documentElement;r.requestFullscreen&&r.requestFullscreen().catch(()=>{});wake()}else{document.fullscreenElement&&document.exitFullscreen();wl&&wl.release()}}catch(e){}draw()}
+function kitchen(){
+ const d=pday(),E=sched(d),M=S.kb[d]||{},now=Date.now(),st=e=>M[e.k]||0,nxt=E.find(e=>st(e)==0),done=E.filter(e=>st(e)==2).length;
+ const card=(e,i)=>{const s=st(e),late=s==0&&e.st<now,over=s==1&&e.t<now;return`<button class="kc s${s}${late?' late':''}${e==nxt?' nx':''}" onclick="kmv(${i})"><span class="kt">${kt(e.st,d)}–${kt(e.t,d)}${late?' · should have started':''}${over?' · should be finished':''}</span><span class="kn">${s==2?'✓ ':''}${esc(e.n)}</span><span class="kp">${e.ps.map(p=>`${bakeN(p.id,p.q)} × ${esc(p.name)}`).join(', ')}</span></button>`};
+ const col=(s,t)=>{const c=E.map((e,i)=>[e,i]).filter(([e])=>st(e)==s);return`<div class="kcol"><h3>${t} <span class="mut">${c.length}</span></h3>${c.map(([e,i])=>card(e,i)).join('')||'<p class="mut">—</p>'}</div>`};
+ return`<div class="row kh"><div class="grow"><div class="mut">Kitchen board</div><h2 class="dayh">${dlab(d)}</h2></div><div class="kclock">${hh(now)}</div></div>
+ <div class="row">${kbig?'<button class="g" onclick="kBig(false)">Exit big screen</button>':'<button class="b" onclick="kBig(true)">Big screen</button><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button>'}<span class="grow"></span><span class="mut">${done} of ${E.length} steps done · tap a card to move it along</span><button class="g sm" onclick="kreset()">Reset</button></div>
+ ${E.length?`<div class="bar"><i style="width:${done/E.length*100}%"></i></div><p class="knext">${nxt?`Next: <b>${esc(nxt.n)}</b> at ${hh(nxt.st)}`:'<b>All done.</b>'}</p><div class="kb">${col(0,'To do')}${col(1,'Doing')}${col(2,'Done')}</div>`:'<div class="card"><p class="chalk">Nothing on the board</p><p class="mut">Add orders or daily targets for this day.</p></div>'}`}
+
+// recipe versions
+const VF=['ings','steps','unitG','batch','mode','yt','flourG','lab','price','por','sp','notes','shelf','store','tray','temp'];
+const snapR=p=>JSON.parse(JSON.stringify(Object.fromEntries(VF.map(k=>[k,p[k]]))));
+function ensV(p){if(!p.vers||!p.vers.length){p.vers=[{v:1,date:tdy(),note:'First version',data:snapR(p)}];p.cv=1}}
+const curV=p=>p.vers.find(v=>v.v==p.cv)||p.vers[p.vers.length-1];
+const vchg=p=>JSON.stringify(snapR(p))!=JSON.stringify(curV(p).data);
+const nextV=p=>Math.max(...p.vers.map(v=>v.v))+1;
+function saveV(i){const p=S.prods[i],n=nextV(p),el=$('#vn');p.vers.push({v:n,date:tdy(),note:(el&&el.value||'').trim(),data:snapR(p)});p.cv=n;save();draw();flash(`Saved as version ${n}`)}
+function restV(i,v){const p=S.prods[i],x=p.vers.find(z=>z.v==v);if(!x)return;snap(`${p.name}: back to version ${v}`);VF.forEach(k=>delete p[k]);Object.assign(p,JSON.parse(JSON.stringify(x.data)));p.cv=v;save();draw()}
+function delV(i,v){const p=S.prods[i];if(v==p.cv||p.vers.length<2)return;snap(`Version ${v} deleted`);p.vers=p.vers.filter(z=>z.v!=v);save();draw()}
+function verUI(i){
+ const p=S.prods[i];ensV(p);const cur=curV(p),c=vchg(p),cost=d=>calc({...p,...d}).cost;
+ return`<details class="ver"${c?' open':''}><summary>Version ${p.cv}${c?' · <b>changed, not saved yet</b>':''} <span class="mut">· saved ${esc(cur.date)}${cur.note?' · '+esc(cur.note):''}</span></summary>
+ ${c?`<div class="row"><input id="vn" class="grow" placeholder="What changed? e.g. less sugar, longer proof"><button class="b sm" onclick="saveV(${i})">Save as version ${nextV(p)}</button><button class="g sm" onclick="restV(${i},${p.cv})">Undo changes</button></div>`:'<p class="mut">Change the recipe, then save it as a new version. You can go back to any earlier version.</p>'}
+ <div class="scroll"><table><tr><th>Version</th><th>Saved</th><th>Note</th><th class="n">Cost / unit</th><th></th></tr>${[...p.vers].reverse().map(v=>`<tr><td>${v.v}${v.v==p.cv?' · current':''}</td><td>${esc(v.date)}</td><td class="wrap">${esc(v.note||'')}</td><td class="n">${m(cost(v.data))}</td><td class="n">${v.v==p.cv?'':`<button class="g sm" onclick="restV(${i},${v.v})">Use this</button> <button class="g sm" onclick="delV(${i},${v.v})">Delete</button>`}</td></tr>`).join('')}</table></div></details>`}
+function dupP(i){const c=JSON.parse(JSON.stringify(S.prods[i]));c.id=nid();c.name+=' (copy)';delete c.vers;delete c.cv;S.prods.splice(i+1,0,c);ed=i+1;save();draw()}
+
+// today
+function today(){
+ const d=pday(),tot=totOf(d),act=S.prods.filter(p=>tot[p.id]>0),end=endOf(d),E=sched(d),M=S.kb[d]||{};
+ let first=Infinity;act.forEach(p=>{first=Math.min(first,end-p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4)});
+ const pE=p=>E.filter(e=>e.ps.some(x=>x.id==p.id)),pdone=p=>!!S.done[d+'|'+p.id]||(pE(p).length>0&&pE(p).every(e=>M[e.k]==2));
+ const nd=act.filter(pdone).length,low=act.filter(p=>mg(p)<(+S.set.margin||0));
+ const picks=S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).sort((a,b)=>(a[0].time||'99').localeCompare(b[0].time||'99'));
+ const N=act.length?need(d):[],hv=N.filter(x=>S.have[d+'|'+key(x.n)]).length,rec=S.sales[d];
+ let rc='';
+ if(act.length){
+  const items=act.reduce((a,p)=>a+bakeN(p.id,tot[p.id]),0),cnt={};dOf(d).filter(o=>o.par).forEach(o=>cnt[o.pid]=(cnt[o.pid]||0)+o.qty);
+  const diff=S.set.useFc?[]:S.prods.filter(p=>{const f=fcast(p.id,d),c=cnt[p.id]||0;return f.n>=3&&Math.abs(f.rec-c)>=Math.max(3,c*.1)});
+  const o=oven(d),mo=money(d);
+  const tile=(q,a,ok,sub,on)=>`<button class="rc${ok?'':' warn'}" onclick="${on}"><span class="q">${q}</span><span class="a"><b>${ok?'✓':'!'}</b> ${a}</span>${sub?`<span class="mut">${sub}</span>`:''}</button>`;
+  rc=`<div class="rcg">`+
+   tile('What should I bake?',`${items} items, ${act.length} product${act.length>1?'s':''}`,!diff.length,diff.length?`Forecast differs for ${diff.slice(0,2).map(p=>esc(p.name)).join(', ')}${diff.length>2?'…':''}`:S.set.useFc?'Counter amounts from forecast':'',"ov='forecast';go('Orders')")+
+   tile('When do I start?',`Start ${hh(first)}`,true,`Ready by ${esc((S.set.ready||'').slice(11,16))}`,"go('Kitchen')")+
+   tile('Enough ingredients?',`${hv} of ${N.length} ticked`,hv==N.length,hv<N.length?'Tick the list below':'',"hvOpen=true;draw();setTimeout(()=>{const e=document.getElementById('hv');e&&e.scrollIntoView({behavior:'smooth'})},50)")+
+   tile('Will it fit in the oven?',o.loads.length>1?`${o.loads.length} loads, ${hm(o.totm)}`:o.loads.length?'One load':o.miss.length?'Not set up':'No bake step',o.loads.length<=1&&!o.miss.length,o.loads.length>1?`Start the first load ${hm(o.extra)} earlier`:o.miss.length?`Set trays on ${o.miss.length} recipe${o.miss.length>1?'s':''}`:'',"go('Plan')")+
+   tile('Will I make money?',mo.profit>=0?`${m(mo.profit)} profit`:`${m(-mo.profit)} loss`,mo.profit>0,`Sales ${m(mo.rev)} · cost ${m(mo.cost)}${mo.waste>.005?` · leftovers ${m(mo.waste)}`:''}${mo.guess?' · assumes all sells':''}`,"go('Plan')")+`</div>`}
+ return guide()+`<div class="row"><div class="grow"><div class="mut">${d==tdy()?'Today':'Planned day'}</div><h2 class="dayh">${dlab(d)}</h2></div><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button></div>`+
+ (act.length?`<div class="card hero"><div class="mut">First start</div><div class="hbig">${hh(first)}</div><div class="mut">to have everything ready by ${esc((S.set.ready||'').slice(11,16))}</div></div>${rc}
+ <div class="row"><b class="grow">To make</b><span class="mut">${nd} of ${act.length} done</span><button class="g sm" onclick="go('Kitchen')">Kitchen board</button></div><div class="bar"><i style="width:${nd/act.length*100}%"></i></div>
+ ${act.map(p=>{const i=S.prods.indexOf(p),x=pdone(p);return`<div class="trow"><label class="chip chk"><input type="checkbox"${x?' checked':''} onchange="dn('${p.id}',this.checked)"> <span class="${x?'mut':''}">${bakeN(p.id,tot[p.id])} × ${esc(p.name)}</span></label><button class="g sm" onclick="vw=${i};go('Products')">Recipe</button></div>`}).join('')}
+ ${N.length?`<details id="hv" class="card"${hvOpen?' open':''} ontoggle="hvOpen=this.open" style="margin-top:20px"><summary><b>Ingredients for this day</b> <span class="mut">${hv} of ${N.length} ticked</span></summary>${N.map((x,k)=>{const on=S.have[d+'|'+key(x.n)];return`<div class="trow"><label class="chip chk"><input type="checkbox"${on?' checked':''} onchange="setHave(${k},this.checked)"> <span class="${on?'mut':''}">${esc(x.n)}</span></label><span>${fq(x.g,x.u)}</span></div>`}).join('')}</details>`:''}`
+ :`<div class="card"><p class="chalk">Nothing baking yet</p><p class="mut">Add orders or daily targets and this day fills in.</p><div class="row"><button class="b" onclick="ov='targets';go('Orders')">Set daily targets</button><button class="g" onclick="ov='orders';go('Orders')">Add an order</button></div></div>`)+
+ (picks.length?`<h2>Pickups</h2><div class="scroll"><table>${picks.map(([o,i])=>`<tr><td>${esc(o.time||'—')}</td><td>${esc(o.cust)}</td><td>${o.qty} × ${esc((S.prods.find(p=>p.id==o.pid)||{name:'?'}).name)}</td><td class="wrap">${esc(o.note||'')}</td><td><label class="chip chk"><input type="checkbox"${o.packed?' checked':''} onchange="tgo(${i},'packed',this.checked)"> Packed</label></td><td><label class="chip chk"><input type="checkbox"${o.done?' checked':''} onchange="tgo(${i},'done',this.checked)"> Collected</label></td></tr>`).join('')}</table></div>`:'')+
+ (act.length||rec?`<div class="card" style="margin-top:24px"><div class="row"><div class="grow"><b>End of day</b><div class="mut">${rec?`Recorded: ${Object.values(rec).reduce((a,r)=>a+rs(r),0)} sold, ${Object.values(rec).reduce((a,r)=>a+(+r.left||0),0)} left over`:'Record what you made and what was left. It feeds the forecast.'}</div></div><button class="${rec?'g':'b'}" onclick="salesFor('${d}')">${rec?'Edit sales':'Record sales'}</button></div></div>`:'')+
+ (low.length?`<p class="mut">Margin below your ${+S.set.margin||0}% target: ${low.slice(0,3).map(p=>esc(p.name)).join(', ')}.</p>`:'')+
+ (act.length?`<p><button class="g" onclick="go('Plan')">Open the full bake plan</button></p>`:'')}
+
+// wiring
+G[0][1].push('Kitchen');TL.Kitchen='Kitchen board';T.Kitchen=kitchen;T.Today=today;
+const planX=T.Plan;
+T.Plan=()=>{const d=pday();let h=planX();if(sched(d).length){const mo=money(d);h+=`<h2>Expected result</h2><div class="stats card"><div><div class="big">${m(mo.rev)}</div>Expected sales</div><div><div class="big">${mo.profit<0?'−':''}${m(Math.abs(mo.profit))}</div>Expected ${mo.profit<0?'loss':'profit'}</div><div><div class="big">${m(mo.waste)}</div>Expected leftovers</div></div><p class="mut">Customer orders count as sold. Counter items use your sales history when you have 3 weeks or more${mo.guess?'; items without history are assumed to sell out':''}.</p>`+ovenHTML(d)}return h};
+function draw(){
+ ens();
+ S.orders.forEach(o=>{if(!o.date)o.date=pday()});
+ if(tab=='Tools'&&!S.set.tools)tab='Settings';
+ const g=gof(tab)||G[0];last[g[0]]=tab;
+ $('#nav').innerHTML=G.map(x=>`<button class="nv${x==g?' on':''}" onclick="go('${last[x[0]]||x[1][0]}')" aria-label="${x[0]}">${IC[x[0]]}<span>${x[0]}</span></button>`).join('');
+ const sb=g[1].filter(t=>t!='Tools'||S.set.tools);
+ $('#v').innerHTML=(sb.length>1?`<div class="row sub noprint">${sb.map(t=>`<button class="g${t==tab?' on':''}" onclick="go('${t}')">${TL[t]}</button>`).join('')}</div>`:'')+T[tab]();
+ document.title=S.set.biz+' Bake & Cost Planner';
+ const cl=document.body.classList,pr=tab=='Products';
+ cl.toggle('plab',tab=='Labels');cl.toggle('pal',tab=='Allergens');cl.toggle('pbd',tab=='Board');cl.toggle('prec',pr&&vw!=null&&!!S.prods[vw]);cl.toggle('cooking',pr&&cm!=null&&!!S.prods[cm]);cl.toggle('kbig',tab=='Kitchen'&&kbig);
+ if(tab=='Tools')tl()}
+setInterval(()=>{if(tab=='Kitchen'&&!document.querySelector('input:focus'))draw()},30000);
+
+draw();
+</script></body></html>
