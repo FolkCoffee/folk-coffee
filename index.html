@@ -290,8 +290,20 @@ body.kbig .al{font-size:26px;padding:22px 26px}
 .fin-h{margin:26px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:500;color:var(--mut)}
 body.kbig .ln-n{font-size:30px}body.kbig .ks{font-size:19px}body.kbig .ks .kn{font-size:30px}body.kbig .kn1{font-size:26px}body.kbig .kn1 .kcd{font-size:40px}
 body.kbig .lane{background:#000}body.kbig .lane.fin{background:#151311}
+.home{max-width:900px}
+.hh{margin:4px 0 18px}.hwm{display:flex;flex-direction:column;gap:6px;margin:6px 0 8px}.hwm .wm1{font-size:72px;line-height:.85}.hwm .wm2{font-size:15px}
+.hdate{font-size:18px;color:var(--mut)}
+.hgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:8px 0 18px}
+.ht{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;font:inherit;color:var(--fg);background:var(--soft);border:1px solid var(--line);border-radius:18px;padding:18px;min-height:132px;cursor:pointer;transition:border-color .15s,transform .1s}
+.ht:hover{border-color:var(--fg)}.ht:active{transform:scale(.98)}
+.ht.wide{grid-column:span 2;background:#ecd7c6;color:#000;border-color:#ecd7c6;min-height:150px}.ht.wide .hts{color:#5b4b42}
+.hic svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.htt{font-size:20px;margin-top:auto}.ht.wide .htt{font-size:26px}
+.hts{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
+.hfoot{margin-top:4px}
+@media(max-width:899px){.hgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ht{min-height:110px;padding:14px}.hwm .wm1{font-size:56px}body:has(.home) header .top{display:none}}
 </style></head><body>
-<header><div class="top"><h1 class="wm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
+<header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
 <main id="v"></main>
 <script>
@@ -1119,6 +1131,36 @@ function kitchen(){
  <p class="mut">Press Start to begin a step and its timer. Done finishes it and starts the next step. You’ll hear an alarm when a timer ends and when a step is due. Tap the screen once so sound can play, and keep this screen open.</p>`
  :'<div class="card"><p class="chalk">Nothing on the board</p><p class="mut">Add orders or daily targets for this day.</p></div>'}`}
 T.Kitchen=kitchen;
+
+// ===== Home screen =====
+IC.Home=svg('<path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/>');
+const HI={kitchen:svg('<circle cx="12" cy="13" r="7"/><path d="M12 13V9M10 3h4M12 3v3"/>'),sales:svg('<path d="M4 20V10M10 20V5M16 20v-8M22 20H2"/>'),label:svg('<path d="M4 12l8-8h7v7l-8 8z"/><circle cx="15" cy="9" r="1"/>'),pantry:svg('<path d="M6 3h12l-1 5H7z"/><path d="M7 8v12h10V8"/>'),menu:svg('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/>'),pct:svg('<path d="M19 5L5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>')};
+G.unshift(['Home',['Home']]);TL.Home='Home';
+function home(){
+ const d=tdy(),tot=totOf(d),act=S.prods.filter(p=>tot[p.id]>0),E=sched(d),M=(S.kb||{})[d]||{},now=Date.now(),h=new Date().getHours();
+ const greet=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+ const items=act.reduce((a,p)=>a+bakeN(p.id,tot[p.id]),0),stepsDone=E.filter(e=>M[e.k]==2).length;
+ const first=act.length?Math.min(...act.map(p=>endOf(d)-p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4)):0;
+ const doing=E.filter(e=>M[e.k]==1),R=runTimers().filter(t=>t.d==d);
+ const picks=S.orders.filter(o=>o.date==d),open=picks.filter(o=>!o.done).length,rec=(S.sales||{})[d];
+ const tile=(icon,t,sub,on,big)=>`<button class="ht${big?' wide':''}" onclick="${on}"><span class="hic">${icon}</span><span class="htt">${t}</span><span class="hts">${sub}</span></button>`;
+ const tmr=R.length?R.slice(0,2).map(t=>{const r=Math.round((t.end-now)/1000);return`${esc(t.e.n)} <span data-end="${t.end}">${r>=0?fmt(r)+' left':'Over by '+fmt(-r)}</span>`}).join(' · '):'';
+ return`<div class="home"><div class="hh"><div class="mut">${greet}</div><div class="hwm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></div><div class="hdate">${new Date().toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'long'})}</div></div>
+ ${bkNag()}${sbNag()}
+ <div class="hgrid">
+ ${tile(IC.Today,'Today',act.length?`${items} items · ${act.length} product${act.length>1?'s':''}${first?` · first start ${hh(first)}`:''}`:'Nothing planned yet',"shd(0);go('Today')",true)}
+ ${tile(HI.kitchen,'Kitchen board',doing.length?`Doing: ${tmr||esc(doing.map(e=>e.n).join(', '))}`:E.length?`${stepsDone} of ${E.length} steps done`:'No steps today',"shd(0);go('Kitchen')",true)}
+ ${tile(IC.Orders,'Orders',picks.length?`${picks.length} today · ${open} to collect`:'No orders today',"ov='orders';go('Orders')")}
+ ${tile(HI.sales,'Record sales',rec?'Done for today ✓':'At closing time',"salesFor('${d}')")}
+ ${tile(IC.Recipes,'Recipes',`${S.prods.length} product${S.prods.length==1?'':'s'}`,"vw=null;ed=null;go('Products')")}
+ ${tile(HI.pantry,'Ingredients',`${S.ings.length} ingredient${S.ings.length==1?'':'s'}`,"go('Ingredients')")}
+ ${tile(HI.label,'Labels','Print for today',"go('Labels')")}
+ ${tile(HI.pct,'Margins','Prices and profit',"go('Menu')")}
+ </div>
+ <div class="row hfoot"><button class="g sm" onclick="ov='forecast';go('Orders')">Forecast</button><button class="g sm" onclick="go('Plan')">Bake plan</button><button class="g sm" onclick="go('Board')">Menu board</button><button class="g sm" onclick="go('Allergens')">Allergens</button><span class="grow"></span><span class="mut">${syncState=='ok'?'Synced ✓':syncLabel()}</span></div></div>`}
+T.Home=home;
+document.querySelector('header h1.wm').addEventListener('click',()=>go('Home'));
+tab='Home';
 
 draw();
 </script></body></html>
