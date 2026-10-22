@@ -265,6 +265,31 @@ body.kbig .al{font-size:26px;padding:22px 26px}
 .tp{font:inherit;font-size:14px;border:1px solid #000;border-radius:999px;padding:7px 14px;background:#ecd7c6;color:#000;cursor:pointer;font-variant-numeric:tabular-nums}
 .tp.over{background:#000;color:#fff}
 @media print{#alm,#tbar{display:none}}
+.lanes{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,400px),1fr));gap:16px;margin-top:14px;align-items:start}
+.lane{border:1px solid var(--line);border-left:10px solid var(--lc);border-radius:16px;background:var(--bg);overflow:hidden}
+.lane.on{border-color:var(--fg);border-left-color:var(--lc);border-width:2px 2px 2px 10px;box-shadow:0 4px 18px rgba(0,0,0,.08)}
+.lane.fin{opacity:.6;background:var(--soft)}
+.ln-h{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;cursor:pointer}
+.ln-n{font-size:22px;font-weight:400}.ln-q{color:var(--mut);font-size:18px}
+.ln-s{font-size:13px;color:var(--mut);margin-top:2px}
+.ln-c{font-size:18px;color:var(--mut)}
+.ln-bar{height:4px;background:var(--line);margin:0 16px}.ln-bar i{display:block;height:100%;background:var(--fg)}
+.ln-b{padding:8px 10px 12px}
+.ks{display:flex;align-items:center;gap:10px;padding:8px 8px;border-radius:10px;font-size:15px}
+.ks .ki{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.ks.done{color:var(--mut);cursor:pointer}.ks.done .grow{text-decoration:line-through}.ks.done .ki{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.ks.later{color:var(--mut)}
+.ks.cur{display:block;background:var(--soft);border:1px solid var(--line);padding:12px;margin:6px 0}
+.ks.cur .ki{border-color:var(--fg);color:var(--fg);font-weight:600;align-self:flex-start;margin-top:4px}
+.ks.cur.doing{background:#ecd7c6;color:#000;border-color:#000}.ks.cur.doing .mut{color:#5b4b42}.ks.cur.doing .g{border-color:#5b4b42;color:#000}
+.ks.cur.late{border:2px solid var(--fg)}
+.ks .kn{font-size:21px}.kd{margin-top:4px;font-size:14px}
+.know{display:flex;flex-direction:column;gap:8px;margin:12px 0 4px}
+.kn1{border-left:8px solid var(--lc,var(--fg));padding:6px 12px;font-size:18px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.kn1 .kcd{font-size:24px;margin-left:auto}
+.fin-h{margin:26px 0 0;font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:500;color:var(--mut)}
+body.kbig .ln-n{font-size:30px}body.kbig .ks{font-size:19px}body.kbig .ks .kn{font-size:30px}body.kbig .kn1{font-size:26px}body.kbig .kn1 .kcd{font-size:40px}
+body.kbig .lane{background:#000}body.kbig .lane.fin{background:#151311}
 </style></head><body>
 <header><div class="top"><h1 class="wm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -1051,6 +1076,49 @@ function kitchen(){
 T.Kitchen=kitchen;
 document.body.insertAdjacentHTML('beforeend','<div id="alm"></div><div id="tbar"></div>');
 setInterval(tick,1000);
+
+// ===== Kitchen board v2: one lane per product =====
+// each product's steps are their own events, keyed product#step
+function sched(d){
+ const tot=totOf(d),end=endOf(d),out=[];
+ S.prods.filter(p=>tot[p.id]>0).forEach(p=>{let t=end;const a=[];for(let j=p.steps.length-1;j>=0;j--){const s=p.steps[j],st=t-(+s.mins||0)*6e4;a.unshift({k:p.id+'#'+j,j,st,t,n:s.n||'Step '+(j+1),dsc:s.d||'',ps:[{id:p.id,name:p.name,q:tot[p.id]}]});t=st}out.push(...a)});
+ return out.sort((a,b)=>a.st-b.st||a.t-b.t)}
+const PAL=['#69504c','#a9b79f','#d9c39b','#8e9aa3','#c98f6f','#000000','#b5a8c9'];
+const pcol=pid=>PAL[Math.max(0,S.prods.findIndex(p=>p.id==pid))%PAL.length];
+const kOpen=new Set(),kShut=new Set();
+function kTog(pid,all){const s=all?kOpen:kShut;s.has(pid)?s.delete(pid):s.add(pid);draw()}
+function kSet(k,n,auto){
+ const d=pday(),E=sched(d),e=E.find(x=>x.k==k);if(!e)return;
+ const M=S.kb[d]=S.kb[d]||{};S.kbt=S.kbt||{};const T=S.kbt[d]=S.kbt[d]||{};
+ M[k]=n;if(n==1)T[k]={s:Date.now(),x:0};else delete T[k];
+ if(n==2&&auto){const nx=E.find(x=>x.ps[0].id==e.ps[0].id&&x.j==e.j+1);if(nx&&!M[nx.k]){M[nx.k]=1;T[nx.k]={s:Date.now(),x:0};flash(`${nx.n} started`)}}
+ if(!Object.keys(T).length)delete S.kbt[d];
+ kAl=kAl.filter(a=>a.k!=k);rAlm();save();draw()}
+function kPlus(ev,k,min){ev.stopPropagation();const d=pday(),T=S.kbt&&S.kbt[d]&&S.kbt[d][k];if(T){T.x=(+T.x||0)+min;kAl=kAl.filter(a=>a.k!=k);rAlm();save();draw()}}
+function kitchen(){
+ const d=pday(),E=sched(d),M=S.kb[d]||{},TT=(S.kbt||{})[d]||{},now=Date.now(),st=e=>M[e.k]||0;
+ const lanes=[];E.forEach(e=>{let L=lanes.find(l=>l.id==e.ps[0].id);if(!L){L={id:e.ps[0].id,name:e.ps[0].name,q:bakeN(e.ps[0].id,e.ps[0].q),steps:[]};lanes.push(L)}L.steps.push(e)});
+ lanes.forEach(L=>{L.steps.sort((a,b)=>a.j-b.j);L.done=L.steps.filter(e=>st(e)==2).length;L.all=L.done==L.steps.length;L.cur=L.steps.find(e=>st(e)!=2);L.busy=!L.all&&(L.done>0||L.steps.some(e=>st(e)==1))});
+ const active=lanes.filter(L=>L.busy).sort((a,b)=>a.cur.st-b.cur.st),wait=lanes.filter(L=>!L.busy&&!L.all).sort((a,b)=>a.cur.st-b.cur.st),fin=lanes.filter(L=>L.all);
+ const doing=E.filter(e=>st(e)==1),nextUp=[...active,...wait].map(L=>L.cur).filter(e=>st(e)==0).sort((a,b)=>a.st-b.st)[0];
+ const total=E.length,dn=E.filter(e=>st(e)==2).length;
+ const timer=e=>{const T=TT[e.k];if(!T)return'';const end=tEnd(e,T),r=Math.round((end-now)/1000);return`<span class="kcd${r<0?' over':''}" data-end="${end}">${r>=0?fmt(r)+' left':'Over by '+fmt(-r)}</span>`};
+ const stepRow=(L,e)=>{const s=st(e),isCur=e==L.cur,late=s==0&&isCur&&e.st<now;
+  if(s==2)return`<div class="ks done" onclick="kSet('${e.k}',0)" title="Tap to undo"><span class="ki">✓</span><span class="grow">${esc(e.n)}</span><span class="mut">undo</span></div>`;
+  if(!isCur)return`<div class="ks later"><span class="ki">${e.j+1}</span><span class="grow">${esc(e.n)}</span><span class="mut">${kt(e.st,d)} · ${hm(Math.round((e.t-e.st)/6e4))}</span></div>`;
+  return`<div class="ks cur${s==1?' doing':''}${late?' late':''}"><div class="row" style="margin:0"><span class="ki">${e.j+1}</span><div class="grow"><div class="kn">${esc(e.n)}</div><div class="mut">${kt(e.st,d)}–${kt(e.t,d)} · ${hm(Math.round((e.t-e.st)/6e4))}${late?' · should have started':''}</div>${e.dsc?`<div class="kd">${esc(e.dsc)}</div>`:''}</div></div>
+   <div class="row kx">${s==1?`${timer(e)}<span class="grow"></span><button class="g sm" onclick="kPlus(event,'${e.k}',5)">+5 min</button><button class="g sm" onclick="kSet('${e.k}',0)">Not yet</button><button class="b" onclick="kSet('${e.k}',2,true)">Done</button>`:`<span class="grow"></span><button class="g sm" onclick="kSet('${e.k}',2)">Mark done</button><button class="b" onclick="kSet('${e.k}',1)">Start</button>`}</div></div>`};
+ const lane=L=>{const col=pcol(L.id),open=L.all?kOpen.has(L.id):!kShut.has(L.id),c=L.cur,stx=L.all?'✓ Finished':st(c)==1?`Doing: ${esc(c.n)}`:`Next: ${esc(c.n)} at ${hh(c.st)}`;
+  return`<section class="lane${L.busy?' on':''}${L.all?' fin':''}" style="--lc:${col}"><div class="ln-h" onclick="kTog('${L.id}',${L.all})"><div class="grow"><div class="ln-n">${esc(L.name)} <span class="ln-q">× ${L.q}</span></div><div class="ln-s">${stx} · ${L.done} of ${L.steps.length}</div></div><span class="ln-c">${open?'▴':'▾'}</span></div><div class="ln-bar"><i style="width:${L.done/L.steps.length*100}%"></i></div>${open?`<div class="ln-b">${L.steps.map(e=>stepRow(L,e)).join('')}</div>`:''}</section>`};
+ return`<div class="row kh"><div class="grow"><div class="mut">Kitchen board</div><h2 class="dayh">${dlab(d)}</h2></div><div class="kclock">${hh(now)}</div></div>
+ <div class="row">${kbig?'<button class="g" onclick="kBig(false)">Exit big screen</button>':'<button class="b" onclick="kBig(true)">Big screen</button><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button>'}<button class="g sm" onclick="setMute(${!muted})">${muted?'Sound off':'Sound on'}</button><span class="grow"></span><span class="mut">${dn} of ${total} steps done</span><button class="g sm" onclick="kreset()">Reset</button></div>
+ ${E.length?`<div class="bar"><i style="width:${total?dn/total*100:0}%"></i></div>
+ <div class="know">${doing.length?doing.map(e=>`<div class="kn1" style="--lc:${pcol(e.ps[0].id)}"><span class="mut">Doing</span> <b>${esc(e.n)}</b> · ${esc(e.ps[0].name)} ${timer(e)}</div>`).join(''):''}${nextUp?`<div class="kn1 nx" style="--lc:${pcol(nextUp.ps[0].id)}"><span class="mut">Next</span> <b>${esc(nextUp.n)}</b> · ${esc(nextUp.ps[0].name)} <span class="mut">at ${hh(nextUp.st)}</span></div>`:''}${!doing.length&&!nextUp?'<div class="kn1"><b>All done for this day.</b></div>':''}</div>
+ <div class="lanes">${[...active,...wait].map(lane).join('')}</div>
+ ${fin.length?`<h3 class="fin-h">Finished · ${fin.length}</h3><div class="lanes">${fin.map(lane).join('')}</div>`:''}
+ <p class="mut">Press Start to begin a step and its timer. Done finishes it and starts the next step. You’ll hear an alarm when a timer ends and when a step is due. Tap the screen once so sound can play, and keep this screen open.</p>`
+ :'<div class="card"><p class="chalk">Nothing on the board</p><p class="mut">Add orders or daily targets for this day.</p></div>'}`}
+T.Kitchen=kitchen;
 
 draw();
 </script></body></html>
