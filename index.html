@@ -301,7 +301,7 @@ body.kbig .lane{background:#000}body.kbig .lane.fin{background:#151311}
 .htt{font-size:20px;margin-top:auto}.ht.wide .htt{font-size:26px}
 .hts{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
 .hfoot{margin-top:4px}
-@media(max-width:899px){.hgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ht{min-height:110px;padding:14px}.hwm .wm1{font-size:56px}body:has(.home) header .top{display:none}}
+@media(max-width:899px){.hgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ht{min-height:110px;padding:14px}.hwm .wm1{font-size:56px}}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -1145,7 +1145,7 @@ function home(){
  const picks=S.orders.filter(o=>o.date==d),open=picks.filter(o=>!o.done).length,rec=(S.sales||{})[d];
  const tile=(icon,t,sub,on,big)=>`<button class="ht${big?' wide':''}" onclick="${on}"><span class="hic">${icon}</span><span class="htt">${t}</span><span class="hts">${sub}</span></button>`;
  const tmr=R.length?R.slice(0,2).map(t=>{const r=Math.round((t.end-now)/1000);return`${esc(t.e.n)} <span data-end="${t.end}">${r>=0?fmt(r)+' left':'Over by '+fmt(-r)}</span>`}).join(' · '):'';
- return`<div class="home"><div class="hh"><div class="mut">${greet}</div><div class="hwm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></div><div class="hdate">${new Date().toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'long'})}</div></div>
+ return`<div class="home"><div class="hh"><div class="mut">${greet}</div><div class="hdate"><h2 class="dayh" style="margin:2px 0 0;color:var(--fg)">${new Date().toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'long'})}</h2></div></div>
  ${bkNag()}${sbNag()}
  <div class="hgrid">
  ${tile(IC.Today,'Today',act.length?`${items} items · ${act.length} product${act.length>1?'s':''}${first?` · first start ${hh(first)}`:''}`:'Nothing planned yet',"shd(0);go('Today')",true)}
