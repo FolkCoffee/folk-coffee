@@ -232,6 +232,7 @@ body.kbig .kclock{font-size:88px}body.kbig .knext{font-size:28px}body.kbig .kcol
 .ver summary{cursor:pointer}
 .bkl{position:relative;overflow:hidden;cursor:pointer;display:inline-flex;align-items:center;font-size:15px;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:9px 20px;background:none}.bkl:hover{border-color:var(--fg)}
 .bkl input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.ni{margin-top:22px;border-style:dashed}
 </style></head><body>
 <header><div class="top"><h1 class="wm"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -550,14 +551,14 @@ function svI(i){
  if(key(nn)!=key(g.n))S.prods.forEach(p=>p.ings.forEach(x=>{if(key(x.n)==key(g.n))x.n=nn}));
  const np=+d.price||0;if(np!=(+g.price||0)){g.prev=g.price;g.pdate=new Date().toISOString().slice(0,10)}
  Object.assign(g,{n:nn,price:np,size:+d.size||1,unit:d.unit,waste:+d.waste||0,sup:d.sup||'',al:[...d.al]});
- delete idr[i];save();draw()}
+ delete idr[i];opn.delete(i);save();draw();flash(`Saved ${nn}`)}
 function delI(i){snap(`Deleted "${S.ings[i].n}"`);S.ings.splice(i,1);opn.clear();for(const k in idr)delete idr[k];save();draw()}
 function ingredients(){
  const I=S.ings,ord=I.map((g,i)=>i).filter(i=>I[i].n.toLowerCase().includes(iq.toLowerCase()));
  const by={name:(a,b)=>I[a].n.localeCompare(I[b].n),used:(a,b)=>used(I[b].n)-used(I[a].n)||I[a].n.localeCompare(I[b].n),changed:(a,b)=>(I[b].pdate||'').localeCompare(I[a].pdate||'')};
  ord.sort(by[isort]);
  const rows=ord.map(i=>{const g=I[i],d=idr[i]||g,pp=ppu(g),u=BASE[g.unit],dis=idr[i]?'':' disabled';return`<details class="ir" data-i="${i}" data-n="${esc(g.n.toLowerCase())}"${opn.has(i)?' open':''} ontoggle="this.open?opn.add(${i}):opn.delete(${i})"><summary><div><span class="nm">${esc(g.n)}</span><br><span class="sub">${g.al.length?esc(g.al.join(', ')):'No allergens'} · used in ${used(g.n)}${g.sup?' · '+esc(g.sup):''}</span></div><span>${u=='each'?m(pp)+' each':m(pp*1000)+' / '+(u=='g'?'kg':'l')}</span><span class="mut">▾</span></summary><div class="body"><div class="row"><label class="grow">Name<input value="${esc(d.n)}" oninput="dr(${i},'n',this.value)"></label><label>Pack price<input type="number" step="any" value="${d.price}" oninput="dr(${i},'price',this.value)"></label><label>Pack size<input type="number" step="any" value="${d.size}" oninput="dr(${i},'size',this.value)"></label><label>Unit<select onchange="dr(${i},'unit',this.value)">${UN.map(x=>`<option${x==d.unit?' selected':''}>${x}</option>`).join('')}</select></label><label>Waste %<input type="number" step="any" value="${d.waste||0}" oninput="dr(${i},'waste',this.value)"></label></div><div class="row"><label class="grow">Supplier (optional)<input value="${esc(d.sup||'')}" oninput="dr(${i},'sup',this.value)"></label></div><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${d.al.includes(a)?' checked':''} onchange="dal(${i},'${a}')"> ${a}</label>`).join('')}</div><div class="row" style="margin-top:16px"><button class="b sv"${dis} onclick="svI(${i})">Save</button><button class="g sv"${dis} onclick="cnI(${i})">Cancel</button><span class="grow"></span><button class="g sm" onclick="delI(${i})">Delete</button></div></div></details>`}).join('');
- return`<h2 style="margin:0 0 6px">Ingredients</h2><p class="mut">What you buy: pack price, size and unit. Open an ingredient, make your changes and press Save. A price change flows into every recipe.</p><div class="row"><input class="grow" placeholder="Search ingredients" value="${esc(iq)}" oninput="iq=this.value;flt('.ir',iq)"><label>Sort<select onchange="isort=this.value;draw()">${[['name','Name'],['used','Most used'],['changed','Price changed']].map(x=>`<option value="${x[0]}"${x[0]==isort?' selected':''}>${x[1]}</option>`).join('')}</select></label></div><div>${rows||'<p class="mut">No ingredients match.</p>'}</div><p><button class="b" onclick="newI()">+ New ingredient</button></p>`}
+ return`<h2 style="margin:0 0 6px">Ingredients</h2><p class="mut">What you buy: pack price, size and unit. Add new ones in the form at the bottom. To change one, open it, edit and press Save. A price change flows into every recipe.</p><div class="row"><input class="grow" placeholder="Search ingredients" value="${esc(iq)}" oninput="iq=this.value;flt('.ir',iq)"><label>Sort<select onchange="isort=this.value;draw()">${[['name','Name'],['used','Most used'],['changed','Price changed']].map(x=>`<option value="${x[0]}"${x[0]==isort?' selected':''}>${x[1]}</option>`).join('')}</select></label></div><div>${rows||'<p class="mut">No ingredients match.</p>'}</div>${newForm()}`}
 
 S.par=S.par||{};
 let ov='week',wk=0,odate='';
@@ -858,6 +859,23 @@ function bkNag(){
  const a=bkAge();if(!S.prods.length||(a!=null&&a<7)||S.set.bkHide==tdy())return'';
  return`<div class="card noprint"><div class="row"><div class="grow"><b>${a==null?'No backup yet':`Last backup ${a} days ago`}</b><div class="mut">Your data lives only in this browser. Save a backup file and keep it on Google Drive.</div></div><button class="b" onclick="bkSave()">Save backup</button><button class="g sm" onclick="S.set.bkHide=tdy();save();draw()">Later</button></div></div>`}
 const todayB=T.Today;T.Today=()=>bkNag()+todayB();
+
+// always-empty "add ingredient" form at the bottom
+const niBlank=()=>({n:'',price:'',size:1,unit:'kg',waste:0,sup:'',al:[]});
+let nI=niBlank();
+function niAl(a){const l=nI.al,k=l.indexOf(a);k<0?l.push(a):l.splice(k,1)}
+function niKey(e){if(e.key=='Enter'){e.preventDefault();addNI()}}
+function addNI(){
+ const n=(nI.n||'').trim();
+ if(!n){flash('Give the ingredient a name first');const x=$('#ni-n');x&&x.focus();return}
+ const k=S.ings.findIndex(g=>key(g.n)==key(n));
+ if(k>=0){flash(`“${S.ings[k].n}” is already in your list`);opn.add(k);iq='';draw();const r=document.querySelector(`.ir[data-i="${k}"]`);r&&r.scrollIntoView({block:'center'});return}
+ S.ings.push({n,price:+nI.price||0,size:+nI.size||1,unit:nI.unit,waste:+nI.waste||0,sup:(nI.sup||'').trim(),al:[...nI.al]});
+ const keep=nI.unit;nI=niBlank();nI.unit=keep;iq='';save();draw();flash(`Added ${n}`);
+ const f=$('#ni');f&&f.scrollIntoView({block:'center'});const x=$('#ni-n');x&&x.focus()}
+function newForm(){
+ const d=nI;
+ return`<div id="ni" class="card ni"><b>Add an ingredient</b><div class="row"><label class="grow">Name<input id="ni-n" value="${esc(d.n)}" placeholder="e.g. Butter" oninput="nI.n=this.value" onkeydown="niKey(event)"></label><label>Pack price<input type="number" step="any" value="${esc(d.price)}" placeholder="0.00" oninput="nI.price=this.value" onkeydown="niKey(event)"></label><label>Pack size<input type="number" step="any" value="${esc(d.size)}" oninput="nI.size=this.value" onkeydown="niKey(event)"></label><label>Unit<select onchange="nI.unit=this.value">${UN.map(x=>`<option${x==d.unit?' selected':''}>${x}</option>`).join('')}</select></label><label>Waste %<input type="number" step="any" value="${esc(d.waste)}" oninput="nI.waste=this.value" onkeydown="niKey(event)"></label></div><details class="qa"><summary>Supplier and allergens</summary><div class="row"><label class="grow">Supplier (optional)<input value="${esc(d.sup)}" oninput="nI.sup=this.value" onkeydown="niKey(event)"></label></div><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${d.al.includes(a)?' checked':''} onchange="niAl('${a}')"> ${a}</label>`).join('')}</div></details><div class="row" style="margin-top:14px"><button class="b" onclick="addNI()">Save and add next</button><span class="mut">Tip: press Enter to save</span></div></div>`}
 
 draw();
 </script></body></html>
