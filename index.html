@@ -843,8 +843,11 @@ const bkAge=()=>S.set.lastBk?Math.round((new Date(tdy()+'T12:00')-new Date(S.set
 function bkSave(){
  S.set.lastBk=tdy();save();
  const name=`folk-backup-${tdy()}.json`,blob=new Blob([JSON.stringify(S,null,1)],{type:'application/json'});
- try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);flash('Backup saved: '+name)}
- catch(e){flash('Could not save the file here. Use “Copy as text” instead.')}
+ const plain=()=>{try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);flash('Backup saved: '+name)}catch(e){flash('Could not save the file here. Use “Copy as text” instead.')}};
+ const cl=window.claude&&window.claude.use;
+ if(!cl){plain();draw();return}
+ window.claude.use('downloads').then(dl=>{if(!dl){flash('Saving files is not available here. Use “Copy as text” instead.');return}
+  return dl.save({filename:name,data:blob}).then(()=>flash('Backup saved: '+name),e=>flash(e&&e.code=='declined'?'Backup not saved':'Could not save the file here. Use “Copy as text” instead.'))});
  draw()}
 function bkLoad(el){
  const f=el.files&&el.files[0];if(!f)return;const r=new FileReader();
