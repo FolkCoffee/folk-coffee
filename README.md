@@ -1,5 +1,7 @@
 # FOLk Coffee app
 
+**Open the app: [kubo23609.github.io/folk-coffee-app](https://kubo23609.github.io/folk-coffee-app/)**
+
 Bake, cost and production planner for FOLk Speciality Coffee. It is one self-contained web page, `index.html`, that runs in any modern browser.
 
 ## What it does
@@ -13,7 +15,9 @@ Bake, cost and production planner for FOLk Speciality Coffee. It is one self-con
 
 ## Using it
 
-Open `index.html` in a browser. You can also publish it with GitHub Pages: in **Settings → Pages**, set the source to the `main` branch and the root folder.
+The app is live at [kubo23609.github.io/folk-coffee-app](https://kubo23609.github.io/folk-coffee-app/), published with GitHub Pages from the `main` branch. Every change pushed to `main` goes live within a few minutes.
+
+On a phone or tablet, open that address and choose **Add to Home Screen** (iPhone: Share menu; Android: ⋮ menu). It then opens full screen with the FOLk icon, like an app.
 
 ## Your data
 
