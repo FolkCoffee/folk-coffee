@@ -323,6 +323,17 @@ body.kbig .wi.wsm{font-size:22px}body.kbig .ln-ing{background:#151311}
 .shop-t td,.shop-t th{padding:9px 8px}.shop-t .cb{width:28px;font-size:20px}
 .shop-tot{margin-top:18px;font-size:17px}
 @media print{body.pshop main>:not(.shop){display:none!important}body.pshop main{padding:0}.shop{max-width:none}.shop-t td,.shop-t th{padding:6px 6px;font-size:11pt}.shop .pw{display:flex}}
+.lb.lt{padding:0;background:#f4efe7;color:#1d1b19;display:flex;flex-direction:column;font-size:7pt;line-height:1.35;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.lt-oak{height:2.4mm;flex:none;background:repeating-linear-gradient(90deg,#b98e5f 0 5mm,#a97f52 5mm 5.3mm,#c29a6d 5.3mm 11mm,#a97f52 11mm 11.3mm)}
+.lt-in{padding:2.4mm 3mm 2mm;display:flex;flex-direction:column;flex:1;min-height:0}
+.lt-top{display:flex;justify-content:space-between;align-items:center}
+.lt-wm{font:300 12pt/1 "Saira Condensed","Arial Narrow",sans-serif}.lt-ic{width:10mm;height:4.2mm}
+.lt-name{font:600 15pt/1 "Saira Condensed","Arial Narrow",sans-serif;text-transform:uppercase;letter-spacing:.02em;margin:1.6mm 0 .4mm}
+.lt-sub{font:500 7pt/1.2 "Saira Condensed","Arial Narrow",sans-serif;letter-spacing:.16em;color:#5f6b4f;margin-bottom:1.4mm}
+.lt-b{font-weight:600;margin-top:.5mm}.lt-m{color:#4a4642}
+.lt-ft{display:flex;justify-content:space-between;gap:2mm;margin-top:auto;padding-top:1mm;border-top:.2mm solid #1d1b19;font:500 7.5pt/1.2 "Saira Condensed","Arial Narrow",sans-serif;letter-spacing:.08em}
+.lt-biz{font-size:6pt;color:#4a4642;margin-top:.6mm}
+.a21 .lb.lt{font-size:5pt;padding:0}.a21 .lt-in{padding:1.4mm 2mm 1.2mm}.a21 .lt-name{font-size:10pt;margin:.8mm 0 .2mm}.a21 .lt-wm{font-size:9pt}.a21 .lt-sub{font-size:5.5pt;margin-bottom:.6mm}.a21 .lt-ft{font-size:5.5pt}.a21 .lt-biz{font-size:4.5pt}.a21 .lt-oak{height:1.6mm}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><span class="wm1">FOLk</span><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -1238,6 +1249,28 @@ function shopping(){
  ${rows.length?sups.map(sp=>`<h3>${esc(sp||'No supplier set')}</h3><table class="shop-t"><tr><th></th><th>Item</th><th class="n">Needed</th><th class="n">Buy</th><th class="n">Cost</th></tr>${rows.filter(r=>r.sup==sp).sort((a,b)=>a.n.localeCompare(b.n)).map(r=>`<tr><td class="cb">☐</td><td>${esc(r.n)}</td><td class="n">${fq(r.g,r.u)}</td><td class="n">${r.packs?`${r.packs} × ${esc(r.ps)}`:'—'}</td><td class="n">${r.packs?m(r.cost):''}</td></tr>`).join('')}</table>`).join('')+`<p class="shop-tot">Total for whole packs: <b>${m(tot)}</b> <span class="mut">· used in the bake: ${m(use)}</span></p>`
  :'<p class="chalk">Nothing to buy</p><p class="mut">Add orders or daily targets for these days.</p>'}</div>`}
 G.find(g=>g[0]=='Print')[1].splice(1,0,'Shop');TL.Shop='Shopping list';T.Shop=shopping;
+
+// ===== Labels: "Long table" style =====
+const TBL='<svg class="lt-ic" viewBox="0 0 38 16" aria-hidden="true"><rect x="5" y="6" width="28" height="4" rx="1" fill="#b98e5f"/><g fill="#1d1b19"><circle cx="9" cy="2.5" r="1.6"/><circle cx="16" cy="2.5" r="1.6"/><circle cx="23" cy="2.5" r="1.6"/><circle cx="30" cy="2.5" r="1.6"/><circle cx="9" cy="13.5" r="1.6"/><circle cx="16" cy="13.5" r="1.6"/><circle cx="23" cy="13.5" r="1.6"/><circle cx="30" cy="13.5" r="1.6"/></g></svg>';
+const dshort=d=>d.toLocaleDateString('en-IE',{day:'numeric',month:'short'}).toUpperCase();
+function labels(){
+ const L=S.lab,q={};dO().forEach(o=>q[o.pid]=(q[o.pid]||0)+o.qty);L.style=L.style||'table';
+ if(S.set.tag==null)S.set.tag='Made to share';
+ const list=L.pid=='all'?S.prods.filter(p=>q[p.id]>0):S.prods.filter(p=>p.id==L.pid);
+ const made=new Date(L.made+'T12:00'),code=L.code||L.made.replace(/-/g,'').slice(2);
+ const info=p=>{const c=calc(p).lines.filter(l=>l.n&&l.g>0).sort((a,b)=>b.g-a.g),A=n=>(gi(n)||{al:[]}).al;return{c,A,al:[...new Set(c.flatMap(l=>A(l.n)))],bb:new Date(made.getTime()+(+p.shelf||0)*864e5)}};
+ const ingTxt=(c,A)=>c.map(l=>esc(l.n)+(A(l.n).length?' (<b>'+esc(A(l.n).join(', ').toUpperCase())+'</b>)':'')).join(', ');
+ const classic=p=>{const{c,A,al,bb}=info(p);return`<div class="lb"><b class="ln">${esc(p.name)}</b><div>Ingredients: ${ingTxt(c,A)}.</div>${al.length?`<div><b>Contains: ${esc(al.join(', '))}</b></div>`:''}${S.set.may?`<div>${esc(S.set.may)}</div>`:''}<div>Net weight ${p.unitG} g · Baked ${dstr(made)} · <b>Best before ${dstr(bb)}</b></div>${p.store?`<div>${esc(p.store)}</div>`:''}<div>Batch ${esc(code)}</div><div class="biz">${esc(S.set.biz)}${S.set.addr?', '+esc(S.set.addr):''}</div>${L.price?`<div class="pr">${m(p.price)}</div>`:''}</div>`};
+ const table=p=>{const{c,A,al,bb}=info(p);return`<div class="lb lt"><div class="lt-oak"></div><div class="lt-in"><div class="lt-top"><span class="lt-wm">FOLk</span>${TBL}</div><div class="lt-name">${esc(p.name)}</div><div class="lt-sub">NET ${p.unitG} G${S.set.tag?' · '+esc(S.set.tag.toUpperCase()):''}${L.price?' · '+m(p.price):''}</div><div>${ingTxt(c,A)}.</div>${al.length?`<div class="lt-b">Contains ${esc(al.join(', ').toLowerCase())}.</div>`:''}${S.set.may?`<div class="lt-m">${esc(S.set.may)}</div>`:''}${p.store?`<div class="lt-m">${esc(p.store)}</div>`:''}<div class="lt-ft"><span>BAKED ${dshort(made)} · ${esc(code)}</span><b>BEST BEFORE ${dshort(bb)}</b></div><div class="lt-biz">${esc(S.set.biz)}${S.set.addr?' · '+esc(S.set.addr):''}</div></div></div>`};
+ const one=L.style=='table'?table:classic;
+ const sheet=list.flatMap(p=>Array(Math.max(+L.copies||q[p.id]||1,1)).fill(one(p))).join('');
+ return`<div class="noprint"><div class="row"><h2 class="grow" style="margin:0">Labels</h2><button class="b" onclick="print()">Print labels</button></div>
+ <div class="card"><div class="row"><label>Style${sel('lab.style',[['table','Long table (oak strip)'],['classic','Classic']],L.style)}</label><label>Product<select onchange="up('lab.pid',this.value)"><option value="all"${L.pid=='all'?' selected':''}>All products for this day</option>${S.prods.map(p=>`<option value="${p.id}"${L.pid==p.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+ <label>Copies each (0 = ordered qty)${inp('lab.copies',L.copies,'',1)}</label><label>Label size${sel('lab.size',[['roll','Roll 100 × 62 mm'],['a8','A4 sheet, 8 labels'],['a21','A4 sheet, 21 labels']],L.size)}</label></div>
+ <div class="row"><label>Baked on<input type="date" value="${esc(L.made)}" onchange="up('lab.made',this.value)"></label><label>Batch code${inp('lab.code',L.code)}</label>${L.style=='table'?`<label class="grow">Small line under the name${inp('set.tag',S.set.tag)}</label>`:''}<label class="chip"><input type="checkbox"${L.price?' checked':''} onchange="S.lab.price=this.checked;save();draw()"> Show price</label></div>
+ ${S.set.addr?'':'<p class="mut"><b>Add your shop address</b> in Settings so it prints on every label.</p>'}
+ <p class="mut">Best before is the baked date plus the shelf life set on each product. In the print dialog, choose your paper size, set margins to none, and turn on background graphics so the oak strip prints. Check labelling rules with the FSAI or your local environmental health officer before selling.</p></div>`+(list.length?`<div class="lsheet"><div class="lg ${L.size}">${sheet}</div></div>`:'<p class="mut">Nothing to print. Add orders, or choose a product.</p>')}
+T.Labels=labels;
 
 draw();
 </script></body></html>
