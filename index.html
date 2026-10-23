@@ -570,63 +570,16 @@ const save=()=>{if(window.__sbReady)S._ts=Date.now();try{localStorage.setItem(K,
 const at=(p)=>p.split('.').reduce((o,k)=>o[k],S);
 function up(p,v,num){const k=p.split('.'),l=k.pop();at(k.join('.'))[l]=num?(+v||0):v;save();draw()}
 function add(p,x){at(p).push(x);save();draw()}
-function del(p,i){at(p).splice(i,1);save();draw()}
 function pr(n,f,v){const k=n.toLowerCase();S.prices[k]=S.prices[k]||{p:0,a:''};S.prices[k][f]=f=='p'?(+v||0):v;save();draw()}
 const m=v=>S.set.cur+(+v||0).toFixed(2);
 const key=n=>n.trim().toLowerCase();
-function calc(p){const sum=p.ings.reduce((a,i)=>a+(+i.pct||0),0)||1;const fl=p.unitG*100/sum;
- const lines=p.ings.map(i=>({n:i.n,g:fl*(+i.pct||0)/100}));
- const ing=lines.reduce((a,l)=>a+l.g/1000*((S.prices[key(l.n)]||{}).p||0),0);
- const cost=ing+(+p.lab||0)/60*S.set.labor;
- const w=p.ings.filter(i=>/water/i.test(i.n)).reduce((a,i)=>a+(+i.pct||0),0);
- const f=p.ings.filter(i=>/flour/i.test(i.n)).reduce((a,i)=>a+(+i.pct||0),0)||100;
- return{lines,cost,ing,sum,hyd:w/f*100}}
 const fm=t=>new Date(t).toLocaleString([],{weekday:'short',hour:'2-digit',minute:'2-digit'});
 const inp=(p,v,cls,num)=>`<input class="${cls||''}" ${num?'type=number step=any':''} value="${esc(v)}" onchange="up('${p}',this.value,${num?1:0})">`;
 
-function plan(){
- const q={};dO().forEach(o=>q[o.pid]=(q[o.pid]||0)+o.qty);
- const act=S.prods.filter(p=>q[p.id]>0);
- let h=`<div class="row noprint"><label>Ready at<input type="datetime-local" value="${esc(S.set.ready)}" onchange="up('set.ready',this.value)"></label><button class="b" onclick="print()">Print the whole plan</button></div>`;
- if(!act.length)return h+`<p class="mut">No orders for <b>${dlab(pday())}</b>. Add orders or daily targets on the Orders tab, or change the Ready at date above.</p>`;
- const end=new Date(S.set.ready).getTime(),ev={};
- act.forEach(p=>{let t=end;[...p.steps].reverse().forEach(s=>{const st=t-(+s.mins||0)*6e4,k=st+'|'+key(s.n)+'|'+t;(ev[k]=ev[k]||{st,t,n:s.n,ps:[]}).ps.push(p.name);t=st})});
- const rows=Object.values(ev).sort((a,b)=>a.st-b.st||a.t-b.t);
- let rev=0,cost=0,shop={};
- act.forEach(p=>{const c=calc(p);rev+=q[p.id]*p.price;cost+=q[p.id]*c.cost;(typeof xl=='function'?xl(c.lines):c.lines).forEach(l=>{const k=key(l.n);shop[k]=shop[k]||{n:l.n,g:0};shop[k].g+=l.g*q[p.id]})});
- h+=`<p class="mut noprint">Showing orders for <b>${dlab(pday())}</b>. Change the date above to see another day.</p><div class="pt">${esc(S.set.biz)} · Production plan · ${fm(end)}</div><div class="stats card"><div><div class="big">${m(rev)}</div>Revenue</div><div><div class="big">${m(cost)}</div>Cost incl. labour</div><div><div class="big">${rev?((rev-cost)/rev*100).toFixed(0):0}%</div>Margin</div></div>`;
- h+=`<h2>Bake schedule</h2><table class="stab"><tr><th>When</th><th>Step</th></tr>${rows.map(r=>`<tr><td class="nw">${fm(r.st)}–${hh(r.t)}</td><td><b>${esc(r.n)}</b><div class="mut">${esc(r.ps.join(', '))}</div></td></tr>`).join('')}</table>`;
- h+='<h2>Scaled formulas</h2>'+act.map(p=>{const c=calc(p);return`<h4>${esc(p.name)} × ${q[p.id]} (${(q[p.id]*p.unitG/1000).toFixed(2)} kg dough, hydration ${c.hyd.toFixed(0)}%)</h4><div class="scroll"><table>${c.lines.map(l=>`<tr><td>${esc(l.n)}</td><td class="n">${Math.round(l.g*q[p.id])} g</td></tr>`).join('')}</table></div>`}).join('');
- h+=`<h2>Shopping list</h2><div class="scroll"><table>${Object.values(shop).map(s=>{const pc=((S.prices[key(s.n)]||{}).p||0)*s.g/1000;return`<tr><td>${esc(s.n)}</td><td class="n">${(s.g/1000).toFixed(2)} kg</td><td class="n">${m(pc)}</td></tr>`}).join('')}</table></div>`;
- const by={};dO().forEach(o=>(by[o.cust]=by[o.cust]||[]).push(o));
- h+='<h2>Packing lists</h2><div class="lbls">'+Object.keys(by).map(c=>`<div class="lbl"><b>${esc(c)}</b>${by[c][0].time?' · '+esc(by[c][0].time):''}<br>${by[c].map(o=>`☐ ${o.qty} × ${esc((S.prods.find(p=>p.id==o.pid)||{}).name)}${o.note?' — '+esc(o.note):''}`).join('<br>')}</div>`).join('')+'</div>';
- h+='<h2>Labels</h2><div class="lbls">'+act.map(p=>{const c=calc(p).lines.filter(l=>l.n).sort((a,b)=>b.g-a.g);const al=[...new Set(c.map(l=>(S.prices[key(l.n)]||{}).a).filter(Boolean))];
-  return`<div class="lbl"><b>${esc(p.name)}</b><br>Ingredients: ${c.map(l=>esc(l.n)).join(', ')}.<br>${al.length?`<b>Contains: ${esc(al.join(', '))}</b><br>`:''}Net weight: ${p.unitG} g<br>${esc(S.set.foot)}<br><b>${esc(S.set.biz)}</b></div>`}).join('')+'</div>';
- return h}
 
-function orders(){
- if(!S.prods.length)return'<p class="mut">Add a product first.</p>';
- let h=`<div class="card"><div class="row"><label class="grow">Customer<input id="oc"></label><label>Product<select id="op">${S.prods.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Qty<input id="oq" type="number" value="1" min="1"></label><button class="b" onclick="addO()">Add order</button></div></div>`;
- h+=S.orders.length?`<div class="scroll"><table>${S.orders.map((o,i)=>`<tr><td>${esc(o.cust)}</td><td>${esc((S.prods.find(p=>p.id==o.pid)||{name:'(deleted)'}).name)}</td><td class="n">${o.qty}</td><td><button class="g" onclick="del('orders',${i})">Remove</button></td></tr>`).join('')}</table></div><p><button class="g" onclick="if(confirm('Clear all orders?')){S.orders=[];save();draw()}">Clear this week</button></p>`:'<p class="mut">No orders yet.</p>';
- return h}
-function addO(){const c=$('#oc').value.trim()||'Walk-in',q=+$('#oq').value||1;add('orders',{cust:c,pid:$('#op').value,qty:q})}
 
-function editor(i){
- return [S.prods[i]].map(p=>{const c=calc(p),P=`prods.${i}`;
- return`<section class="card"><div class="row"><button class="g" onclick="ed=null;draw()">← All products</button><span class="grow"></span><button class="g" onclick="dupP(${i})">Duplicate</button><button class="g" onclick="delP(${i})">Delete</button></div><div class="row">${inp(P+'.name',p.name,'grow big2')}</div>
- <div class="row"><label>Unit weight (g)${inp(P+'.unitG',p.unitG,'',1)}</label><label>Sell price${inp(P+'.price',p.price,'',1)}</label><label>Labour min / unit${inp(P+'.lab',p.lab,'',1)}</label></div>
- <h4>Formula in baker’s % (flour = 100)</h4>${p.ings.map((g,j)=>`<div class="row">${inp(`${P}.ings.${j}.n`,g.n,'grow')}${inp(`${P}.ings.${j}.pct`,g.pct,'',1)}<span class="mut">%</span><button class="g" onclick="del('${P}.ings',${j})">×</button></div>`).join('')}<button class="g" onclick="add('${P}.ings',{n:'',pct:0})">+ Ingredient</button>
- <h4>Steps in order, with minutes</h4>${p.steps.map((s,j)=>`<div class="row">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${inp(`${P}.steps.${j}.mins`,s.mins,'',1)}<span class="mut">min</span><button class="g" onclick="del('${P}.steps',${j})">×</button></div>`).join('')}<button class="g" onclick="add('${P}.steps',{n:'',mins:30})">+ Step</button>
- <p class="mut">Total ${c.sum.toFixed(0)}% · hydration ${c.hyd.toFixed(0)}% · ingredients ${m(c.ing)} · cost with labour ${m(c.cost)} · margin ${p.price?((p.price-c.cost)/p.price*100).toFixed(0):0}%</p></section>`}).join('')}
 let ed=null;
 const nid=()=>'p'+Date.now()+Math.random().toString(36).slice(2,5);
-function newP(){S.prods.push({id:nid(),name:'New product',unitG:500,price:0,lab:0,ings:[{n:'Flour',pct:100}],steps:[{n:'Mix',mins:30},{n:'Bake',mins:30}]});ed=S.prods.length-1;save();draw()}
-function dupP(i){const c=JSON.parse(JSON.stringify(S.prods[i]));c.id=nid();c.name+=' (copy)';S.prods.splice(i+1,0,c);ed=i+1;save();draw()}
-function delP(i){if(!confirm('Delete "'+S.prods[i].name+'"? Existing orders for it will show as deleted.'))return;S.prods.splice(i,1);ed=null;save();draw()}
-function prods(){
- if(ed!=null&&S.prods[ed])return editor(ed);
- const cards=S.prods.map((p,i)=>{const c=calc(p),mg=p.price?(p.price-c.cost)/p.price*100:0;return`<article class="box"><h3>${esc(p.name)}</h3><p class="mut">${p.unitG} g · ${p.ings.length} ingredients · ${p.steps.length} steps</p><div class="kv"><span>Price<b>${m(p.price)}</b></span><span>Cost<b>${m(c.cost)}</b></span><span>Margin<b>${mg.toFixed(0)}%</b></span></div><div class="row"><button class="b" onclick="ed=${i};draw()">Edit</button><button class="g" onclick="dupP(${i})">Duplicate</button><button class="g" onclick="delP(${i})">Delete</button></div></article>`}).join('');
- return`<div class="row"><h2 class="grow" style="margin:0">Products</h2><button class="b" onclick="newP()">+ New product</button></div><div class="grid">${cards}<button class="box add" onclick="newP()">+<br>Add product</button></div>`}
 
 function tools(){
  return`<div class="card"><h3>Dough temperature</h3><p class="mut">Water temperature that hits your target dough temperature (°C).</p><div class="row"><label>Target${tn('t1',24)}</label><label>Flour${tn('t2',20)}</label><label>Room${tn('t3',22)}</label><label>Levain${tn('t4',24)}</label><label>Friction${tn('t5',0)}</label></div><p class="big" id="r1"></p></div>
@@ -637,11 +590,6 @@ function tl(){const g=i=>+$('#'+i).value||0;
  const s=g('l2')+g('l3')+g('l4')||1,t=g('l1');
  $('#r2').textContent=`Starter ${Math.round(t*g('l2')/s)} g · flour ${Math.round(t*g('l3')/s)} g · water ${Math.round(t*g('l4')/s)} g`}
 
-function settings(){
- const names={};S.prods.forEach(p=>p.ings.forEach(i=>{if(i.n.trim())names[key(i.n)]=i.n}));
- return`<div class="card"><div class="row"><label class="grow">Business name${inp('set.biz',S.set.biz)}</label><label>Currency${inp('set.cur',S.set.cur)}</label><label>Labour rate / hour${inp('set.labor',S.set.labor,'',1)}</label></div><label>Label footer${inp('set.foot',S.set.foot)}</label></div>
- <h2>Ingredient prices and allergens</h2><div class="scroll"><table><tr><th>Ingredient</th><th>Price per kg</th><th>Allergen</th></tr>${Object.keys(names).map(k=>{const x=S.prices[k]||{p:0,a:''},n=esc(names[k]).replace(/'/g,'&#39;');return`<tr><td>${esc(names[k])}</td><td><input type=number step=any value="${x.p}" onchange="pr('${n}','p',this.value)"></td><td><input value="${esc(x.a)}" placeholder="e.g. milk" onchange="pr('${n}','a',this.value)"></td></tr>`}).join('')}</table></div>
- <h2>Backup</h2><p class="mut">Data is stored only in this browser. Copy the text below to keep a backup, or paste a backup and load it.</p><textarea id="bk" rows="5">${esc(JSON.stringify(S))}</textarea><p><button class="b" onclick="try{S=JSON.parse($('#bk').value);save();draw()}catch(e){alert('That backup could not be read.')}">Load backup</button> <button class="g" onclick="if(confirm('Reset everything?')){S=def();save();draw()}">Reset</button></p>`}
 
 const AL=['Celery','Gluten','Crustaceans','Eggs','Fish','Lupin','Milk','Molluscs','Mustard','Nuts','Peanuts','Sesame','Soya','Sulphites'];
 const UN=['g','kg','ml','l','each'],FAC={g:1,kg:1000,ml:1,l:1000,each:1},BASE={g:'g',kg:'g',ml:'ml',l:'ml',each:'each'};
@@ -671,31 +619,8 @@ function calc(p){
  const cost=ing+(+p.lab||0)/60*S.set.labor;
  const w=lines.filter(l=>/water/i.test(l.n)).reduce((a,l)=>a+l.g,0),fl=lines.filter(l=>/flour/i.test(l.n)).reduce((a,l)=>a+l.g,0);
  return{lines,cost,ing,sum,hyd:fl?w/fl*100:0}}
-function newP(){S.prods.push({id:nid(),name:'New product',unitG:100,price:0,lab:0,mode:'amt',yt:'batch',batch:1,flourG:1000,shelf:3,store:'Keep in a cool, dry place.',ings:[{n:(S.ings[0]||{n:''}).n,pct:100,amt:0}],steps:[{n:'Make',mins:30},{n:'Bake',mins:30}]});ed=S.prods.length-1;save();draw()}
-function pickI(i,j,v){if(v=='__new'){const n='New ingredient '+(S.ings.length+1);S.ings.push({n,price:0,size:1,unit:'kg',al:[],waste:0});S.prods[i].ings[j].n=n;tab='Ingredients'}else S.prods[i].ings[j].n=v;save();draw()}
-function editor(i){
- const p=S.prods[i],c=calc(p),P=`prods.${i}`,pc=p.mode=='pct',bt=p.yt=='batch';
- const opts=v=>S.ings.filter(g=>!(typeof subOf=='function'&&subOf(g.n))).map(g=>`<option${key(g.n)==key(v)?' selected':''}>${esc(g.n)}</option>`).join('')+((S.prods.filter(x=>x.sub&&x.id!=S.prods[i].id)).map(x=>`<option${key(x.name)==key(v)?' selected':''}>${esc(x.name)}</option>`).join(''));
- const sug=Math.ceil(c.cost/(1-Math.min(+S.set.margin||0,95)/100)*20)/20;
- return`<section class="card"><div class="row"><button class="g" onclick="ed=null;draw()">← All products</button><button class="g" onclick="ed=null;vw=${i};draw()">View recipe</button><span class="grow"></span><button class="g" onclick="dupP(${i})">Duplicate</button><button class="g" onclick="delP(${i})">Delete</button></div>
- <div class="row">${inp(P+'.name',p.name,'grow big2')}</div>
- <div class="row">${p.img?`<img class="ph" src="${p.img}" alt="">`:''}<label class="chip">Photo<input type="file" accept="image/*" onchange="photo(${i},this)"></label>${p.img?`<button class="g" onclick="up('prods.${i}.img','')">Remove photo</button>`:''}</div>
- ${verUI(i)}${pNotes(p.id).length?`<details class="ver"><summary>Bake notes · ${pNotes(p.id).length}</summary>${notesList(p.id,5)}</details>`:''}<div class="row"><label>Category${sel(P+'.cat',[['Bakery','Bakery'],['Drinks','Drinks'],['Other','Other']],p.cat||'Bakery')}</label><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label><label>Yield defined by${sel(P+'.yt',[['weight','Weight per unit'],['batch','Units per batch']],p.yt)}</label></div>
- <div class="row"><label>Net weight per unit (g)${inp(P+'.unitG',p.unitG,'',1)}</label>${bt?`<label>Units per batch${inp(P+'.batch',p.batch,'',1)}</label>`:''}${pc&&bt?`<label>Flour per batch (g)${inp(P+'.flourG',p.flourG,'',1)}</label>`:''}<label>Sell price${inp(P+'.price',p.price,'',1)}</label><label>Portions per unit${inp(P+'.por',p.por||1,'',1)}</label><label>Price per portion${inp(P+'.sp',p.sp||0,'',1)}</label><label>Labour min / unit${inp(P+'.lab',p.lab,'',1)}</label><label>Units per oven tray${inp(P+'.tray',p.tray||0,'',1)}</label><label>Oven °C${inp(P+'.temp',p.temp||0,'',1)}</label></div>
- ${preUI(i)}<h4>Ingredients ${pc?'(flour = 100%)':bt?'(amounts for one batch)':'(amounts for one unit)'}</h4>
- ${ingEd(i)}
- <h4>Steps in order, with minutes</h4>${p.steps.map((s,j)=>`<div class="row">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${inp(`${P}.steps.${j}.mins`,s.mins,'',1)}<span class="mut">min</span><button class="g" onclick="del('${P}.steps',${j})">×</button></div><div class="row"><input class="grow" placeholder="Instructions for this step (optional)" value="${esc(s.d||'')}" onchange="up('${P}.steps.${j}.d',this.value)"></div>`).join('')}<div class="row qrow"><input id="rs-n" class="grow" placeholder="Add step, e.g. Proof" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#rs-m').focus()}"><input id="rs-m" type="number" step="any" placeholder="min" onkeydown="if(event.key=='Enter'){event.preventDefault();rsAdd(${i})}"><span class="mut">min</span><button class="b sm" onclick="rsAdd(${i})">Add</button></div>
- <h4>Notes for the person making it</h4><textarea rows="3" onchange="up('${P}.notes',this.value)">${esc(p.notes||'')}</textarea>
- <h4>Label</h4><div class="row"><label>Shelf life (days)${inp(P+'.shelf',p.shelf,'',1)}</label><label class="grow">Storage advice${inp(P+'.store',p.store)}</label></div>
- <p class="mut">Ingredients ${m(c.ing)} · cost with labour ${m(c.cost)} · margin ${p.price?((p.price-c.cost)/p.price*100).toFixed(0):0}% · price for ${+S.set.margin||0}% margin: ${m(sug)}${por(p)>1?' · '+pinfo(p):''}${c.hyd?` · hydration ${c.hyd.toFixed(0)}%`:''}</p><div class="row" style="margin-top:14px"><button class="b" onclick="edDone(${i})">Done</button><span class="mut">Changes save automatically as you type.</span></div></section>`}
 
-function newI(){S.ings.push({n:'New ingredient',price:0,size:1,unit:'kg',al:[],waste:0});save();draw();const c=document.querySelectorAll('#v section.card'),x=c[c.length-1];if(x){const i=x.querySelector('input');i.scrollIntoView({block:'center'});i.focus();i.select()}}
-function rn(i,v){const o=S.ings[i].n;S.prods.forEach(p=>p.ings.forEach(x=>{if(key(x.n)==key(o))x.n=v}));S.ings[i].n=v;save();draw()}
-function tg(i,a,el){const l=S.ings[i].al,k=l.indexOf(a);k<0?l.push(a):l.splice(k,1);save();el.closest('details').firstElementChild.textContent='Allergens'+(l.length?': '+l.join(', '):' (none)')}
 const used=n=>S.prods.filter(p=>p.ings.some(x=>key(x.n)==key(n))).length;
-function delI(i){const n=used(S.ings[i].n);if(!confirm(n?`"${S.ings[i].n}" is used in ${n} product(s). Delete anyway?`:'Delete this ingredient?'))return;S.ings.splice(i,1);save();draw()}
-function ingredients(){
- return`<div class="row"><h2 class="grow" style="margin:0">Ingredients</h2></div><p class="mut">Enter what you buy: pack price, pack size and unit. Recipes pick from this list, and changing a price updates every recipe.</p>`+(S.ings.length?S.ings.map((g,i)=>{const pp=ppu(g),u=BASE[g.unit];return`<section class="card"><div class="row"><label class="grow">Name<input value="${esc(g.n)}" onchange="rn(${i},this.value)"></label><label>Pack price${inp(`ings.${i}.price`,g.price,'',1)}</label><label>Pack size${inp(`ings.${i}.size`,g.size,'',1)}</label><label>Unit${sel(`ings.${i}.unit`,UN.map(x=>[x,x]),g.unit)}</label><label>Waste %${inp(`ings.${i}.waste`,g.waste,'',1)}</label></div><p class="mut">${u=='each'?m(pp)+' each':m(pp*1000)+' per '+(u=='g'?'kg':'l')} · used in ${used(g.n)} product(s)</p><details><summary>Allergens${g.al.length?': '+esc(g.al.join(', ')):' (none)'}</summary><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${g.al.includes(a)?' checked':''} onchange="tg(${i},'${a}',this)"> ${a}</label>`).join('')}</div></details><p><button class="g" onclick="delI(${i})">Delete</button></p></section>`}).join(''):'<p class="mut">No ingredients yet. Add the ones you buy.</p>')+'<p><button class="b" onclick="newI()">+ New ingredient</button></p>'}
 
 function plan(){
  const q={};dO().forEach(o=>q[o.pid]=(q[o.pid]||0)+o.qty);
@@ -718,20 +643,6 @@ function plan(){
  h+='<h2>Packing lists</h2><div class="lbls">'+Object.keys(by).map(c=>`<div class="lbl"><b>${esc(c)}</b>${by[c][0].time?' · '+esc(by[c][0].time):''}<br>${by[c].map(o=>`☐ ${o.qty} × ${esc((S.prods.find(p=>p.id==o.pid)||{}).name)}${o.note?' — '+esc(o.note):''}`).join('<br>')}</div>`).join('')+'</div>';
  return h}
 
-function labels(){
- const L=S.lab,q={};dO().forEach(o=>q[o.pid]=(q[o.pid]||0)+o.qty);
- const list=L.pid=='all'?S.prods.filter(p=>q[p.id]>0):S.prods.filter(p=>p.id==L.pid);
- const made=new Date(L.made+'T12:00'),code=L.code||L.made.replace(/-/g,'').slice(2);
- const one=p=>{const c=calc(p).lines.filter(l=>l.n&&l.g>0).sort((a,b)=>b.g-a.g);
-  const A=n=>(gi(n)||{al:[]}).al,al=[...new Set(c.flatMap(l=>A(l.n)))],bb=new Date(made.getTime()+(+p.shelf||0)*864e5);
-  return`<div class="lb"><b class="ln">${esc(p.name)}</b><div>Ingredients: ${c.map(l=>esc(l.n)+(A(l.n).length?' (<b>'+esc(A(l.n).join(', ').toUpperCase())+'</b>)':'')).join(', ')}.</div>${al.length?`<div><b>Contains: ${esc(al.join(', '))}</b></div>`:''}${S.set.may?`<div>${esc(S.set.may)}</div>`:''}<div>Net weight ${p.unitG} g · Baked ${dstr(made)} · <b>Best before ${dstr(bb)}</b></div>${p.store?`<div>${esc(p.store)}</div>`:''}<div>Batch ${esc(code)}</div><div class="biz">${esc(S.set.biz)}${S.set.addr?', '+esc(S.set.addr):''}</div>${L.price?`<div class="pr">${m(p.price)}</div>`:''}</div>`};
- const sheet=list.flatMap(p=>Array(Math.max(+L.copies||q[p.id]||1,1)).fill(one(p))).join('');
- return`<div class="noprint"><div class="row"><h2 class="grow" style="margin:0">Labels</h2><button class="b" onclick="print()">Print labels</button></div>
- <div class="card"><div class="row"><label>Product<select onchange="up('lab.pid',this.value)"><option value="all"${L.pid=='all'?' selected':''}>All products in this week’s orders</option>${S.prods.map(p=>`<option value="${p.id}"${L.pid==p.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
- <label>Copies each (0 = ordered qty)${inp('lab.copies',L.copies,'',1)}</label><label>Label size${sel('lab.size',[['roll','Roll 100 × 62 mm'],['a8','A4 sheet, 8 labels'],['a21','A4 sheet, 21 labels']],L.size)}</label>
- <label>Baked on<input type="date" value="${esc(L.made)}" onchange="up('lab.made',this.value)"></label><label>Batch code${inp('lab.code',L.code)}</label>
- <label class="chip"><input type="checkbox"${L.price?' checked':''} onchange="S.lab.price=this.checked;save();draw()"> Show price</label></div>
- <p class="mut">Best before is baked date plus the shelf life set on each product. In the print dialog, choose your paper size and set margins to none. Check labelling rules with the FSAI or your local environmental health officer before selling.</p></div>`+(list.length?`<div class="lsheet"><div class="lg ${L.size}">${sheet}</div></div>`:'<p class="mut">Nothing to print. Add orders, or choose a product.</p>')}
 
 function settings(){
  const csv='Product,Unit weight g,Cost per unit,Sell price,Margin %\n'+S.prods.map(p=>{const c=calc(p);return[p.name,p.unitG,c.cost.toFixed(2),(+p.price||0).toFixed(2),p.price?((p.price-c.cost)/p.price*100).toFixed(0):0].map(x=>/[",\n]/.test(x)?'"'+String(x).replace(/"/g,'""')+'"':x).join(',')}).join('\n');
@@ -744,62 +655,29 @@ function settings(){
  <details class="qa"><summary>Copy as text instead</summary><textarea id="bk" rows="5">${esc(JSON.stringify(S))}</textarea><p><button class="g" onclick="bkText()">Load from text</button></p></details>
  <p><button class="g" onclick="rst()">Reset everything</button></p>
  <h2>Cost sheet (CSV)</h2><textarea rows="5" readonly>${esc(csv)}</textarea>`}
-function rst(){if(confirm('Reset everything?')){S=def();mig();save();draw()}}
-function go(t){if(t=='Products'&&tab=='Products')ed=null;tab=t;draw()}
-function draw(){
- $('#nav').innerHTML=Object.keys(T).map(t=>`<button class="${t==tab?'on':''}" onclick="go('${t}')">${t}</button>`).join('');
- $('#v').innerHTML=T[tab]();document.title=S.set.biz+' Bake & Cost Planner';
- document.body.classList.toggle('plab',tab=='Labels');document.body.classList.toggle('pal',tab=='Allergens');if(tab=='Tools')tl()}
 document.body.insertAdjacentHTML('beforeend','<div id="cf"></div>');
 let lastS=null,tmr;
 function snap(msg){lastS=JSON.stringify(S);$('#cf').innerHTML=`<div class="toast"><span>${esc(msg)}</span><button class="g" onclick="undo()">Undo</button></div>`;clearTimeout(tmr);tmr=setTimeout(()=>{$('#cf').innerHTML=''},8000)}
 function undo(){if(lastS){S=JSON.parse(lastS);lastS=null;$('#cf').innerHTML='';save();draw()}}
 function del(p,i){snap('Removed');at(p).splice(i,1);save();draw()}
 function delP(i){snap(`Deleted "${S.prods[i].name}"`);S.prods.splice(i,1);ed=null;save();draw()}
-function delI(i){snap(`Deleted "${S.ings[i].n}"`);S.ings.splice(i,1);save();draw()}
-function rst(){snap('Everything was reset');S=def();mig();save();draw()}
-function clrO(){snap('Orders cleared');S.orders=[];save();draw()}
-function orders(){
- if(!S.prods.length)return'<p class="mut">Add a product first.</p>';
- let h=`<div class="card"><div class="row"><label class="grow">Customer<input id="oc"></label><label>Product<select id="op">${S.prods.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Qty<input id="oq" type="number" value="1" min="1"></label><button class="b" onclick="addO()">Add order</button></div></div>`;
- h+=S.orders.length?`<div class="scroll"><table>${S.orders.map((o,i)=>`<tr><td>${esc(o.cust)}</td><td>${esc((S.prods.find(p=>p.id==o.pid)||{name:'(deleted)'}).name)}</td><td class="n">${o.qty}</td><td><button class="g" onclick="del('orders',${i})">Remove</button></td></tr>`).join('')}</table></div><p><button class="g" onclick="clrO()">Clear this week</button></p>`:'<p class="mut">No orders yet.</p>';
- return h}
 let iq='',isort='name',pq='',pcat='All';const opn=new Set();
 const sg=n=>gi(n)||{};
 const mg=p=>{const c=calc(p).cost;return p.price?(p.price-c)/p.price*100:0};
 function flt(s,q){q=q.toLowerCase();document.querySelectorAll(s).forEach(e=>e.hidden=!e.dataset.n.includes(q))}
 function fx(){const v=$('#v');v.classList.remove('fx');void v.offsetWidth;v.classList.add('fx')}
-function go(t){if(t=='Products'&&tab=='Products')ed=null;tab=t;draw();fx()}
-function openP(i){ed=i;draw();fx()}
 function pc(i,v){const g=S.ings[i];v=+v||0;if(v!=g.price){g.prev=g.price;g.pdate=new Date().toISOString().slice(0,10);g.price=v}save();draw()}
 function dis(i){S.ings[i].prev=null;save();draw()}
 function tg(i,a){const l=S.ings[i].al,k=l.indexOf(a);k<0?l.push(a):l.splice(k,1);save();draw()}
-function delI(i){snap(`Deleted "${S.ings[i].n}"`);S.ings.splice(i,1);opn.clear();save();draw()}
-function qadd(i){const n=$('#qn').value.trim();if(!n)return;S.ings.push({n,price:+$('#qp').value||0,size:+$('#qs').value||1,unit:$('#qu').value,al:[],waste:0});S.prods[i].ings.push({n,pct:0,amt:0});save();draw()}
-function newI(){S.ings.push({n:'New ingredient',price:0,size:1,unit:'kg',al:[],waste:0});const k=S.ings.length-1;opn.add(k);iq='';save();draw();const r=document.querySelector(`.ir[data-i="${k}"]`);if(r){r.scrollIntoView({block:'center'});const x=r.querySelector('.body input');x.focus();x.select()}}
 function photo(i,el){const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,480/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.prods[i].img=c.toDataURL('image/jpeg',.7);save();draw()};im.src=r.result};r.readAsDataURL(f)}
 
-function ingredients(){
- const I=S.ings,ord=I.map((g,i)=>i).filter(i=>I[i].n.toLowerCase().includes(iq.toLowerCase()));
- const by={name:(a,b)=>I[a].n.localeCompare(I[b].n),used:(a,b)=>used(I[b].n)-used(I[a].n)||I[a].n.localeCompare(I[b].n),changed:(a,b)=>(I[b].pdate||'').localeCompare(I[a].pdate||'')};
- ord.sort(by[isort]);
- const rows=ord.map(i=>{const g=I[i],pp=ppu(g),u=BASE[g.unit];return`<details class="ir" data-i="${i}" data-n="${esc(g.n.toLowerCase())}"${opn.has(i)?' open':''} ontoggle="this.open?opn.add(${i}):opn.delete(${i})"><summary><div><span class="nm">${esc(g.n)}</span><br><span class="sub">${g.al.length?esc(g.al.join(', ')):'No allergens'} · used in ${used(g.n)}${g.sup?' · '+esc(g.sup):''}</span></div><span>${u=='each'?m(pp)+' each':m(pp*1000)+' / '+(u=='g'?'kg':'l')}</span><span class="mut">▾</span></summary><div class="body"><div class="row"><label class="grow">Name<input value="${esc(g.n)}" onchange="rn(${i},this.value)"></label><label>Pack price<input type="number" step="any" value="${g.price}" onchange="pc(${i},this.value)"></label><label>Pack size${inp(`ings.${i}.size`,g.size,'',1)}</label><label>Unit${sel(`ings.${i}.unit`,UN.map(x=>[x,x]),g.unit)}</label><label>Waste %${inp(`ings.${i}.waste`,g.waste,'',1)}</label></div><div class="row"><label class="grow">Supplier${inp(`ings.${i}.sup`,g.sup||'')}</label><label>In stock (${g.unit})${inp(`ings.${i}.stock`,g.stock||0,'',1)}</label></div><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${g.al.includes(a)?' checked':''} onchange="tg(${i},'${a}')"> ${a}</label>`).join('')}</div><p><button class="g" onclick="delI(${i})">Delete</button></p></div></details>`}).join('');
- return`<h2 style="margin:0 0 6px">Ingredients</h2><p class="mut">What you buy: pack price, size and unit. Recipes pick from this list, and a price change flows into every recipe.</p><div class="row"><input class="grow" placeholder="Search ingredients" value="${esc(iq)}" oninput="iq=this.value;flt('.ir',iq)"><label>Sort<select onchange="isort=this.value;draw()">${[['name','Name'],['used','Most used'],['changed','Price changed']].map(x=>`<option value="${x[0]}"${x[0]==isort?' selected':''}>${x[1]}</option>`).join('')}</select></label></div><div>${rows||'<p class="mut">No ingredients match.</p>'}</div><p><button class="b" onclick="newI()">+ New ingredient</button></p>`}
 
-function prods(){
- if(ed!=null&&S.prods[ed])return editor(ed);
- const cats=['All',...new Set(S.prods.map(p=>p.cat||'Bakery'))];
- const cards=S.prods.map((p,i)=>[p,i]).filter(([p])=>(pcat=='All'||(p.cat||'Bakery')==pcat)&&p.name.toLowerCase().includes(pq.toLowerCase())).map(([p,i])=>{const c=calc(p);return`<article class="box" data-n="${esc(p.name.toLowerCase())}">${p.img?`<img class="ph" src="${p.img}" alt="">`:''}<h3>${esc(p.name)}</h3><p class="mut">${esc(p.cat||'Bakery')} · ${p.unitG} g · ${p.ings.length} ingredients</p>${por(p)>1?`<p class="mut">${esc(pinfo(p))}</p>`:''}<div class="kv"><span>Price<b>${m(p.price)}</b></span><span>Cost<b>${m(c.cost)}</b></span><span>Margin<b>${mg(p).toFixed(0)}%</b></span></div><div class="row"><button class="b" onclick="openP(${i})">Edit</button><button class="g" onclick="dupP(${i})">Duplicate</button><button class="g" onclick="delP(${i})">Delete</button></div></article>`}).join('');
- return`<h2 style="margin:0 0 6px">Products</h2><div class="row"><input class="grow" placeholder="Search products" value="${esc(pq)}" oninput="pq=this.value;flt('.box[data-n]',pq)">${cats.map(c=>`<button class="g${c==pcat?' on':''}" onclick="pcat='${c}';draw()">${c}</button>`).join('')}</div><div class="grid">${cards}<button class="box add" onclick="newP()">+<br>Add product</button></div>`}
 
 function alerts(){
  const out=S.ings.map((g,i)=>[g,i]).filter(([g])=>g.prev!=null&&g.prev!=g.price).map(([g,i])=>{
   const aff=S.prods.filter(p=>p.ings.some(x=>key(x.n)==key(g.n))),cur=g.price;g.price=g.prev;const b=aff.map(mg);g.price=cur;const a=aff.map(mg);
   return`<div class="card"><div class="row"><b class="grow">${esc(g.n)}: ${m(g.prev)} → ${m(g.price)} per pack</b><button class="g" onclick="dis(${i})">Dismiss</button></div>${aff.map((p,k)=>`<div class="mut">${esc(p.name)}: margin ${b[k].toFixed(0)}% → ${a[k].toFixed(0)}%</div>`).join('')||'<div class="mut">Not used in any product.</div>'}</div>`}).join('');
  return out?`<h2>Price changes</h2>${out}`:''}
-function menu(){
- const T0=+S.set.margin||0,rows=S.prods.map(p=>{const c=calc(p);return{p,c,g:mg(p),sug:Math.ceil(c.cost/(1-Math.min(T0,95)/100)*20)/20}}).sort((a,b)=>a.g-b.g);
- return alerts()+`<h2>Menu margins</h2><p class="mut">Lowest margin first. Your target is ${T0}%.</p><div class="scroll"><table class="mtab"><tr><th>Item</th><th>Category</th><th class="n">Cost</th><th class="n">Price</th><th class="n">Margin</th><th class="n">Suggested price</th></tr>${rows.map(r=>`<tr><td>${esc(r.p.name)}${por(r.p)>1?`<br><span class="mut">${esc(pinfo(r.p))}</span>`:''}</td><td>${esc(r.p.cat||'Bakery')}</td><td class="n">${m(r.c.cost)}</td><td class="n">${m(r.p.price)}</td><td class="n">${r.g.toFixed(0)}%${r.g<T0?' ▾ below target':''}</td><td class="n">${m(r.sug)}</td></tr>`).join('')}</table></div>`}
 function guide(){
  if(S.set.noguide)return'';
  const st=[[S.ings.some(g=>g.price>0),'Add your ingredients with prices','Ingredients'],[S.prods.some(p=>p.ings.length&&calc(p).cost>0),'Build a product from them','Products'],[S.orders.length>0||Object.keys(S.par||{}).length>0,'Add orders or daily targets','Orders']];
@@ -809,23 +687,11 @@ const plan0=plan;
 const T={Plan:()=>guide()+plan0(),Orders:orders,Products:prods,Ingredients:ingredients,Menu:menu,Labels:labels,Allergens:allergens,Tools:tools,Settings:settings};
 
 
-function draw(){
- $('#nav').innerHTML=Object.keys(T).map(t=>`<button class="${t==tab?'on':''}" onclick="tab='${t}';ed=null;draw()">${t}</button>`).join('');
- $('#v').innerHTML=T[tab]();document.title=S.set.biz+' Bake & Cost Planner';
- $('#sub').textContent='Bake and cost planner';if(tab=='Tools')tl()}
 let vw=null;const vq={};
 let wD=null;const WT=['Today','Kitchen','Home'];const pday=()=>WT.includes(tab)?(wD||tdy()):(S.set.ready||'').slice(0,10);
 const dO=()=>dOf(pday());
 const dlab=d=>new Date(d+'T12:00').toLocaleDateString('en-IE',{weekday:'short',day:'numeric',month:'short'});
 const hm=x=>x>=60?Math.floor(x/60)+' h'+(x%60?' '+x%60+' min':''):x+' min';
-function addO(){add('orders',{cust:$('#oc').value.trim()||'Walk-in',pid:$('#op').value,qty:+$('#oq').value||1,date:$('#od').value||pday()})}
-function setDay(d){S.set.ready=d+'T'+(S.set.ready||'T07:00').slice(11,16);save();draw()}
-function orders(){
- if(!S.prods.length)return'<p class="mut">Add a product first.</p>';
- const ds=[...new Set(S.orders.map(o=>o.date))].sort();
- let h=`<div class="card"><div class="row"><label class="grow">Customer<input id="oc"></label><label>Product<select id="op">${S.prods.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Qty<input id="oq" type="number" value="1" min="1"></label><label>For day<input id="od" type="date" value="${pday()}"></label><button class="b" onclick="addO()">Add order</button></div></div>`;
- h+=ds.length?ds.map(d=>`<div class="row" style="margin-top:22px"><h3 class="grow" style="margin:0">${dlab(d)}${d==pday()?' · in the plan':''}</h3>${d==pday()?'':`<button class="g sm" onclick="setDay('${d}')">Plan this day</button>`}</div><div class="scroll"><table>${S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).map(([o,i])=>`<tr><td>${esc(o.cust)}</td><td>${esc((S.prods.find(p=>p.id==o.pid)||{name:'(deleted)'}).name)}</td><td class="n">${o.qty}</td><td class="n"><button class="g sm" onclick="del('orders',${i})">Remove</button></td></tr>`).join('')}</table></div>`).join(''):'<p class="mut">No orders yet.</p>';
- return h+(S.orders.length?'<p><button class="g sm" onclick="clrO()">Clear all orders</button></p>':'')}
 
 function recipe(i){
  const p=S.prods[i],c=calc(p),b=Math.max(+p.batch||1,1),bt=p.yt=='batch';
@@ -840,36 +706,14 @@ function recipe(i){
  <h3>Method</h3><ol class="steps">${p.steps.map((s,j)=>`<li><span class="bx" onclick="this.classList.toggle('done')"></span><div><b>${esc(s.n)}</b> <span class="mut">${hm(+s.mins||0)} · start ${fm(st[j])}</span>${s.d?`<div>${esc(s.d)}</div>`:''}</div></li>`).join('')}</ol>
  ${p.notes?`<h3>Notes</h3><p style="white-space:pre-wrap">${esc(p.notes)}</p>`:''}${p.store?`<p class="mut">Storage: ${esc(p.store)} · shelf life ${p.shelf} days</p>`:''}<h3>Bake notes</h3><div class="noprint">${noteBox(p.id,'rv')}</div>${notesList(p.id)||'<p class="mut">No notes yet.</p>'}</div>`}
 
-function prods(){
- if(cm!=null&&S.prods[cm])return cookv(cm);
- if(vw!=null&&S.prods[vw])return recipe(vw);
- if(ed!=null&&S.prods[ed])return editor(ed);
- const cats=['All',...new Set(S.prods.map(p=>p.cat||'Bakery'))];
- const cards=S.prods.map((p,i)=>[p,i]).filter(([p])=>(pcat=='All'||(p.cat||'Bakery')==pcat)&&p.name.toLowerCase().includes(pq.toLowerCase())).map(([p,i])=>{const c=calc(p);return`<article class="box" data-n="${esc(p.name.toLowerCase())}">${p.img?`<img class="ph" src="${p.img}" alt="">`:''}<h3 class="lk" onclick="vw=${i};draw();fx()">${esc(p.name)}</h3><p class="mut">${esc(p.cat||'Bakery')} · ${p.unitG} g · ${p.ings.length} ingredients</p>${por(p)>1?`<p class="mut">${esc(pinfo(p))}</p>`:''}<div class="kv"><span>Price<b>${m(p.price)}</b></span><span>Cost<b>${m(c.cost)}</b></span><span>Margin<b>${mg(p).toFixed(0)}%</b></span></div><div class="row"><button class="b" onclick="vw=${i};draw();fx()">Open recipe</button><button class="b" onclick="goCook(${i})">Cook</button><button class="g" onclick="openP(${i})">Edit</button></div><div class="row"><button class="g sm" onclick="dupP(${i})">Duplicate</button><button class="g sm" onclick="delP(${i})">Delete</button></div></article>`}).join('');
- return`<h2 style="margin:0 0 6px">Products</h2><div class="row"><input class="grow" placeholder="Search products" value="${esc(pq)}" oninput="pq=this.value;flt('.box[data-n]',pq)">${cats.map(c=>`<button class="g${c==pcat?' on':''}" onclick="pcat='${c}';draw()">${c}</button>`).join('')}</div><div class="grid">${cards}<button class="box add" onclick="newP()">+<br>Add product</button></div>`}
 
-function go(t){if(t=='Products'&&tab=='Products'){ed=null;vw=null}tab=t;draw();fx()}
 const tabs=()=>Object.keys(T).filter(t=>t!='Tools'||S.set.tools);
-function draw(){
- S.orders.forEach(o=>{if(!o.date)o.date=pday()});
- if(!tabs().includes(tab))tab='Plan';
- $('#nav').innerHTML=tabs().map(t=>`<button class="${t==tab?'on':''}" onclick="go('${t}')">${t}</button>`).join('');
- $('#v').innerHTML=T[tab]();document.title=S.set.biz+' Bake & Cost Planner';
- document.body.classList.toggle('plab',tab=='Labels');document.body.classList.toggle('pal',tab=='Allergens');document.body.classList.toggle('prec',tab=='Products'&&vw!=null&&!!S.prods[vw]);if(tab=='Tools')tl()}
 
 const idr={};
 const dg=i=>idr[i]||(idr[i]={...S.ings[i],al:[...S.ings[i].al]});
 const en=i=>document.querySelectorAll(`.ir[data-i="${i}"] .sv`).forEach(b=>b.disabled=false);
 function dr(i,f,v){dg(i)[f]=v;en(i)}
 function dal(i,a){const l=dg(i).al,k=l.indexOf(a);k<0?l.push(a):l.splice(k,1);en(i)}
-function cnI(i){delete idr[i];draw()}
-function svI(i){
- const d=idr[i],g=S.ings[i];if(!d)return;
- const nn=d.n.trim()||g.n;
- if(key(nn)!=key(g.n))S.prods.forEach(p=>p.ings.forEach(x=>{if(key(x.n)==key(g.n))x.n=nn}));
- const np=+d.price||0;if(np!=(+g.price||0)){g.prev=g.price;g.pdate=new Date().toISOString().slice(0,10)}
- Object.assign(g,{n:nn,price:np,size:+d.size||1,unit:d.unit,waste:+d.waste||0,sup:d.sup||'',al:[...d.al]});
- delete idr[i];opn.delete(i);save();draw();flash(`Saved ${nn}`)}
 function delI(i){snap(`Deleted "${S.ings[i].n}"`);S.ings.splice(i,1);opn.clear();for(const k in idr)delete idr[k];save();draw()}
 function ingredients(){
  const I=S.ings,ord=I.map((g,i)=>i).filter(i=>I[i].n.toLowerCase().includes(iq.toLowerCase()));
@@ -884,34 +728,13 @@ const DN=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const dow=d=>(new Date(d+'T12:00').getDay()+6)%7;
 const por=p=>Math.max(+p.por||1,1),pprice=p=>+p.sp||(p.price/por(p));
 const pinfo=p=>{const c=calc(p).cost/por(p),pp=pprice(p);return`per portion: cost ${m(c)}, price ${m(pp)}, margin ${pp?((pp-c)/pp*100).toFixed(0):0}%`};
-function dOf(d){
- const r=S.orders.filter(o=>o.date==d);
- S.prods.forEach(p=>{const q=+((S.par||{})[p.id]||{})[dow(d)]||0;if(q>0)r.push({cust:'Counter (daily target)',pid:p.id,qty:q,date:d,par:true})});
- return r}
 function pd(d){S.set.ready=d+'T'+(S.set.ready||'T07:00').slice(11,16);tab='Plan';save();draw();fx()}
-function tgo(i,f,v){S.orders[i][f]=v;save();draw()}
 function setPar(id,k,v){S.par=S.par||{};(S.par[id]=S.par[id]||{})[k]=+v||0;save()}
-function addO(){const o={cust:$('#oc').value.trim()||'Walk-in',pid:$('#op').value,qty:+$('#oq').value||1,date:$('#od').value||pday(),time:$('#ot').value||'',note:$('#on').value.trim(),packed:false,done:false};odate='';add('orders',o)}
 
 function targets(){
  return`<p class="mut">How many of each item you want ready on each weekday. They are added to that day’s plan automatically as “Counter”.</p><div class="scroll"><table><tr><th>Item</th>${DN.map(d=>`<th class="n">${d}</th>`).join('')}</tr>${S.prods.map(p=>`<tr><td>${esc(p.name)}</td>${DN.map((d,k)=>`<td class="n"><input class="tq" type="number" min="0" value="${((S.par||{})[p.id]||{})[k]||''}" onchange="setPar('${p.id}',${k},this.value)"></td>`).join('')}</tr>`).join('')}</table></div>`}
 
-function weekv(){
- const b=new Date(pday()+'T12:00'),mon=new Date(b);mon.setDate(b.getDate()-dow(pday())+wk*7);
- const ds=[...Array(7)].map((_,k)=>{const d=new Date(mon);d.setDate(mon.getDate()+k);return d.toISOString().slice(0,10)});
- const card=d=>{const tot={};dOf(d).forEach(o=>tot[o.pid]=(tot[o.pid]||0)+o.qty);const n=S.orders.filter(o=>o.date==d).length,on=d==pday();
-  return`<div class="day${on?' on':''}"><b>${dlab(d)}</b>${on?'<span class="mut"> · planned</span>':''}<p class="mut">${n} order${n==1?'':'s'}</p><div class="dl">${Object.keys(tot).map(id=>`${tot[id]} × ${esc((S.prods.find(p=>p.id==id)||{name:'?'}).name)}`).join('<br>')||'<span class="mut">Nothing planned</span>'}</div><div class="row"><button class="${on?'g':'b'} sm" onclick="pd('${d}')">Plan this day</button><button class="g sm" onclick="odate='${d}';ov='orders';draw()">+ Order</button></div></div>`};
- return`<div class="row"><button class="g sm" onclick="wk--;draw()">← Previous</button><button class="g sm" onclick="wk=0;draw()">Planned week</button><button class="g sm" onclick="wk++;draw()">Next →</button></div><div class="week">${ds.map(card).join('')}</div>`}
 
-function ordl(){
- if(!S.prods.length)return'<p class="mut">Add a product first.</p>';
- const past=[...new Set(S.orders.filter(o=>o.date<tdy()).map(o=>o.date))].length,ds=[...new Set(S.orders.map(o=>o.date))].filter(d=>oPast||d>=tdy()).sort();
- let h=`<div class="card"><div class="row"><label class="grow">Customer<input id="oc"></label><label>Product<select id="op">${S.prods.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Qty<input id="oq" type="number" value="1" min="1"></label></div><div class="row"><label>For day<input id="od" type="date" value="${odate||pday()}"></label><label>Pickup time<input id="ot" type="time"></label><label class="grow">Note<input id="on" placeholder="e.g. no nuts, birthday message"></label><button class="b" onclick="addO()">Add order</button></div></div>`;
- h+=ds.length?ds.map(d=>`<div class="row" style="margin-top:22px"><h3 class="grow" style="margin:0">${dlab(d)}</h3><button class="lnk" onclick="goDay('${d}')">Open day →</button></div><div class="scroll"><table><tr><th>Time</th><th>Customer</th><th>Item</th><th class="n">Qty</th><th>Note</th><th>Packed</th><th>Collected</th><th></th></tr>${S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).sort((a,b)=>(a[0].time||'99').localeCompare(b[0].time||'99')).map(([o,i])=>`<tr><td>${esc(o.time||'')}</td><td>${esc(o.cust)}</td><td>${esc((S.prods.find(p=>p.id==o.pid)||{name:'(deleted)'}).name)}</td><td class="n">${o.qty}</td><td class="wrap">${esc(o.note||'')}</td><td><input type="checkbox" class="ck"${o.packed?' checked':''} onchange="tgo(${i},'packed',this.checked)"></td><td><input type="checkbox" class="ck"${o.done?' checked':''} onchange="tgo(${i},'done',this.checked)"></td><td class="n"><button class="g sm" onclick="del('orders',${i})">Remove</button></td></tr>`).join('')}</table></div>`).join(''):'<p class="mut">No customer orders yet.</p>';
- return h+(past?`<p><button class="g sm" onclick="oPast=!oPast;draw()">${oPast?'Hide past days':`Show ${past} past day${past==1?'':'s'}`}</button></p>`:'')+(S.orders.length?'<p><button class="g sm" onclick="clrO()">Clear all orders</button></p>':'')}
-function orders(){
- const t=[['week','Week'],['orders','Orders'],['targets','Daily targets']];
- return`<div class="row seg">${t.map(x=>`<button class="g${ov==x[0]?' on':''}" onclick="ov='${x[0]}';draw()">${x[1]}</button>`).join('')}</div>`+(ov=='week'?weekv():ov=='targets'?targets():ordl())}
 
 function allergens(){
  const rows=S.prods.filter(p=>!p.sub).map(p=>({p,al:new Set(calc(p).lines.flatMap(l=>sg(l.n).al||[]))})).sort((a,b)=>(a.p.cat||'Bakery').localeCompare(b.p.cat||'Bakery')||a.p.name.localeCompare(b.p.name));
@@ -931,22 +754,7 @@ const IC={Today:svg('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 1
 const G=[['Today',['Today']],['Orders',['Orders']],['Recipes',['Products']],['Costs',['Ingredients','Menu']],['Print',['Plan','Labels','Allergens','Board']],['Settings',['Settings','Tools']]];
 const TL={Today:'Today',Orders:'Orders',Products:'Recipes',Ingredients:'Ingredients',Menu:'Margins',Plan:'Bake plan',Labels:'Labels',Allergens:'Allergens',Board:'Menu board',Settings:'Settings',Tools:'Tools'};
 const last={};
-function shd(k){const d=new Date((k?pday():tdy())+'T12:00');if(k)d.setDate(d.getDate()+k);S.set.ready=d.toISOString().slice(0,10)+'T'+S.set.ready.slice(11,16);save();draw()}
 function dn(id,v){S.done=S.done||{};S.done[pday()+'|'+id]=v;save();draw()}
-function today(){
- const d=pday(),tot={};dOf(d).forEach(o=>tot[o.pid]=(tot[o.pid]||0)+o.qty);
- const act=S.prods.filter(p=>tot[p.id]>0),end=new Date(S.set.ready).getTime();
- let first=Infinity;act.forEach(p=>{first=Math.min(first,end-p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4)});
- S.done=S.done||{};const nd=act.filter(p=>S.done[d+'|'+p.id]).length,low=act.filter(p=>mg(p)<(+S.set.margin||0));
- const picks=S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).sort((a,b)=>(a[0].time||'99').localeCompare(b[0].time||'99'));
- return guide()+`<div class="row"><div class="grow"><div class="mut">${d==tdy()?'Today':'Planned day'}</div><h2 class="dayh">${dlab(d)}</h2></div><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button></div>`+
- (act.length?`<div class="card hero"><div class="mut">First start</div><div class="hbig">${new Date(first).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div><div class="mut">to have everything ready by ${esc(S.set.ready.slice(11,16))}</div></div>
- <div class="row"><b class="grow">To make</b><span class="mut">${nd} of ${act.length} done</span></div><div class="bar"><i style="width:${nd/act.length*100}%"></i></div>
- ${act.map(p=>{const i=S.prods.indexOf(p),x=S.done[d+'|'+p.id];return`<div class="trow"><label class="chip chk"><input type="checkbox"${x?' checked':''} onchange="dn('${p.id}',this.checked)"> <span class="${x?'mut':''}">${tot[p.id]} × ${esc(p.name)}</span></label><button class="g sm" onclick="vw=${i};go('Products')">Recipe</button></div>`}).join('')}`
- :`<div class="card"><p class="chalk">Nothing baking yet</p><p class="mut">Add orders or daily targets and this day fills in.</p><div class="row"><button class="b" onclick="ov='targets';go('Orders')">Set daily targets</button><button class="g" onclick="ov='orders';go('Orders')">Add an order</button></div></div>`)+
- (picks.length?`<h2>Pickups</h2><div class="scroll"><table>${picks.map(([o,i])=>`<tr><td>${esc(o.time||'—')}</td><td>${esc(o.cust)}</td><td>${o.qty} × ${esc((S.prods.find(p=>p.id==o.pid)||{name:'?'}).name)}</td><td class="wrap">${esc(o.note||'')}</td><td><label class="chip chk"><input type="checkbox"${o.packed?' checked':''} onchange="tgo(${i},'packed',this.checked)"> Packed</label></td><td><label class="chip chk"><input type="checkbox"${o.done?' checked':''} onchange="tgo(${i},'done',this.checked)"> Collected</label></td></tr>`).join('')}</table></div>`:'')+
- (low.length?`<p class="mut">Margin below your ${+S.set.margin||0}% target: ${low.slice(0,3).map(p=>esc(p.name)).join(', ')}.</p>`:'')+
- (act.length?`<p><button class="g" onclick="go('Plan')">Open the full bake plan</button></p>`:'')}
 
 let cm=null,cs=0,tL=0,tR=false,tI=null,wl=null;
 const fmt=s=>Math.floor(Math.abs(s)/60)+':'+String(Math.abs(s)%60).padStart(2,'0');
@@ -955,7 +763,6 @@ function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(
 function tmUI(){const a=$('#tm'),b=$('#tb');if(a)a.textContent=tL<=0&&!tR&&tL<0?'Done':fmt(tL);if(b)b.textContent=tR?'Pause':'Start timer'}
 function ctReset(){clearInterval(tI);tR=false;const s=S.prods[cm]&&S.prods[cm].steps[cs-1];tL=s?(+s.mins||0)*60:0}
 function ctTog(){if(tR){clearInterval(tI);tR=false}else{tR=true;tI=setInterval(()=>{tL--;if(tL<=0){clearInterval(tI);tR=false;beep()}tmUI()},1000)}tmUI()}
-function cook(i){cm=i;cs=0;ctReset();wake();draw()}
 function cookX(){clearInterval(tI);tR=false;cm=null;try{wl&&wl.release()}catch(e){}draw()}
 function cmGo(k){if(cm==null||!S.prods[cm])return;const N=S.prods[cm].steps.length;if(cs+k>N)return cookX();cs=Math.max(0,cs+k);ctReset();draw()}
 function cookv(i){
@@ -970,19 +777,8 @@ function board(){
  const codes=p=>[...new Set(calc(p).lines.flatMap(l=>sg(l.n).al||[]))].map(a=>AL.indexOf(a)+1).filter(x=>x>0).sort((a,b)=>a-b).join(',');
  return`<div class="noprint row"><h2 class="grow" style="margin:0">Menu board</h2><label class="chip"><input type="checkbox"${S.set.white?' checked':''} onchange="S.set.white=this.checked;save();draw()"> Print on white</label><button class="b" onclick="print()">Print menu</button></div><p class="mut noprint">Prices come from your products (the price per portion when a product is cut into portions). Allergen numbers come from the ingredients you ticked. Check with the FSAI or your local environmental health officer what you need to show.</p><div class="board${S.set.white?' w':''}"><div class="bh"><img class="wm-logo" src="${LOGO()}" alt="FOLk"><span class="wm2">Speciality Coffee</span></div>${cats.length?`<div class="bcols">${cats.map(c=>`<div><h3>${esc(c)}</h3>${items.filter(p=>(p.cat||'Bakery')==c).map(p=>`<div class="bi"><span>${esc(p.name)}${codes(p)?` <sup>${codes(p)}</sup>`:''}</span><i></i><b>${m(por(p)>1?pprice(p):p.price)}</b></div>`).join('')}</div>`).join('')}</div>`:'<p class="chalk">Add prices to your products and the menu appears here</p>'}<p class="bl">Allergens: ${AL.map((a,k)=>`${k+1} ${a}`).join(' · ')}</p></div>`}
 
-T.Today=today;T.Board=board;
+T.Board=board;
 const gof=t=>G.find(g=>g[1].includes(t));
-function draw(){
- S.orders.forEach(o=>{if(!o.date)o.date=pday()});
- if(tab=='Tools'&&!S.set.tools)tab='Settings';
- const g=gof(tab)||G[0];last[g[0]]=tab;
- $('#nav').innerHTML=G.map(x=>`<button class="nv${x==g?' on':''}" onclick="wD=null;go('${last[x[0]]||x[1][0]}')" aria-label="${x[0]}">${IC[x[0]]}<span>${x[0]}</span></button>`).join('');
- const sb=g[1].filter(t=>t!='Tools'||S.set.tools);
- vSet((sb.length>1?`<div class="row sub noprint">${sb.map(t=>`<button class="g${t==tab?' on':''}" onclick="go('${t}')">${TL[t]}</button>`).join('')}</div>`:'')+T[tab]());
- document.title=S.set.biz+' Bake & Cost Planner';
- const cl=document.body.classList,pr=tab=='Products';
- cl.toggle('plab',tab=='Labels');cl.toggle('pal',tab=='Allergens');cl.toggle('pbd',tab=='Board');cl.toggle('prec',pr&&vw!=null&&!!S.prods[vw]);cl.toggle('cooking',pr&&cm!=null&&!!S.prods[cm]);
- if(tab=='Tools')tl()}
 
 // ===== V2: sales, forecast, kitchen board, versions, oven, money =====
 let fdate=null,sdate=null,kbig=false,hvOpen=false;
@@ -1014,12 +810,6 @@ function dOf(d){
   if(q>0)r.push({cust:c,pid:p.id,qty:q,date:d,par:true})});
  return r}
 const totOf=d=>{const t={};dOf(d).forEach(o=>t[o.pid]=(t[o.pid]||0)+o.qty);return t};
-function sched(d){
- const tot=totOf(d),end=endOf(d),ev={};
- S.prods.filter(p=>tot[p.id]>0).forEach(p=>{let t=end;[...p.steps].reverse().forEach(s=>{const st=t-(+s.mins||0)*6e4,k=st+'|'+key(s.n)+'|'+t;(ev[k]=ev[k]||{k,st,t,n:s.n,ps:[]}).ps.push({id:p.id,name:p.name,q:tot[p.id]});t=st})});
- return Object.values(ev).sort((a,b)=>a.st-b.st||a.t-b.t)}
-function need(d){const tot=totOf(d),sh={};S.prods.filter(p=>tot[p.id]>0).forEach(p=>{const n=bakeN(p.id,tot[p.id]);calc(p).lines.forEach(l=>{if(!l.n||!l.g)return;const k=key(l.n);sh[k]=sh[k]||{n:l.n,g:0,u:bu(l.n)};sh[k].g+=l.g*n})});return Object.values(sh).sort((a,b)=>a.n.localeCompare(b.n))}
-function setHave(i,v){const x=need(pday())[i];if(x){S.have[pday()+'|'+key(x.n)]=v;save();draw()}}
 
 // oven
 const isBake=s=>/bake|oven|pec/i.test(s.n||'');
@@ -1074,22 +864,10 @@ function slog(){
  ${days.length?`<h2>Recorded days</h2><div class="scroll"><table><tr><th>Day</th><th class="n">Sold</th><th class="n">Left over</th><th></th></tr>${days.map(x=>{const v=Object.values(S.sales[x]);return`<tr><td>${dlab(x)}</td><td class="n">${v.reduce((a,r)=>a+rs(r),0)}</td><td class="n">${v.reduce((a,r)=>a+(+r.left||0),0)}</td><td class="n"><button class="g sm" onclick="sdate='${x}';draw()">Edit</button> <button class="g sm" onclick="delDay('${x}')">Delete</button></td></tr>`}).join('')}</table></div>`:''}
  <details class="qa"><summary>Import past sales</summary><p class="mut">Paste one line per item: date, product name, sold, and optionally made. For example: 17/10/2026, Cardamom bun, 43, 48</p><textarea id="imp" rows="5"></textarea><p><button class="b" onclick="impS()">Import</button></p></details>`}
 
-function orders(){
- const t=[['week','Week'],['orders','Orders'],['targets','Daily targets'],['forecast','Forecast'],['sales','Sales']];
- return`<div class="row seg">${t.map(x=>`<button class="g${ov==x[0]?' on':''}" onclick="ov='${x[0]}';draw()">${x[1]}</button>`).join('')}</div>`+(ov=='week'?weekv():ov=='targets'?targets():ov=='forecast'?fview():ov=='sales'?slog():ordl())}
 
 // kitchen board
 const kt=(t,d)=>tz(new Date(t)).slice(0,10)==d?hh(t):new Date(t).toLocaleDateString('en-IE',{weekday:'short'})+' '+hh(t);
-function kmv(i){const d=pday(),e=sched(d)[i];if(!e)return;const M=S.kb[d]=S.kb[d]||{};M[e.k]=((M[e.k]||0)+1)%3;save();draw()}
-function kreset(){snap('Board reset');delete S.kb[pday()];save();draw()}
 function kBig(on){kbig=on;try{if(on){const r=document.documentElement;r.requestFullscreen&&r.requestFullscreen().catch(()=>{});wake()}else{document.fullscreenElement&&document.exitFullscreen();wl&&wl.release()}}catch(e){}draw()}
-function kitchen(){
- const d=pday(),E=sched(d),M=S.kb[d]||{},now=Date.now(),st=e=>M[e.k]||0,nxt=E.find(e=>st(e)==0),done=E.filter(e=>st(e)==2).length;
- const card=(e,i)=>{const s=st(e),late=s==0&&e.st<now,over=s==1&&e.t<now;return`<button class="kc s${s}${late?' late':''}${e==nxt?' nx':''}" onclick="kmv(${i})"><span class="kt">${kt(e.st,d)}–${kt(e.t,d)}${late?' · should have started':''}${over?' · should be finished':''}</span><span class="kn">${s==2?'✓ ':''}${esc(e.n)}</span><span class="kp">${e.ps.map(p=>`${bakeN(p.id,p.q)} × ${esc(p.name)}`).join(', ')}</span></button>`};
- const col=(s,t)=>{const c=E.map((e,i)=>[e,i]).filter(([e])=>st(e)==s);return`<div class="kcol"><h3>${t} <span class="mut">${c.length}</span></h3>${c.map(([e,i])=>card(e,i)).join('')||'<p class="mut">—</p>'}</div>`};
- return`<div class="row kh"><div class="grow"><div class="mut">Kitchen board</div><h2 class="dayh">${dlab(d)}</h2></div><div class="kclock">${hh(now)}</div></div>
- <div class="row">${kbig?'<button class="g" onclick="kBig(false)">Exit big screen</button>':'<button class="b" onclick="kBig(true)">Big screen</button><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button>'}<span class="grow"></span><span class="mut">${done} of ${E.length} steps done · tap a card to move it along</span><button class="g sm" onclick="kreset()">Reset</button></div>
- ${E.length?`<div class="bar"><i style="width:${done/E.length*100}%"></i></div><p class="knext">${nxt?`Next: <b>${esc(nxt.n)}</b> at ${hh(nxt.st)}`:'<b>All done.</b>'}</p><div class="kb">${col(0,'To do')}${col(1,'Doing')}${col(2,'Done')}</div>`:'<div class="card"><p class="chalk">Nothing on the board</p><p class="mut">Add orders or daily targets for this day.</p></div>'}`}
 
 // recipe versions
 const VF=['ings','steps','unitG','batch','mode','yt','flourG','lab','price','por','sp','notes','shelf','store','tray','temp'];
@@ -1109,38 +887,9 @@ function verUI(i){
 function dupP(i){const c=JSON.parse(JSON.stringify(S.prods[i]));c.id=nid();c.name+=' (copy)';delete c.vers;delete c.cv;S.prods.splice(i+1,0,c);ed=i+1;save();draw()}
 
 // today
-function today(){
- const d=pday(),tot=totOf(d),act=S.prods.filter(p=>tot[p.id]>0),end=endOf(d),E=sched(d),M=S.kb[d]||{};
- let first=Infinity;act.forEach(p=>{first=Math.min(first,pEnd(p,d)-p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4)});
- const pE=p=>E.filter(e=>e.ps.some(x=>x.id==p.id)),pdone=p=>!!S.done[d+'|'+p.id]||(pE(p).length>0&&pE(p).every(e=>M[e.k]==2));
- const nd=act.filter(pdone).length,low=act.filter(p=>mg(p)<(+S.set.margin||0));
- const picks=S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).sort((a,b)=>(a[0].time||'99').localeCompare(b[0].time||'99'));
- const N=act.length?need(d):[],hv=N.filter(x=>S.have[d+'|'+key(x.n)]).length,rec=S.sales[d];
- let rc='';
- if(act.length){
-  const items=act.reduce((a,p)=>a+bakeN(p.id,tot[p.id]),0),cnt={};dOf(d).filter(o=>o.par).forEach(o=>cnt[o.pid]=(cnt[o.pid]||0)+o.qty);
-  const diff=S.set.useFc?[]:S.prods.filter(p=>{const f=fcast(p.id,d),c=cnt[p.id]||0;return f.n>=3&&Math.abs(f.rec-c)>=Math.max(3,c*.1)});
-  const o=oven(d),mo=money(d);
-  const tile=(q,a,ok,sub,on)=>`<button class="rc${ok?'':' warn'}" onclick="${on}"><span class="q">${q}</span><span class="a"><b>${ok?'✓':'!'}</b> ${a}</span>${sub?`<span class="mut">${sub}</span>`:''}</button>`;
-  rc=`<div class="rcg">`+
-   tile('What should I bake?',`${items} items, ${act.length} product${act.length>1?'s':''}`,!diff.length,diff.length?`Forecast differs for ${diff.slice(0,2).map(p=>esc(p.name)).join(', ')}${diff.length>2?'…':''}`:S.set.useFc?'Counter amounts from forecast':'',"ov='forecast';go('Orders')")+
-   tile('When do I start?',whenT(first),true,`Ready ${whenT(end)}`,"go('Kitchen')")+
-   tile('Enough ingredients?',`${hv} of ${N.length} ticked`,hv==N.length,hv<N.length?'Tick the list below':'',"hvOpen=true;draw();setTimeout(()=>{const e=document.getElementById('hv');e&&e.scrollIntoView({behavior:'smooth'})},50)")+
-   tile('Will it fit in the oven?',o.loads.length>1?`${o.loads.length} loads, ${hm(o.totm)}`:o.loads.length?'One load':o.miss.length?'Not set up':'No bake step',o.loads.length<=1&&!o.miss.length,o.loads.length>1?`Start the first load ${hm(o.extra)} earlier`:o.miss.length?`Set trays on ${o.miss.length} recipe${o.miss.length>1?'s':''}`:'',"go('Plan')")+
-   tile('Will I make money?',mo.profit>=0?`${m(mo.profit)} profit`:`${m(-mo.profit)} loss`,mo.profit>0,`Sales ${m(mo.rev)} · cost ${m(mo.cost)}${mo.waste>.005?` · leftovers ${m(mo.waste)}`:''}${mo.guess?' · assumes all sells':''}`,"go('Plan')")+`</div>`}
- return guide()+`<div class="row"><div class="grow"><div class="mut">${d==tdy()?'Today':'Planned day'}</div><h2 class="dayh">${dlab(d)}</h2></div><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button></div>`+
- (act.length?`${heroHTML(first,d)}${rc}
- <div class="row"><b class="grow">To make</b><span class="mut">${nd} of ${act.length} done</span></div><div class="bar"><i style="width:${nd/act.length*100}%"></i></div>
- ${act.map(p=>{const i=S.prods.indexOf(p),x=pdone(p);return`<div class="trow"><label class="chip chk"><input type="checkbox"${x?' checked':''} onchange="dn('${p.id}',this.checked)"> <span class="${x?'mut':''}">${bakeN(p.id,tot[p.id])} × ${esc(p.name)}</span></label><button class="g sm" onclick="vw=${i};go('Products')">Recipe</button><button class="b sm" onclick="goCook(${i})">Cook</button></div>`}).join('')}
- ${N.length?`<details id="hv" class="card"${hvOpen?' open':''} ontoggle="hvOpen=this.open" style="margin-top:20px"><summary><b>Ingredients for this day</b> <span class="mut">${hv} of ${N.length} ticked</span></summary>${N.map((x,k)=>{const on=S.have[d+'|'+key(x.n)];return`<div class="trow"><label class="chip chk"><input type="checkbox"${on?' checked':''} onchange="setHave(${k},this.checked)"> <span class="${on?'mut':''}">${esc(x.n)}</span></label><span>${fq(x.g,x.u)}</span></div>`}).join('')}</details>`:''}`
- :`<div class="card"><p class="chalk">Nothing baking yet</p><p class="mut">Add orders or daily targets and this day fills in.</p><div class="row"><button class="b" onclick="ov='targets';go('Orders')">Set daily targets</button><button class="g" onclick="ov='orders';go('Orders')">Add an order</button></div></div>`)+
- (picks.length?`<h2>Pickups</h2><div class="scroll"><table>${picks.map(([o,i])=>`<tr><td>${esc(o.time||'—')}</td><td>${esc(o.cust)}</td><td>${o.qty} × ${esc((S.prods.find(p=>p.id==o.pid)||{name:'?'}).name)}</td><td class="wrap">${esc(o.note||'')}</td><td><label class="chip chk"><input type="checkbox"${o.packed?' checked':''} onchange="tgo(${i},'packed',this.checked)"> Packed</label></td><td><label class="chip chk"><input type="checkbox"${o.done?' checked':''} onchange="tgo(${i},'done',this.checked)"> Collected</label></td></tr>`).join('')}</table></div>`:'')+
- (act.length||rec?`<div class="card" style="margin-top:24px"><div class="row"><div class="grow"><b>End of day</b><div class="mut">${rec?`Recorded: ${Object.values(rec).reduce((a,r)=>a+rs(r),0)} sold, ${Object.values(rec).reduce((a,r)=>a+(+r.left||0),0)} left over`:'Record what you made and what was left. It feeds the forecast.'}</div></div><button class="${rec?'g':'b'}" onclick="salesFor('${d}')">${rec?'Edit sales':'Record sales'}</button></div></div>`:'')+
- (low.length?`<p class="mut">Margin below your ${+S.set.margin||0}% target: ${low.slice(0,3).map(p=>esc(p.name)).join(', ')}.</p>`:'')+
- (act.length?`<p><button class="g" onclick="go('Plan')">Open the full bake plan</button></p>`:'')}
 
 // wiring
-G[0][1].push('Kitchen');TL.Kitchen='Kitchen board';T.Kitchen=kitchen;T.Today=today;
+G[0][1].push('Kitchen');TL.Kitchen='Kitchen board';T.Today=today;
 const planX=T.Plan;
 T.Plan=()=>{const d=pday();let h=planX();if(sched(d).length){const mo=money(d);h+=`<h2>Expected result</h2><div class="stats card"><div><div class="big">${m(mo.rev)}</div>Expected sales</div><div><div class="big">${mo.profit<0?'−':''}${m(Math.abs(mo.profit))}</div>Expected ${mo.profit<0?'loss':'profit'}</div><div><div class="big">${m(mo.waste)}</div>Expected leftovers</div></div><p class="mut">Customer orders count as sold. Counter items use your sales history when you have 3 weeks or more${mo.guess?'; items without history are assumed to sell out':''}.</p>`+ovenHTML(d)}return h};
 function draw(){
@@ -1216,14 +965,6 @@ function mkTpl(k){
  const p=Object.assign({id:nid(),name:(tplName||'').trim()||(k=='blank'?'New product':'New '+x.t.toLowerCase()),price:0,flourG:1000,shelf:3,store:'Keep in a cool, dry place.',ings,steps:x.steps.map(([n,mins])=>({n,mins}))},JSON.parse(JSON.stringify(x.p)));
  S.prods.push(p);ensV(p);tpl=false;ed=S.prods.length-1;save();draw();fx();
  setTimeout(()=>{const f=(tplName||'').trim()?$('#ri-n'):document.querySelector('#v .big2');if(f){f.focus();f.select&&f.select();f.scrollIntoView({block:'center'})}},30)}
-function riU(v,pc){const u=$('#ri-u');if(u)u.textContent=pc?'%':(gi(v)?bu(v):'')}
-function riAdd(i){
- const p=S.prods[i],pc=p.mode=='pct',n=($('#ri-n').value||'').trim(),v=+$('#ri-a').value||0;
- if(!n){$('#ri-n').focus();return}
- let g=gi(n);if(!g){g={n,price:0,size:1,unit:'kg',al:[],waste:0};S.ings.push(g);flash(`Added ${n} to Ingredients. Set its price there.`)}
- const l=p.ings.find(x=>key(x.n)==key(g.n));
- if(l){if(pc)l.pct=v;else l.amt=v;flash(`${g.n} updated`)}else p.ings.push({n:g.n,pct:pc?v:0,amt:pc?0:v});
- save();draw();const x=$('#ri-n');x&&(x.focus(),x.scrollIntoView({block:'center'}))}
 function rsAdd(i){
  const n=($('#rs-n').value||'').trim();if(!n){$('#rs-n').focus();return}
  S.prods[i].steps.push({n,mins:+$('#rs-m').value||0});save();draw();const x=$('#rs-n');x&&(x.focus(),x.scrollIntoView({block:'center'}))}
@@ -1307,55 +1048,18 @@ function buzz(strong){try{navigator.vibrate&&navigator.vibrate(strong?[400,150,4
 function setMute(v){muted=v;try{localStorage.setItem('folk-mute',v?'1':'0')}catch(e){}if(!v)tone(1,660);draw()}
 const tEnd=(e,T)=>T.s+(e.t-e.st)+(+T.x||0)*6e4;
 function runTimers(){const out=[];Object.keys(S.kbt||{}).forEach(d=>{const T=S.kbt[d],E=sched(d);Object.keys(T).forEach(k=>{const e=E.find(x=>x.k==k);if(e&&T[k]&&T[k].s)out.push({d,k,e,end:tEnd(e,T[k])})})});return out.sort((a,b)=>a.end-b.end)}
-function kmv(i){
- const d=pday(),e=sched(d)[i];if(!e)return;
- const M=S.kb[d]=S.kb[d]||{};S.kbt=S.kbt||{};const T=S.kbt[d]=S.kbt[d]||{},n=((M[e.k]||0)+1)%3;
- M[e.k]=n;if(n==1)T[e.k]={s:Date.now(),x:0};else delete T[e.k];if(!Object.keys(T).length)delete S.kbt[d];
- kAl=kAl.filter(a=>a.k!=e.k);rAlm();save();draw()}
-function kext(ev,i,min){ev.stopPropagation();const d=pday(),e=sched(d)[i],T=e&&S.kbt&&S.kbt[d]&&S.kbt[d][e.k];if(T){T.x=(+T.x||0)+min;kAl=kAl.filter(a=>a.k!=e.k);rAlm();save();draw()}}
-function kreset(){snap('Board reset');delete S.kb[pday()];if(S.kbt)delete S.kbt[pday()];kAl=[];rAlm();save();draw()}
 function ring(t,e,strong){kAl.push({id:Date.now()+Math.random(),k:e.k,t,sub:e.ps.map(p=>`${bakeN(p.id,p.q)} × ${p.name}`).join(', '),strong,n:1,last:Date.now()});tone(strong?4:2,strong?880:660);buzz(strong);rAlm()}
 function rAlm(){const el=document.getElementById('alm');if(el)el.innerHTML=kAl.map(a=>`<div class="al${a.strong?' st':''}"><div class="grow"><b>${esc(a.t)}</b><div>${esc(a.sub)}</div></div><button class="b" onclick="okAl(${a.id})">OK</button></div>`).join('')}
 function okAl(id){kAl=kAl.filter(a=>a.id!=id);rAlm()}
-function tick(){
- const now=Date.now();
- document.querySelectorAll('[data-end]').forEach(el=>{const r=Math.round((+el.dataset.end-now)/1000);el.textContent=r>=0?fmt(r)+' left':'Over by '+fmt(-r);el.classList.toggle('over',r<0)});
- const R=runTimers();
- R.forEach(t=>{const id='e|'+t.d+'|'+t.k+'|'+t.end;if(now>=t.end&&now-t.end<180000&&!fired.has(id)){fired.add(id);ring(`${t.e.n} is done`,t.e,true)}});
- const d=pday(),M=(S.kb||{})[d]||{};sched(d).forEach(e=>{const id='s|'+d+'|'+e.k;if(!M[e.k]&&now>=e.st&&now-e.st<180000&&!fired.has(id)){fired.add(id);ring(`Time to start: ${e.n}`,e,false)}});
- kAl.forEach(a=>{if(a.strong&&a.n<6&&now-a.last>20000){a.n++;a.last=now;tone(3,880);buzz(true)}});
- const tb=document.getElementById('tbar');
- if(tb){const show=R.length&&!(tab=='Kitchen');const h=show?R.slice(0,3).map(t=>{const r=Math.round((t.end-now)/1000);return`<button class="tp${r<0?' over':''}" onclick="go('Kitchen')">${esc(t.e.n)} <b>${r>=0?fmt(r):'+'+fmt(-r)}</b></button>`}).join(''):'';if(tb.innerHTML!=h)tb.innerHTML=h}}
-function kitchen(){
- const d=pday(),E=sched(d),M=S.kb[d]||{},TT=(S.kbt||{})[d]||{},now=Date.now(),st=e=>M[e.k]||0,nxt=E.find(e=>st(e)==0),done=E.filter(e=>st(e)==2).length;
- const card=(e,i)=>{const s=st(e),T=TT[e.k],end=s==1&&T?tEnd(e,T):0,late=s==0&&e.st<now,r=end?Math.round((end-now)/1000):0;
-  return`<div class="kc s${s}${late?' late':''}${e==nxt?' nx':''}" role="button" tabindex="0" onclick="kmv(${i})" onkeydown="if(event.key=='Enter')kmv(${i})"><span class="kt">${kt(e.st,d)}–${kt(e.t,d)}${late?' · should have started':''}</span><span class="kn">${s==2?'✓ ':''}${esc(e.n)}</span><span class="kp">${e.ps.map(p=>`${bakeN(p.id,p.q)} × ${esc(p.name)}`).join(', ')}</span>${end?`<div class="row kx"><span class="kcd${r<0?' over':''}" data-end="${end}">${r>=0?fmt(r)+' left':'Over by '+fmt(-r)}</span><span class="grow"></span><button class="g sm" onclick="kext(event,${i},5)">+5 min</button></div>`:''}</div>`};
- const col=(s,t)=>{const c=E.map((e,i)=>[e,i]).filter(([e])=>st(e)==s);return`<div class="kcol"><h3>${t} <span class="mut">${c.length}</span></h3>${c.map(([e,i])=>card(e,i)).join('')||'<p class="mut">—</p>'}</div>`};
- return`<div class="row kh"><div class="grow"><div class="mut">Kitchen board</div><h2 class="dayh">${dlab(d)}</h2></div><div class="kclock">${hh(now)}</div></div>
- <div class="row">${kbig?'<button class="g" onclick="kBig(false)">Exit big screen</button>':'<button class="b" onclick="kBig(true)">Big screen</button><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button>'}<button class="g sm" onclick="setMute(${!muted})">${muted?'Sound off':'Sound on'}</button><span class="grow"></span><span class="mut">${done} of ${E.length} steps done · tap a card to move it along</span><button class="g sm" onclick="kreset()">Reset</button></div>
- ${E.length?`<div class="bar"><i style="width:${done/E.length*100}%"></i></div><p class="knext">${nxt?`Next: <b>${esc(nxt.n)}</b> at ${hh(nxt.st)}`:'<b>All done.</b>'}</p><p class="mut">Moving a card to Doing starts its timer. You’ll hear an alarm when it’s done and when a step is due to start. Tap anywhere once so the sound can play, and keep this screen open.</p><div class="kb">${col(0,'To do')}${col(1,'Doing')}${col(2,'Done')}</div>`:'<div class="card"><p class="chalk">Nothing on the board</p><p class="mut">Add orders or daily targets for this day.</p></div>'}`}
-T.Kitchen=kitchen;
 document.body.insertAdjacentHTML('beforeend','<div id="alm"></div><div id="tbar"></div>');
 setInterval(tick,1000);
 
 // ===== Kitchen board v2: one lane per product =====
 // each product's steps are their own events, keyed product#step
-function sched(d){
- const tot=totOf(d),end=endOf(d),out=[];
- S.prods.filter(p=>tot[p.id]>0).forEach(p=>{let t=pEnd(p,d);const a=[];for(let j=p.steps.length-1;j>=0;j--){const s=p.steps[j],st=t-(+s.mins||0)*6e4;a.unshift({k:p.id+'#'+j,j,fd:d,st,t,n:s.n||'Step '+(j+1),dsc:s.d||'',ps:[{id:p.id,name:p.name,q:tot[p.id]}]});t=st}out.push(...a)});
- return out.sort((a,b)=>a.st-b.st||a.t-b.t)}
 const PAL=['#69504c','#a9b79f','#d9c39b','#8e9aa3','#c98f6f','#000000','#b5a8c9'];
 const pcol=pid=>PAL[Math.max(0,S.prods.findIndex(p=>p.id==pid))%PAL.length];
 const kOpen=new Set(),kShut=new Set();
 function kTog(pid,all){const s=all?kOpen:kShut;s.has(pid)?s.delete(pid):s.add(pid);draw()}
-function kSet(k,n,auto){
- const d=pday(),E=sched(d),e=E.find(x=>x.k==k);if(!e)return;
- const M=S.kb[d]=S.kb[d]||{};S.kbt=S.kbt||{};const T=S.kbt[d]=S.kbt[d]||{};
- M[k]=n;if(n==1)T[k]={s:Date.now(),x:0};else delete T[k];
- if(n==2&&auto){const nx=E.find(x=>x.ps[0].id==e.ps[0].id&&x.j==e.j+1);if(nx&&!M[nx.k]){M[nx.k]=1;T[nx.k]={s:Date.now(),x:0};flash(`${nx.n} started`)}}
- if(!Object.keys(T).length)delete S.kbt[d];
- kAl=kAl.filter(a=>a.k!=k);rAlm();save();draw()}
-function kPlus(ev,k,min){ev.stopPropagation();const d=pday(),T=S.kbt&&S.kbt[d]&&S.kbt[d][k];if(T){T.x=(+T.x||0)+min;kAl=kAl.filter(a=>a.k!=k);rAlm();save();draw()}}
 function kitchen(){
  const d=pday(),E=dayWork(d),now=Date.now(),st=e=>(((S.kb||{})[e.fd]||{})[e.k])||0,TTf=e=>((S.kbt||{})[e.fd]||{})[e.k];
  const lanes=[];E.forEach(e=>{const lk=e.ps[0].id+'@'+e.fd;let L=lanes.find(l=>l.key==lk);if(!L){L={key:lk,fd:e.fd,id:e.ps[0].id,name:e.ps[0].name,q:bakeN(e.ps[0].id,e.ps[0].q),steps:[]};lanes.push(L)}L.steps.push(e)});
@@ -1414,14 +1118,6 @@ tab='Home';
 
 // ===== Weighing checklist (cook mode) and bake notes =====
 const wck=new Set();
-function wTog(pid,j){const k=pid+'|'+j;wck.has(k)?wck.delete(k):wck.add(k);draw()}
-function wList(p,c,n){
- const L=c.lines.map((l,j)=>({...l,j})).filter(l=>l.n&&l.g>0),one=!!S.set.oneBowl,done=L.filter(l=>wck.has(p.id+'|'+l.j)).length;let run=0;
- return`<div class="mut">Making ${n} × ${esc(p.name)}</div><div class="row" style="margin:4px 0 0"><h2 class="ck1 grow" style="margin:0">Weigh</h2><label class="chip"><input type="checkbox"${one?' checked':''} onchange="S.set.oneBowl=this.checked;save();draw()"> One bowl totals</label></div>
- <div class="mut">${done} of ${L.length} weighed · tap each one when it’s in</div>
- <div class="wl">${L.map(l=>{const on=wck.has(p.id+'|'+l.j),u=bu(l.n),g=l.g*n;if(u!='each')run+=g;return`<button class="wi${on?' on':''}" onclick="wTog('${p.id}',${l.j})"><span class="wb">${on?'✓':''}</span><span class="grow wn">${esc(l.n)}</span><span class="wq">${fq(g,u)}</span>${one&&u!='each'?`<span class="wr">bowl ≈ ${fq(run,'g')}</span>`:''}</button>`}).join('')}</div>
- ${L.length&&done==L.length?'<p class="wdone">✓ Everything weighed. Press Next for the first step.</p>':''}`}
-function cook(i){wck.clear();cm=i;cs=0;ctReset();wake();draw()}
 // bake notes
 const pNotes=pid=>(S.notes||[]).filter(n=>n.pid==pid);
 function addNote(pid,el){const x=document.getElementById(el),t=(x&&x.value||'').trim();if(!t){flash('Write a note first');x&&x.focus();return}const p=S.prods.find(q=>q.id==pid);S.notes=S.notes||[];S.notes.unshift({id:nid(),pid,date:pday(),v:p&&p.cv||1,t});save();draw();flash('Note saved')}
@@ -1435,9 +1131,6 @@ function goCook(i){if(!S.prods[i])return;tab='Products';tpl=false;ed=null;vw=i;c
 let wFd=null;const wIs=(pid,j)=>!!(((S.wk||{})[wFd||pday()]||{})[pid+'|'+j]);
 function wTog(pid,j,fd){const dd=fd||pday();S.wk=S.wk||{};const W=S.wk[dd]=S.wk[dd]||{},k=pid+'|'+j;if(W[k])delete W[k];else W[k]=1;save();draw()}
 function cook(i){cm=i;cs=0;ctReset();wake();draw()}
-function wRows(p,n,cls){
- const L=calc(p).lines.map((l,j)=>({...l,j})).filter(l=>l.n&&l.g>0),one=!!S.set.oneBowl;let run=0;
- return{L,done:L.filter(l=>wIs(p.id,l.j)).length,html:L.map(l=>{const on=wIs(p.id,l.j),u=bu(l.n),g=l.g*n;if(u!='each')run+=g;return`<button class="wi ${cls||''}${on?' on':''}" onclick="event.stopPropagation();wTog('${p.id}',${l.j})"><span class="wb">${on?'✓':''}</span><span class="grow wn">${esc(l.n)}</span><span class="wq">${fq(g,u)}</span>${one&&u!='each'?`<span class="wr">bowl ≈ ${fq(run,'g')}</span>`:''}</button>`}).join('')}}
 function wList(p,c,n){
  const r=wRows(p,n);
  return`<div class="mut">Making ${n} × ${esc(p.name)}</div><div class="row" style="margin:4px 0 0"><h2 class="ck1 grow" style="margin:0">Weigh</h2><label class="chip"><input type="checkbox"${S.set.oneBowl?' checked':''} onchange="S.set.oneBowl=this.checked;save();draw()"> One bowl totals</label></div>
@@ -1445,11 +1138,6 @@ function wList(p,c,n){
  ${r.L.length&&r.done==r.L.length?'<p class="wdone">✓ Everything weighed. Press Next for the first step.</p>':''}`}
 const kIng=new Map();
 function kIngT(pid,v){kIng.set(pid,v)}
-function laneIng(L){
- const p=S.prods.find(x=>x.id==L.id);if(!p)return'';const r=wRows(p,L.q,'wsm');if(!r.L.length)return'';
- const open=kIng.has(L.id)?kIng.get(L.id):(!L.all&&L.done==0)||(r.done>0&&r.done<r.L.length);
- return`<details class="ln-ing"${open?' open':''} ontoggle="kIngT('${L.id}',this.open)"><summary><b>Ingredients</b> <span class="mut">for ${L.q} · ${r.done} of ${r.L.length} weighed</span></summary><div class="wl">${r.html}</div></details>`}
-function kreset(){snap('Board reset');const d=pday();delete S.kb[d];if(S.kbt)delete S.kbt[d];if(S.wk)delete S.wk[d];kAl=[];rAlm();save();draw()}
 
 // ===== Shopping list (printable on its own) =====
 let shopDays=1;
@@ -1469,7 +1157,6 @@ function shopping(){
 G.find(g=>g[0]=='Print')[1].splice(1,0,'Shop');TL.Shop='Shopping list';T.Shop=shopping;
 
 // ===== Labels: shop style (oak strip) =====
-const TBL='<svg class="lt-ic" viewBox="0 0 38 16" aria-hidden="true"><rect x="5" y="6" width="28" height="4" rx="1" fill="#b98e5f"/><g fill="#1d1b19"><circle cx="9" cy="2.5" r="1.6"/><circle cx="16" cy="2.5" r="1.6"/><circle cx="23" cy="2.5" r="1.6"/><circle cx="30" cy="2.5" r="1.6"/><circle cx="9" cy="13.5" r="1.6"/><circle cx="16" cy="13.5" r="1.6"/><circle cx="23" cy="13.5" r="1.6"/><circle cx="30" cy="13.5" r="1.6"/></g></svg>';
 const dshort=d=>d.toLocaleDateString('en-IE',{day:'numeric',month:'short'}).toUpperCase();
 function labels(){
  const L=S.lab,q={};dO().forEach(o=>q[o.pid]=(q[o.pid]||0)+o.qty);L.style=L.style||'table';
@@ -1511,7 +1198,6 @@ function secRen(i,k,v){const p=S.prods[i],o=p.secs[k];v=(v||'').trim();if(!v||v=
 function secDel(i,k){const p=S.prods[i],o=p.secs[k];snap(`Section “${o}” removed`);p.secs.splice(k,1);const to=p.secs[0];p.ings.forEach(l=>{if(l.sec==o)l.sec=to});if(p.secs.length<2){delete p.secs;p.ings.forEach(l=>delete l.sec)}save();draw()}
 function secMove(i,j,v){S.prods[i].ings[j].sec=v;save();draw()}
 const rid=k=>k?'-'+k:'';
-function riU(v,pc,k){const u=$('#ri-u'+rid(k||0));if(u)u.textContent=pc?'%':(gi(v)?bu(v):'')}
 function riAdd(i,k){
  k=k||0;const p=S.prods[i],pc=p.mode=='pct',ss=secsOf(p),sn=ss?ss[k]:undefined,n=($('#ri-n'+rid(k)).value||'').trim(),v=+$('#ri-a'+rid(k)).value||0;
  if(!n){$('#ri-n'+rid(k)).focus();return}
@@ -1541,9 +1227,6 @@ const mergeL=lines=>{const m={};lines.filter(l=>l.n&&l.g>0).forEach(l=>{const k=
 const dayRel=t=>{const d=tz(new Date(t)).slice(0,10),t0=tdy();return d==t0?'Today':d==addD(t0,1)?'Tomorrow':d==addD(t0,-1)?'Yesterday':new Date(t).toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'short'})};
 const whenT=t=>`${dayRel(t)} ${hh(t)}`;
 const untilT=t=>{const mn=Math.round((t-Date.now())/6e4),a=Math.abs(mn),s=a>=60?`${Math.floor(a/60)} h${a%60?' '+a%60+' min':''}`:`${a} min`;return mn>0?`in ${s}`:mn==0?'now':`${s} ago`};
-function heroHTML(first,d){
- const end=endOf(d),full=new Date(end).toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'long'}),past=first<Date.now();
- return`<div class="card hero"><div class="hcols"><div><div class="mut">${past?'Started':'Start'}</div><div class="hday">${dayRel(first)}</div><div class="hbig">${hh(first)}</div><div class="mut">${untilT(first)}</div></div><div class="harr" aria-hidden="true">→</div><div><div class="mut">Ready</div><div class="hday">${dayRel(end)}</div><div class="hbig">${hh(end)}</div><div class="mut">${full}</div></div></div></div>`}
 
 // ===== Multi-day bakes: start the day before, cross-day kitchen board =====
 VF.push('pre');
@@ -1557,11 +1240,6 @@ function dayWork(d){
 function early(d){
  const L={};dayWork(d).filter(e=>e.fd!=d).forEach(e=>{const k=e.ps[0].id+'@'+e.fd;(L[k]=L[k]||{id:e.ps[0].id,name:e.ps[0].name,q:bakeN(e.ps[0].id,e.ps[0].q),fd:e.fd,steps:[]}).steps.push(e)});
  return Object.values(L).map(l=>{const M=(S.kb||{})[l.fd]||{};l.steps.sort((a,b)=>a.j-b.j);l.today=l.steps.filter(e=>e.st>=dS(d)&&e.st<dE(d));l.first=l.today[0]||l.steps[0];l.done=l.today.length&&l.today.every(e=>M[e.k]==2);return l}).filter(l=>l.today.length).sort((a,b)=>a.first.st-b.first.st)}
-function earlyCard(d){
- const L=early(d);if(!L.length)return'';
- return`<div class="card early"><div class="row"><b class="grow">Start ${d==tdy()?'today':'this day'} for later bakes</b><button class="g sm" onclick="go('Kitchen')">Kitchen board</button></div>${L.map(l=>`<div class="trow"><div class="grow"><div class="${l.done?'mut':''}">${l.done?'✓ ':''}<b>${hh(l.first.st)}</b> · ${esc(l.today.map(e=>e.n).join(', '))}</div><div class="mut">${l.q} × ${esc(l.name)} · for ${dlab(l.fd)}</div></div><button class="g sm" onclick="vw=${S.prods.findIndex(p=>p.id==l.id)};go('Products')">Recipe</button></div>`).join('')}</div>`}
-const todayE=T.Today;
-T.Today=()=>{const h=todayE(),c=earlyCard(pday());if(!c)return h;for(const mk of['<div class="row"><b class="grow">To make</b>','<div class="card"><p class="chalk">Nothing baking yet']){const k=h.indexOf(mk);if(k>=0)return h.slice(0,k)+c+h.slice(k)}return c+h};
 function setPre(i,v){S.prods[i].pre=v?(S.prods[i].pre||'16:00'):'';save();draw()}
 function preUI(i){const p=S.prods[i],P=`prods.${i}`,rt=(S.set.ready||'T07:00').slice(11,16);
  return`<div class="row"><label>When is it ready?<select onchange="setPre(${i},this.value)"><option value=""${p.pre?'':' selected'}>On the day, by ${rt}</option><option value="1"${p.pre?' selected':''}>The day before</option></select></label>${p.pre?`<label>Ready by<input type="time" value="${esc(p.pre)}" onchange="up('${P}.pre',this.value||'16:00')"></label>`:''}<span class="mut grow">${p.pre?'For an order on Saturday, this is finished on Friday by this time.':'Steps count back from the ready time, into the day before if needed.'}</span></div>`}
@@ -1626,9 +1304,6 @@ function today(){
   (missed.length?`<div class="miss"><span class="grow"><b>${missed.length} earlier job${missed.length==1?'':'s'}</b> not ticked</span><button class="g sm" onclick="tShowLate=!tShowLate;draw()">${tShowLate?'Hide':'Show'}</button><button class="b sm" onclick="kDoneBefore('${d}')">Mark all done</button></div>`:'')+block('Carried over',carry)+block('Morning',rest.filter(e=>hr(e)<12))+block('Afternoon',rest.filter(e=>hr(e)>=12&&hr(e)<17))+block('Evening',rest.filter(e=>hr(e)>=17))+
   (ready.length?`<div class="h3">Ready ${isT?'today':'this day'}</div>${ready.map(r=>`<div class="trow"><span class="tm">${hh(r.t)}</span><span class="grow ${r.done?'mut':''}">${r.done?'✓ ':''}${r.q} × ${esc(r.name)}${r.fd!=d?` <span class="bd">for ${new Date(r.fd+'T12:00').toLocaleDateString('en-IE',{weekday:'short'})}</span>`:''}</span><button class="g sm" onclick="vw=${S.prods.findIndex(p=>p.id==r.id)};go('Products')">Recipe</button></div>`).join('')}`:'')+
   pickups(d,true)+checks(d)}
-function pickups(d){
- const P=S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).sort((a,b)=>(a[0].time||'99').localeCompare(b[0].time||'99'));if(!P.length)return'';
- return`<div class="h3">Pickups</div>${P.map(([o,i])=>`<div class="trow"><span class="tm">${esc(o.time||'—')}</span><div class="grow"><div class="${o.done?'mut':''}">${esc(o.cust)} · ${o.qty} × ${esc((S.prods.find(p=>p.id==o.pid)||{name:'?'}).name)}</div>${o.note?`<div class="mut">${esc(o.note)}</div>`:''}</div><span class="tbtn"><button class="g sm${o.packed?' on':''}" onclick="tgo(${i},'packed',${!o.packed})">${o.packed?'✓ Packed':'Packed'}</button><button class="g sm${o.done?' on':''}" onclick="tgo(${i},'done',${!o.done})">${o.done?'✓ Collected':'Collected'}</button></span></div>`).join('')}`}
 function checks(d){
  const tot=totOf(d),act=S.prods.filter(p=>tot[p.id]>0),chips=[];
  if(act.length){
@@ -1644,7 +1319,6 @@ function checks(d){
  ${N.length?`<details id="hv" class="card"${hvOpen?' open':''} ontoggle="hvOpen=this.open" style="margin-top:12px"><summary><b>Ingredients for what you start ${d==tdy()?'today':'this day'}</b> <span class="mut">${N.filter(x=>S.have[d+'|'+key(x.n)]).length} of ${N.length} ticked</span></summary>${N.map((x,k)=>{const on=S.have[d+'|'+key(x.n)];return`<div class="trow"><label class="chip chk"><input type="checkbox"${on?' checked':''} onchange="setHave(${k},this.checked)"> <span class="${on?'mut':''}">${esc(x.n)}</span></label><span>${fq(x.g,x.u)}</span></div>`}).join('')}</details>`:''}`}
 T.Today=()=>sbNag()+bkNag()+today();
 
-function needW(d){const sh={};workDay(d).ev.filter(e=>e.first&&!e.carry).forEach(e=>{const p=S.prods.find(x=>x.id==e.ps[0].id);if(!p)return;const n=bakeN(p.id,e.ps[0].q);calc(p).lines.forEach(l=>{if(!l.n||!l.g)return;const k=key(l.n);sh[k]=sh[k]||{n:l.n,g:0,u:bu(l.n)};sh[k].g+=l.g*n})});return Object.values(sh).sort((a,b)=>a.n.localeCompare(b.n))}
 function setHave(i,v){const x=needW(pday())[i];if(x){S.have[pday()+'|'+key(x.n)]=v;save();draw()}}
 
 // ===== Batch 1: own day per screen, calmer lists, status colours =====
@@ -1659,15 +1333,6 @@ const mst=g=>{const t=+S.set.margin||65;return g>=t?'ok':g>=t-10?'warn':'bad'};
 const mdot=g=>`<span class="dot st-${mst(g)}" aria-hidden="true"></span>`;
 const sug=p=>{const t=Math.min(+S.set.margin||65,95);return Math.ceil(calc(p).cost/(1-t/100)*20)/20};
 // recipes: one compact row each, tap to open
-function prods(){
- if(cm!=null&&S.prods[cm])return cookv(cm);
- if(vw!=null&&S.prods[vw])return recipeX(vw);
- if(ed!=null&&S.prods[ed])return editor(ed);
- const cats=['All',...new Set(S.prods.map(p=>p.cat||'Bakery'))];
- const rows=S.prods.map((p,i)=>[p,i]).filter(([p])=>(pcat=='All'||(p.cat||'Bakery')==pcat)&&p.name.toLowerCase().includes(pq.toLowerCase())).map(([p,i])=>{const c=calc(p),g=mg(p);
-  return`<button class="prw" data-n="${esc(p.name.toLowerCase())}" onclick="vw=${i};draw();fx();window.scrollTo(0,0)">${p.img?`<img class="pth" src="${p.img}" alt="">`:`<span class="pcl" style="--lc:${pcol(p.id)}"></span>`}<span class="grow prn"><b>${esc(p.name)}</b><span class="mut">${esc(p.cat||'Bakery')} · ${p.unitG} g${por(p)>1?` · ${por(p)} portions`:''}</span></span><span class="prm"><span>${m(p.price)}</span><span class="mut">cost ${m(c.cost)}</span></span><span class="prg st-${mst(g)}"><span>${mdot(g)}${g.toFixed(0)}%</span></span></button>`}).join('');
- return`<div class="row"><h2 class="grow" style="margin:0">Recipes</h2><button class="b" onclick="newP()">+ New product</button></div><div class="row"><input class="grow" placeholder="Search" value="${esc(pq)}" oninput="pq=this.value;flt('.prw[data-n]',pq)">${cats.length>2?cats.map(c=>`<button class="g sm${c==pcat?' on':''}" onclick="pcat='${c}';draw()">${c}</button>`).join(''):''}</div>
- <div class="plist">${rows||'<p class="mut">No products yet.</p>'}</div><p class="mut sm2">${mdot(99)} at or above your ${+S.set.margin||65}% target · ${mdot(-999).replace('bad','warn')} within 10% · ${mdot(-999)} well below</p>`}
 // recipe page: duplicate and delete live here now
 function recipeX(i){const h=recipe(i),p=S.prods[i],c=calc(p),g=mg(p);
  const k=h.indexOf('<div class="pw">');
@@ -1681,12 +1346,6 @@ function menu(){
  <div class="mlist">${rows.map(r=>{const s=mst(r.g),i=S.prods.indexOf(r.p);return`<button class="mrw" onclick="vw=${i};ed=null;go('Products')"><span class="grow"><b>${esc(r.p.name)}</b><span class="mut">${esc(r.p.cat||'Bakery')}${por(r.p)>1?' · '+esc(pinfo(r.p)):''}</span></span><span class="prm"><span>${priceTxt(r.p)}</span><span class="mut">cost ${m(sellOf(r.p)=='slice'?r.c.cost/por(r.p):r.c.cost)}</span></span><span class="prg st-${s}"><span>${mdot(r.g)}${r.g.toFixed(0)}%</span>${s!='ok'?`<span class="mut sug">→ ${m(sellOf(r.p)=='slice'?sug(r.p)/por(r.p):sug(r.p))}</span>`:''}</span></button>`}).join('')}</div>
  <p class="mut sm2">The arrow shows the price that would hit your target.</p>`}
 // orders week: starts today, quiet empty days
-function weekv(){
- const s0=addD(tdy(),wk*7),ds=[...Array(7)].map((_,k)=>addD(s0,k));
- const lab=d=>d==tdy()?'Today':d==addD(tdy(),1)?'Tomorrow':new Date(d+'T12:00').toLocaleDateString('en-IE',{weekday:'long'});
- const card=d=>{const tot={};dOf(d).forEach(o=>tot[o.pid]=(tot[o.pid]||0)+o.qty);const n=new Set(S.orders.filter(o=>o.date==d&&!o.par).map(o=>o.oid)).size,ids=Object.keys(tot);
-  return`<div class="day2${ids.length?'':' empty'}${d<tdy()?' past':''}"><div class="row"><b>${lab(d)}</b><span class="mut">${new Date(d+'T12:00').toLocaleDateString('en-IE',{day:'numeric',month:'short'})}</span><span class="grow"></span><button class="g sm" onclick="oFor('${d}')">+ Order</button></div>${ids.length?`<div class="dl">${ids.map(id=>`<div>${tot[id]} × ${esc((S.prods.find(p=>p.id==id)||{name:'?'}).name)}</div>`).join('')}</div><div class="row"><span class="mut grow">${n?`${n} customer order${n==1?'':'s'}`:'Daily targets only'}</span><button class="lnk" onclick="goDay('${d}')">Open day →</button></div>`:''}</div>`};
- return`<div class="row"><button class="g sm" onclick="wk--;draw()" aria-label="Earlier">‹</button><b class="grow" style="text-align:center">${wk==0?'Next 7 days':`${dlab(ds[0])} – ${dlab(ds[6])}`}</b>${wk?'<button class="g sm" onclick="wk=0;draw()">Now</button>':''}<button class="g sm" onclick="wk++;draw()" aria-label="Later">›</button></div><div class="week2">${ds.map(card).join('')}</div>`}
 let oPast=false;
 
 // ===== Batch 2: orders with several products, customers, weekly orders, 5-item bar =====
@@ -1756,7 +1415,6 @@ function ordl(){
  const reps=(S.rep||[]).length?`<details class="wrep"${f.redit?' open':''}><summary><b>Weekly orders</b> <span class="mut">· ${S.rep.length} · ${S.rep.map(r=>esc(r.cust)).join(', ')}</span></summary>${S.rep.map(r=>`<div class="orw"><div class="row"><span class="tm">${esc(r.time||'—')}</span><div class="grow"><b>${esc(r.cust)}</b> <span class="mut">· ${daysTxt(r.days)}</span><div>${r.lines.map(l=>`${l.qty} × ${esc(pname(l.pid))}`).join(' · ')}</div>${r.note?`<div class="mut">${esc(r.note)}</div>`:''}</div></div><div class="row oact"><span class="grow"></span><button class="lnk" onclick="rEdit('${r.id}')">Change</button><button class="lnk" onclick="rStop('${r.id}')">Stop</button></div></div>`).join('')}</details>`:'';
  return (f.open||f.edit||f.redit?form:`<div class="row"><button class="b" onclick="oF.open=1;draw();setTimeout(()=>{const x=$('#o-c');x&&x.focus()},30)">+ New order</button><span class="grow"></span></div>`)+reps+`<h3 style="margin-top:24px">Coming up</h3>`+list+(past?`<p><button class="g sm" onclick="oPast=!oPast;draw()">${oPast?'Hide past days':`Show ${past} past day${past==1?'':'s'}`}</button></p>`:'')}
 // "+ Order" from the week view opens a fresh form for that day
-function oFor(d){oF=oNew();oF.open=1;oF.date=d;oF.days=[dow(d)];ov='orders';draw();window.scrollTo(0,0);setTimeout(()=>{const x=$('#o-c');x&&x.focus()},30)}
 // pickups on Today, one row per order
 function pickups(d,nt){
  const P=grpO(S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d&&!o.par&&!(nt&&o.time))).sort((a,b)=>(a.o.time||'99').localeCompare(b.o.time||'99'));if(!P.length)return'';
