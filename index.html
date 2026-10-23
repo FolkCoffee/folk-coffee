@@ -557,6 +557,7 @@ nav button.nv.on{background:var(--now);color:var(--now-fg)}
 /* targets */
 .tgl{border-top:1px solid var(--line);margin-top:6px}.tgr{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.tgr .grow{display:flex;flex-direction:column;min-width:0}.tgr .tq{width:84px;text-align:right}.tgb{white-space:nowrap}
 /* add-by-link */
+.buyl{gap:6px;flex-wrap:nowrap;align-items:center}.buyl input{width:58px;padding:6px 6px;min-width:0}.buyl input.bpp{width:72px}.impin .row:last-child{flex-wrap:nowrap}.buyl select{width:68px;padding:6px}
 .impr{padding:8px 0;border-bottom:1px solid var(--line)}.impin{max-height:80vh;overflow:auto}
 .impbox{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;padding:16px}
 .impin{background:var(--bg);color:var(--fg);border-radius:18px;padding:18px 18px 14px;max-width:480px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);margin-bottom:calc(env(safe-area-inset-bottom,0px) + 70px)}
@@ -1760,6 +1761,26 @@ function tChgUI(e){if(e.pk||e.carry||kst(e)!=0)return'';const k=tShiftKey(e),sh=
  const users=p.sub&&sh>0?S.prods.filter(x=>x.id!=p.id&&x.ings.some(l=>key(l.n)==key(p.name))&&sched(e.fd).some(y=>y.ps[0].id==x.id)).map(x=>x.name):[];
  const open=tChg.has(k);
  return`${warn}${users.length?`<div class="sm2 st-warn">Also moves ${users.map(esc).join(', ')} ${hm(sh)} later, so they're ready later</div>`:''}<div class="row tchg">${sh?`<span class="mut sm2">Moved ${hm(Math.abs(sh))} ${sh<0?'earlier':'later'} for this day</span><button class="lnk" onclick="tReset('${k}')">Reset</button>`:''}${open?`<label class="sm2">Start at <input type="time" value="${hh(e.st)}" onchange="tSetStart('${e.fd}','${p.id}',${e.j},this.value)"></label><button class="lnk" onclick="tChg.delete('${k}');draw()">Cancel</button>`:`<button class="lnk" onclick="tChg.add('${k}');draw()">Change time</button>`}</div>`}
+
+// ===== Record a purchase from a link (#buy=...) =====
+let buyR=null;
+function buyRead(){try{const m=location.hash.match(/^#buy=([\w-]+)/);if(!m)return null;const b=m[1].replace(/-/g,'+').replace(/_/g,'/');const r=JSON.parse(decodeURIComponent(escape(atob(b+'==='.slice((b.length+3)%4)))));return r&&Array.isArray(r.lines)&&r.lines.length?r:null}catch(e){return null}}
+const buyMatch=l=>{for(const n of [l.n,...(l.m||[])]){const g=S.ings.find(x=>key(x.n)==key(n));if(g)return g}return null};
+function buyShow(){buyR=buyRead();const old=document.getElementById('imp');old&&old.remove();if(!buyR)return;
+ buyR.lines.forEach(l=>{const g=buyMatch(l);l.g=g?g.n:null;if(l.size==null)l.size=g?g.size:1;if(!l.unit)l.unit=g?g.unit:'kg'});
+ const el=document.createElement('div');el.id='imp';el.className='impbox';
+ el.innerHTML=`<div class="impin"><div class="mut sm2">Record this purchase?</div><h3 style="margin:2px 0 4px">${esc(buyR.sup||'Purchase')}</h3><div class="mut sm2">${dlab(buyR.date||tdy())} · prices are per pack</div>
+ ${buyR.lines.map((l,j)=>`<div class="impr"><div class="row" style="margin:0"><b class="grow">${esc(l.g||l.n)}</b>${l.g?'':'<span class="bd">new</span>'}</div><div class="row buyl" style="margin:6px 0 0"><input type="number" step="any" value="${l.packs}" aria-label="Packs" onchange="const L=buyR.lines[${j}];L.packs=+this.value||0;if(L.tot&&L.packs){L.price=Math.round(L.tot/L.packs*1000)/1000;this.parentNode.querySelector('.bpp').value=L.price}"><span class="mut">×</span><input type="number" step="any" value="${l.size}" aria-label="Pack size" onchange="buyR.lines[${j}].size=+this.value||0"><select aria-label="Unit" onchange="buyR.lines[${j}].unit=this.value">${UN.map(u=>`<option${u==l.unit?' selected':''}>${u}</option>`).join('')}</select><span class="mut">€</span><input class="bpp" type="number" step="any" value="${l.price}" aria-label="Price per pack" onchange="buyR.lines[${j}].price=+this.value||0;buyR.lines[${j}].tot=0"></div>${l.note?`<div class="mut sm2" style="margin-top:4px">${esc(l.note)}</div>`:''}</div>`).join('')}
+ ${typeof sb!='undefined'&&sb&&!sbUser?`<p class="sm2 st-warn">You’re not signed in on this screen, so this would stay here and not reach your phone app. Open the link from the FOLk app, or sign in under More → Settings first.</p>`:''}
+ <div class="row" style="margin-top:12px"><button class="g" onclick="impClose();buyR=null">Cancel</button><span class="grow"></span><button class="b" onclick="buySave()">Save purchase</button></div></div>`;
+ document.body.appendChild(el)}
+async function buySave(){const r=buyR;if(!r)return;try{if(typeof sb!='undefined'&&sb&&sbUser&&typeof pull=='function')await pull()}catch(e){}
+ bF={date:r.date||tdy(),sup:r.sup||'',lines:r.lines.filter(l=>+l.packs>0&&+l.price>0).map(l=>{const g=buyMatch(l);return{n:g?g.n:l.n,packs:+l.packs,size:+l.size||1,unit:l.unit||'kg',price:+l.price}})};
+ if(!bF.lines.length){flash('Nothing to save');return}
+ r.lines.forEach(l=>{if(!buyMatch(l)&&l.al){S.ings.push({n:l.n,price:0,size:+l.size||1,unit:l.unit||'kg',al:l.al,waste:0})}});
+ buyR=null;impClose();tab='Buy';bSave()}
+window.addEventListener('hashchange',()=>{if(/^#buy=/.test(location.hash))buyShow()});
+setTimeout(()=>{if(/^#buy=/.test(location.hash))buyShow()},700);
 
 draw();
 </script></body></html>
