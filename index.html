@@ -1793,6 +1793,7 @@ function impUpd(p,r,made){ensV(p);
  if(vchg(p)){const n=nextV(p);p.vers.push({v:n,date:tdy(),note:'Before Claude’s change',data:snapR(p)});p.cv=n}
  if(Array.isArray(r.steps)&&r.steps.length)p.steps=r.steps.map(([n,mins,d])=>({n,mins,...(d?{d}:{})}));
  if(Array.isArray(r.ings)&&r.ings.length)p.ings=r.ings.map(l=>{if(subOf(l.n))return{n:subOf(l.n).name,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})};let g=null;for(const n of [l.n,...(l.m||[])]){g=S.ings.find(x=>key(x.n)==key(n));if(g)break}if(!g){g={n:l.n,price:0,size:1,unit:l.u=='each'?'each':l.u=='ml'?'l':'kg',al:l.al||[],waste:0};S.ings.push(g);made.push(l.n)}return{n:g.n,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})}});
+ if(Array.isArray(r.secs)){if(r.secs.length>1)p.secs=[...r.secs];else delete p.secs}
  ['notes','store'].forEach(k=>{if(typeof r[k]=='string')p[k]=r[k]});['batch','unitG','temp','lab','shelf','tray'].forEach(k=>{if(+r[k]>0)p[k]=+r[k]});
  const n=nextV(p);p.vers.push({v:n,date:tdy(),note:r.vnote||'Changed by Claude',data:snapR(p)});p.cv=n}
 // ===== Claude inbox: recipes and purchases Claude sends arrive here by themselves =====
