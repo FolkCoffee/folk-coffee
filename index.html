@@ -6,7 +6,8 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="FOLk">
@@ -1914,6 +1915,12 @@ T.Board=()=>{let h=boardD();if(!S.dr||!S.dr.items.length)return h;
  const col=`<div><h3>Coffee</h3>${S.dr.items.map(it=>`<div class="bi"><span>${esc(it.name)}${dal(it)?` <sup>${dal(it)}</sup>`:''}${it.sizes.length>1||it.sizes[0].s!='12oz'?` <span class="bsz2">${it.sizes.map(z=>z.s=='Espresso cup'?'':esc(z.s)).filter(Boolean).join(' / ')}</span>`:''}</span><i></i><b>${it.sizes.map(z=>m(z.price)).join(' / ')}</b></div>`).join('')}${+S.dr.oatUp?`<p class="bnt">Oat milk +${m(S.dr.oatUp)}</p>`:'<p class="bnt">Oat milk available</p>'}</div>`;
  return h.includes('<div class="bcols">')?h.replace('<div class="bcols">','<div class="bcols">'+col):h.replace('<p class="chalk">Add prices to your products and the menu appears here</p>','<div class="bcols">'+col+'</div>')};
 G.find(g=>g[0]=='Recipes')[1].push('Drinks');TL.Products='Bakery';TL.Drinks='Coffee and drinks';T.Drinks=drinks;
+
+
+// status bar follows the app background (light or dark)
+function tcSync(){try{const c=getComputedStyle(document.body).backgroundColor;document.querySelectorAll('meta[name=theme-color]').forEach(m=>m.setAttribute('content',c));document.documentElement.style.backgroundColor=c}catch(e){}}
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>setTimeout(tcSync,50))}catch(e){}
+setTimeout(tcSync,0);
 
 draw();
 </script></body></html>
