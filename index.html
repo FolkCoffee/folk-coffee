@@ -433,6 +433,19 @@ input[type=file]{max-width:100%;min-width:0}
  .pth{width:38px;height:38px;font-size:16px}
  .prg{min-width:52px}
 }
+/* batch 2 */
+.ofm .row{margin-top:8px}
+.oln select{min-width:0}.oln .oq{width:76px}
+.wdays{gap:6px}
+.orw{padding:12px 0;border-bottom:1px solid var(--line)}
+.orw .row{margin:0;flex-wrap:nowrap;align-items:flex-start}
+.orw .oact{margin-top:6px;align-items:center;gap:8px;flex-wrap:wrap}
+.orw.dn{opacity:.55}
+.orw .tm,.trow .tm{min-width:48px}
+.ohd{margin-top:22px;padding-bottom:6px;border-bottom:1px solid var(--line);align-items:baseline}
+.lnk+.lnk{margin-left:4px}
+.oact .lnk{font-size:14px;padding:6px 4px}
+.orw .oact{flex-wrap:nowrap}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><img class="wm-logo hdr" src="brand/folk-logo.png" alt="FOLk"><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -1025,7 +1038,7 @@ G[0][1].push('Kitchen');TL.Kitchen='Kitchen board';T.Kitchen=kitchen;T.Today=tod
 const planX=T.Plan;
 T.Plan=()=>{const d=pday();let h=planX();if(sched(d).length){const mo=money(d);h+=`<h2>Expected result</h2><div class="stats card"><div><div class="big">${m(mo.rev)}</div>Expected sales</div><div><div class="big">${mo.profit<0?'−':''}${m(Math.abs(mo.profit))}</div>Expected ${mo.profit<0?'loss':'profit'}</div><div><div class="big">${m(mo.waste)}</div>Expected leftovers</div></div><p class="mut">Customer orders count as sold. Counter items use your sales history when you have 3 weeks or more${mo.guess?'; items without history are assumed to sell out':''}.</p>`+ovenHTML(d)}return h};
 function draw(){
- ens();if(tab!='Products')tpl=false;
+ ens();if(typeof matRep=='function')matRep();if(tab!='Products')tpl=false;
  S.orders.forEach(o=>{if(!o.date)o.date=pday()});
  if(tab=='Tools'&&!S.set.tools)tab='Settings';
  const g=gof(tab)||G[0];last[g[0]]=tab;
@@ -1565,10 +1578,89 @@ function menu(){
 function weekv(){
  const s0=addD(tdy(),wk*7),ds=[...Array(7)].map((_,k)=>addD(s0,k));
  const lab=d=>d==tdy()?'Today':d==addD(tdy(),1)?'Tomorrow':new Date(d+'T12:00').toLocaleDateString('en-IE',{weekday:'long'});
- const card=d=>{const tot={};dOf(d).forEach(o=>tot[o.pid]=(tot[o.pid]||0)+o.qty);const n=S.orders.filter(o=>o.date==d).length,ids=Object.keys(tot);
-  return`<div class="day2${ids.length?'':' empty'}${d<tdy()?' past':''}"><div class="row"><b>${lab(d)}</b><span class="mut">${new Date(d+'T12:00').toLocaleDateString('en-IE',{day:'numeric',month:'short'})}</span><span class="grow"></span><button class="g sm" onclick="odate='${d}';ov='orders';draw()">+ Order</button></div>${ids.length?`<div class="dl">${ids.map(id=>`<div>${tot[id]} × ${esc((S.prods.find(p=>p.id==id)||{name:'?'}).name)}</div>`).join('')}</div><div class="row"><span class="mut grow">${n?`${n} customer order${n==1?'':'s'}`:'Daily targets only'}</span><button class="lnk" onclick="pd('${d}')">Bake plan →</button></div>`:''}</div>`};
+ const card=d=>{const tot={};dOf(d).forEach(o=>tot[o.pid]=(tot[o.pid]||0)+o.qty);const n=new Set(S.orders.filter(o=>o.date==d&&!o.par).map(o=>o.oid)).size,ids=Object.keys(tot);
+  return`<div class="day2${ids.length?'':' empty'}${d<tdy()?' past':''}"><div class="row"><b>${lab(d)}</b><span class="mut">${new Date(d+'T12:00').toLocaleDateString('en-IE',{day:'numeric',month:'short'})}</span><span class="grow"></span><button class="g sm" onclick="oFor('${d}')">+ Order</button></div>${ids.length?`<div class="dl">${ids.map(id=>`<div>${tot[id]} × ${esc((S.prods.find(p=>p.id==id)||{name:'?'}).name)}</div>`).join('')}</div><div class="row"><span class="mut grow">${n?`${n} customer order${n==1?'':'s'}`:'Daily targets only'}</span><button class="lnk" onclick="pd('${d}')">Bake plan →</button></div>`:''}</div>`};
  return`<div class="row"><button class="g sm" onclick="wk--;draw()" aria-label="Earlier">‹</button><b class="grow" style="text-align:center">${wk==0?'Next 7 days':`${dlab(ds[0])} – ${dlab(ds[6])}`}</b>${wk?'<button class="g sm" onclick="wk=0;draw()">Now</button>':''}<button class="g sm" onclick="wk++;draw()" aria-label="Later">›</button></div><div class="week2">${ds.map(card).join('')}</div>`}
 let oPast=false;
+
+// ===== Batch 2: orders with several products, customers, weekly orders, 5-item bar =====
+const pname=id=>(S.prods.find(p=>p.id==id)||{name:'(deleted)'}).name;
+const WD=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+// every order line belongs to an order (oid); old single-line orders become their own order
+function ordFix(){(S.orders||[]).forEach(o=>{if(!o.oid)o.oid='o'+nid()});S.rep=S.rep||[]}
+// weekly orders are turned into real orders for the next 14 days, once per date
+function matRep(){
+ ordFix();let ch=false;const t0=tdy();
+ S.rep.forEach(r=>{r.made=r.made||{};Object.keys(r.made).forEach(d=>{if(d<addD(t0,-30))delete r.made[d]});
+  for(let k=0;k<14;k++){const d=addD(t0,k);if(d<(r.from||t0)||r.made[d]||!r.days.includes(dow(d)))continue;
+   const oid='o'+nid();r.lines.forEach(l=>S.orders.push({oid,rid:r.id,cust:r.cust,pid:l.pid,qty:l.qty,date:d,time:r.time||'',note:r.note||''}));r.made[d]=1;ch=true}});
+ if(ch)save()}
+const grpO=list=>{const m=new Map();list.forEach(([o,i])=>{const g=m.get(o.oid)||{oid:o.oid,o,lines:[]};g.lines.push([o,i]);m.set(o.oid,g)});return[...m.values()]};
+function tgoG(oid,f,v){S.orders.forEach(o=>{if(o.oid==oid)o[f]=v});save();draw()}
+function delG(oid){const L=S.orders.filter(o=>o.oid==oid);if(!L.length)return;snap(`Order for ${L[0].cust} removed`);S.orders=S.orders.filter(o=>o.oid!=oid);save();draw()}
+const custs=()=>[...new Set([...S.orders.filter(o=>!o.par).map(o=>o.cust),...(S.rep||[]).map(r=>r.cust)].filter(c=>c&&c!='Walk-in'))].sort((a,b)=>a.localeCompare(b));
+// order form state (kept while you type)
+let oF=null;
+const oNew=()=>({cust:'',date:odate||addD(tdy(),1),time:'',note:'',lines:[{pid:(S.prods[0]||{}).id,qty:1}],rep:false,days:[],edit:null,redit:null});
+function oSet(k,v){oF[k]=v;if(k=='date'&&!oF.rep)oF.days=[dow(v)]}
+function oLine(j,k,v){oF.lines[j][k]=k=='qty'?Math.max(+v||0,0):v}
+function oAddLine(){oF.lines.push({pid:(S.prods.find(p=>!oF.lines.some(l=>l.pid==p.id))||S.prods[0]||{}).id,qty:1});draw();setTimeout(()=>{const a=document.querySelectorAll('.oln select');a.length&&a[a.length-1].focus()},30)}
+function oDelLine(j){oF.lines.splice(j,1);if(!oF.lines.length)oF.lines.push({pid:(S.prods[0]||{}).id,qty:1});draw()}
+function oRep(on){oF.rep=on;if(on&&!oF.days.length)oF.days=[dow(oF.date)];draw()}
+function oDay(k){const i=oF.days.indexOf(k);i<0?oF.days.push(k):oF.days.splice(i,1);oF.days.sort();draw()}
+function oLast(){const c=(oF.cust||'').trim().toLowerCase();const L=S.orders.filter(o=>!o.par&&o.cust.toLowerCase()==c).sort((a,b)=>b.date.localeCompare(a.date));if(!L.length)return;const g=S.orders.filter(o=>o.oid==L[0].oid);oF.lines=g.map(o=>({pid:o.pid,qty:o.qty}));oF.time=g[0].time||oF.time;oF.note=g[0].note||'';draw()}
+function oCust(v){oF.cust=v;const has=custs().some(c=>c.toLowerCase()==v.trim().toLowerCase());const b=$('#o-last');if(b)b.hidden=!has}
+function oSave(){
+ const f=oF,cust=(f.cust||'').trim()||'Walk-in',lines=f.lines.filter(l=>l.pid&&l.qty>0);
+ if(!lines.length){flash('Add at least one product');return}
+ if(f.rep&&!f.days.length){flash('Pick the days it repeats');return}
+ if(f.edit)S.orders=S.orders.filter(o=>o.oid!=f.edit);
+ if(f.rep){
+  let r=f.redit&&S.rep.find(x=>x.id==f.redit);
+  if(r){const gone=new Set(S.orders.filter(o=>o.rid==r.id&&o.date>=tdy()&&!o.packed&&!o.done).map(o=>o.date));S.orders=S.orders.filter(o=>!(o.rid==r.id&&gone.has(o.date)&&!o.packed&&!o.done));gone.forEach(d=>{if(!S.orders.some(o=>o.rid==r.id&&o.date==d))delete r.made[d]})}
+  else{r={id:'r'+nid(),made:{}};S.rep.push(r)}
+  Object.assign(r,{cust,days:[...f.days],lines:lines.map(l=>({...l})),time:f.time||'',note:f.note||'',from:f.date<tdy()?tdy():f.date});
+  matRep();flash(`Weekly order saved for ${cust}`)}
+ else{const oid='o'+nid();lines.forEach(l=>S.orders.push({oid,cust,pid:l.pid,qty:l.qty,date:f.date||addD(tdy(),1),time:f.time||'',note:f.note||''}));flash(`Order added for ${cust}`)}
+ oF=oNew();oF.date=f.date;oF.days=[dow(f.date)];save();draw()}
+function oEdit(oid){const g=S.orders.filter(o=>o.oid==oid);if(!g.length)return;const o=g[0];oF={cust:o.cust,date:o.date,time:o.time||'',note:o.note||'',lines:g.map(x=>({pid:x.pid,qty:x.qty})),rep:false,days:[dow(o.date)],edit:oid,redit:null};ov='orders';draw();window.scrollTo(0,0)}
+function rEdit(id){const r=S.rep.find(x=>x.id==id);if(!r)return;oF={cust:r.cust,date:r.from&&r.from>tdy()?r.from:tdy(),time:r.time||'',note:r.note||'',lines:r.lines.map(l=>({...l})),rep:true,days:[...r.days],edit:null,redit:id};ov='orders';draw();window.scrollTo(0,0)}
+function rStop(id){const r=S.rep.find(x=>x.id==id);if(!r)return;snap(`Weekly order for ${r.cust} stopped`);S.orders=S.orders.filter(o=>!(o.rid==id&&o.date>=tdy()&&!o.packed&&!o.done));S.rep=S.rep.filter(x=>x!=r);save();draw()}
+const daysTxt=ds=>ds.length==7?'every day':ds.length==5&&!ds.includes(5)&&!ds.includes(6)?'weekdays':ds.map(k=>WD[k]).join(', ');
+function ordl(){
+ if(!S.prods.length)return'<p class="mut">Add a product first.</p>';
+ if(!oF)oF=oNew();const f=oF,cl=custs();
+ const popt=v=>S.prods.map(p=>`<option value="${p.id}"${p.id==v?' selected':''}>${esc(p.name)}</option>`).join('');
+ const form=`<div class="card ofm"><div class="row"><b class="grow">${f.edit?'Change order':f.redit?'Change weekly order':'New order'}</b>${f.edit||f.redit?'<button class="g sm" onclick="oF=oNew();draw()">Cancel</button>':''}</div>
+ <div class="row"><label class="grow">Customer<input id="o-c" list="custl" value="${esc(f.cust)}" placeholder="Name, or leave empty for walk-in" oninput="oCust(this.value)" autocomplete="off"></label><datalist id="custl">${cl.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+ <div class="row"><button id="o-last" class="g sm" onclick="oLast()"${cl.some(c=>c.toLowerCase()==f.cust.trim().toLowerCase())&&f.cust?'':' hidden'}>Same as last time</button></div>
+ ${f.lines.map((l,j)=>`<div class="row oln"><select class="grow" onchange="oLine(${j},'pid',this.value)">${popt(l.pid)}</select><input type="number" min="0" inputmode="numeric" value="${l.qty}" aria-label="Quantity" onchange="oLine(${j},'qty',this.value)" class="oq"><button class="g sm" onclick="oDelLine(${j})" aria-label="Remove line">×</button></div>`).join('')}
+ <p style="margin:4px 0 10px"><button class="lnk" onclick="oAddLine()">+ Another product</button></p>
+ <div class="row">${f.rep?'':`<label>For day<input type="date" value="${esc(f.date)}" onchange="oSet('date',this.value);draw()"></label>`}<label>Pickup time<input type="time" value="${esc(f.time)}" onchange="oSet('time',this.value)"></label></div>
+ <div class="row"><label class="grow">Note<input value="${esc(f.note)}" placeholder="e.g. sliced, no nuts, birthday message" oninput="oSet('note',this.value)"></label></div>
+ ${f.edit?'':`<label class="chip"><input type="checkbox"${f.rep?' checked':''} onchange="oRep(this.checked)"> Repeat every week</label>${f.rep?`<div class="row wdays">${WD.map((n,k)=>`<button class="g sm${f.days.includes(k)?' on':''}" onclick="oDay(${k})">${n}</button>`).join('')}</div><p class="mut sm2">Orders are added automatically two weeks ahead. Change or skip a single day in the list below.</p>`:''}`}
+ <div class="row"><span class="grow"></span><button class="b" onclick="oSave()">${f.edit||f.redit?'Save changes':f.rep?'Save weekly order':'Add order'}</button></div></div>`;
+ const all=S.orders.map((o,i)=>[o,i]).filter(([o])=>!o.par),past=new Set(all.filter(([o])=>o.date<tdy()).map(([o])=>o.date)).size;
+ const ds=[...new Set(all.map(([o])=>o.date))].filter(d=>oPast||d>=tdy()).sort((a,b)=>oPast&&a<tdy()&&b<tdy()?b.localeCompare(a):a.localeCompare(b));
+ const lab=d=>d==tdy()?'Today':d==addD(tdy(),1)?'Tomorrow':new Date(d+'T12:00').toLocaleDateString('en-IE',{weekday:'long'});
+ const row=g=>{const o=g.o,pk=g.lines.every(([x])=>x.packed),dn=g.lines.every(([x])=>x.done);
+  return`<div class="orw${dn?' dn':''}"><div class="row"><span class="tm">${esc(o.time||'—')}</span><div class="grow"><b>${esc(o.cust)}</b>${o.rid?' <span class="bd">weekly</span>':''}<div>${g.lines.map(([x])=>`${x.qty} × ${esc(pname(x.pid))}`).join(' · ')}</div>${o.note?`<div class="mut">${esc(o.note)}</div>`:''}</div></div>
+  <div class="row oact"><button class="g sm${pk?' on':''}" onclick="tgoG('${o.oid}','packed',${!pk})">${pk?'✓ Packed':'Packed'}</button><button class="g sm${dn?' on':''}" onclick="tgoG('${o.oid}','done',${!dn})">${dn?'✓ Collected':'Collected'}</button><span class="grow"></span><button class="lnk" onclick="oEdit('${o.oid}')">Change</button><button class="lnk" onclick="delG('${o.oid}')">${o.rid?'Skip':'Remove'}</button></div></div>`};
+ const list=ds.length?ds.map(d=>{const G2=grpO(all.filter(([o])=>o.date==d)).sort((a,b)=>(a.o.time||'99').localeCompare(b.o.time||'99'));return`<div class="row ohd"><h3 class="grow" style="margin:0">${lab(d)} <span class="mut">${new Date(d+'T12:00').toLocaleDateString('en-IE',{day:'numeric',month:'short'})}</span></h3><span class="mut">${G2.length} order${G2.length==1?'':'s'}</span><button class="lnk" onclick="pd('${d}')">Bake plan →</button></div>${G2.map(row).join('')}`}).join(''):'<p class="mut">No customer orders coming up.</p>';
+ const reps=(S.rep||[]).length?`<h3 style="margin-top:28px">Weekly orders</h3>${S.rep.map(r=>`<div class="orw"><div class="row"><span class="tm">${esc(r.time||'—')}</span><div class="grow"><b>${esc(r.cust)}</b> <span class="mut">· ${daysTxt(r.days)}</span><div>${r.lines.map(l=>`${l.qty} × ${esc(pname(l.pid))}`).join(' · ')}</div>${r.note?`<div class="mut">${esc(r.note)}</div>`:''}</div></div><div class="row oact"><span class="grow"></span><button class="lnk" onclick="rEdit('${r.id}')">Change</button><button class="lnk" onclick="rStop('${r.id}')">Stop</button></div></div>`).join('')}`:'';
+ return form+reps+`<h3 style="margin-top:28px">Coming up</h3>`+list+(past?`<p><button class="g sm" onclick="oPast=!oPast;draw()">${oPast?'Hide past days':`Show ${past} past day${past==1?'':'s'}`}</button></p>`:'')}
+// "+ Order" from the week view opens a fresh form for that day
+function oFor(d){oF=oNew();oF.date=d;oF.days=[dow(d)];ov='orders';draw();window.scrollTo(0,0);setTimeout(()=>{const x=$('#o-c');x&&x.focus()},30)}
+// pickups on Today, one row per order
+function pickups(d){
+ const P=grpO(S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d&&!o.par)).sort((a,b)=>(a.o.time||'99').localeCompare(b.o.time||'99'));if(!P.length)return'';
+ return`<div class="h3">Pickups</div>${P.map(g=>{const o=g.o,pk=g.lines.every(([x])=>x.packed),dn=g.lines.every(([x])=>x.done);return`<div class="trow"><span class="tm">${esc(o.time||'—')}</span><div class="grow"><div class="${dn?'mut':''}">${esc(o.cust)} · ${g.lines.map(([x])=>`${x.qty} × ${esc(pname(x.pid))}`).join(', ')}</div>${o.note?`<div class="mut">${esc(o.note)}</div>`:''}</div><span class="tbtn"><button class="g sm${pk?' on':''}" onclick="tgoG('${o.oid}','packed',${!pk})">${pk?'✓ Packed':'Packed'}</button><button class="g sm${dn?' on':''}" onclick="tgoG('${o.oid}','done',${!dn})">${dn?'✓ Collected':'Collected'}</button></span></div>`}).join('')}`}
+// navigation: Today · Orders · Recipes · Costs · More
+IC.More=svg('<circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/>');
+G.length=0;G.push(['Today',['Today','Kitchen']],['Orders',['Orders']],['Recipes',['Products']],['Costs',['Ingredients','Menu','Shop']],['More',['Plan','Labels','Allergens','Board','Settings','Tools']]);
+TL.Plan='Bake plan';TL.Shop='Shopping list';
+function go(t){if(t=='Home')t='Today';if(t=='Products'&&tab=='Products'){ed=null;vw=null}tab=t;draw();fx()}
+if(tab=='Home')tab='Today';
 
 draw();
 </script></body></html>
