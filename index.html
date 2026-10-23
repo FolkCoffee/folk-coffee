@@ -1461,12 +1461,14 @@ function setSub(i,on){const p=S.prods[i];if(on){if(p.mode=='pct'&&p.yt!='batch')
 const usedIn=p=>S.prods.filter(x=>x.id!=p.id&&x.ings.some(l=>key(l.n)==key(p.name)));
 // schedule: sub-recipe prep is its own lane, finished before the first product that uses it starts
 function sched(d){
- const tot=totOf(d),out=[],seen=new Set();
+ const tot=totOf(d),out=[],seen=new Set(),shf=id=>+((S.shift||{})[d+'|'+id])||0;
+ // a sub-recipe moved later pushes the products that use it later by the same amount
+ const push=p=>Math.max(0,...calc(p).lines.map(l=>{const s=subOf(l.n);return s&&s.id!=p.id?shf(s.id):0}))*6e4;
  const lane=(p,q,end)=>{let t=end;const a=[];for(let j=p.steps.length-1;j>=0;j--){const s=p.steps[j],st=t-(+s.mins||0)*6e4;a.unshift({k:p.id+'#'+j,j,fd:d,st,t,n:s.n||'Step '+(j+1),dsc:s.d||'',ps:[{id:p.id,name:p.name,q}]});t=st}return a};
- let lv=S.prods.filter(p=>tot[p.id]>0).map(p=>{seen.add(p.id);const e=pEnd(p,d),a=lane(p,tot[p.id],e);out.push(...a);return{p,n:bakeN(p.id,tot[p.id]),st:a.length?a[0].st:e}});
+ let lv=S.prods.filter(p=>tot[p.id]>0).map(p=>{seen.add(p.id);const e=pEnd(p,d)+push(p),a=lane(p,tot[p.id],e);out.push(...a);return{p,n:bakeN(p.id,tot[p.id]),st:a.length?a[0].st:e}});
  for(let r=0;r<4&&lv.length;r++){
   const need={};lv.forEach(({p,n,st})=>calc(p).lines.forEach(l=>{const s=subOf(l.n);if(!s||s.id==p.id||seen.has(s.id))return;const x=need[s.id]=need[s.id]||{s,q:0,end:Infinity};x.q+=l.g*n/(+s.unitG||1);x.end=Math.min(x.end,st)}));
-  lv=Object.values(need).map(({s,q,end})=>{seen.add(s.id);q=Math.max(1,Math.ceil(q-1e-6));const a=lane(s,q,end);out.push(...a);return{p:s,n:bakeN(s.id,q),st:a.length?a[0].st:end}})}
+  lv=Object.values(need).map(({s,q,end})=>{seen.add(s.id);q=Math.max(1,Math.ceil(q-1e-6));end+=Math.min(0,shf(s.id))*6e4;const a=lane(s,q,end);out.push(...a);return{p:s,n:bakeN(s.id,q),st:a.length?a[0].st:end}})}
  return out.sort((a,b)=>a.st-b.st||a.t-b.t)}
 // what to buy for a day: sub-recipes expanded into raw ingredients
 function need(d){const tot=totOf(d),sh={};S.prods.filter(p=>tot[p.id]>0).forEach(p=>{const n=bakeN(p.id,tot[p.id]);xl(calc(p).lines).forEach(l=>{if(!l.n||!l.g)return;const k=key(l.n);sh[k]=sh[k]||{n:l.n,g:0,u:bu(l.n)};sh[k].g+=l.g*n})});return Object.values(sh).sort((a,b)=>a.n.localeCompare(b.n))}
@@ -1755,8 +1757,9 @@ function tChgUI(e){if(e.pk||e.carry||kst(e)!=0)return'';const k=tShiftKey(e),sh=
  const L=sched(e.fd).filter(x=>x.ps[0].id==p.id),first=L[0],ready=L.length?L[L.length-1].t:0;if(!first||first.k!=e.k)return sh?`<div class="mut sm2">moved ${hm(Math.abs(sh))} ${sh<0?'earlier':'later'} today</div>`:'';
  const pk=S.orders.filter(o=>o.date==e.fd&&o.pid==p.id&&o.time&&!o.par).map(o=>({c:o.cust,t:new Date(e.fd+'T'+o.time).getTime()})).sort((a,b)=>a.t-b.t)[0];
  const warn=pk&&ready>pk.t?`<div class="sm2 st-bad">Ready ${hh(ready)}, after ${esc(pk.c)}’s pickup at ${hh(pk.t)}</div>`:'';
+ const users=p.sub&&sh>0?S.prods.filter(x=>x.id!=p.id&&x.ings.some(l=>key(l.n)==key(p.name))&&sched(e.fd).some(y=>y.ps[0].id==x.id)).map(x=>x.name):[];
  const open=tChg.has(k);
- return`${warn}<div class="row tchg">${sh?`<span class="mut sm2">Moved ${hm(Math.abs(sh))} ${sh<0?'earlier':'later'} for this day</span><button class="lnk" onclick="tReset('${k}')">Reset</button>`:''}${open?`<label class="sm2">Start at <input type="time" value="${hh(e.st)}" onchange="tSetStart('${e.fd}','${p.id}',${e.j},this.value)"></label><button class="lnk" onclick="tChg.delete('${k}');draw()">Cancel</button>`:`<button class="lnk" onclick="tChg.add('${k}');draw()">Change time</button>`}</div>`}
+ return`${warn}${users.length?`<div class="sm2 st-warn">Also moves ${users.map(esc).join(', ')} ${hm(sh)} later, so they're ready later</div>`:''}<div class="row tchg">${sh?`<span class="mut sm2">Moved ${hm(Math.abs(sh))} ${sh<0?'earlier':'later'} for this day</span><button class="lnk" onclick="tReset('${k}')">Reset</button>`:''}${open?`<label class="sm2">Start at <input type="time" value="${hh(e.st)}" onchange="tSetStart('${e.fd}','${p.id}',${e.j},this.value)"></label><button class="lnk" onclick="tChg.delete('${k}');draw()">Cancel</button>`:`<button class="lnk" onclick="tChg.add('${k}');draw()">Change time</button>`}</div>`}
 
 draw();
 </script></body></html>
