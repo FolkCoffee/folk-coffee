@@ -241,7 +241,7 @@ body.kbig .kclock{font-size:88px}body.kbig .knext{font-size:28px}body.kbig .kcol
 .ver summary{cursor:pointer}
 .bkl{position:relative;overflow:hidden;cursor:pointer;display:inline-flex;align-items:center;font-size:15px;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:9px 20px;background:none}.bkl:hover{border-color:var(--fg)}
 .bkl input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.ni{margin-top:22px;border-style:dashed}
+.nif{margin-top:22px;border-style:dashed}
 .qrow{border:1px dashed var(--line);border-radius:12px;padding:8px;margin-top:10px}
 .box.tpl{font:inherit;color:var(--fg);text-align:left;cursor:pointer;min-height:150px}
 .box.tpl:hover{border-color:var(--fg)}
@@ -356,6 +356,24 @@ body.kbig .wi.wsm{font-size:22px}body.kbig .ln-ing{background:#151311}
 .board .bh .wm-logo{height:62px;filter:invert(1)}.board.w .bh .wm-logo{filter:none}
 .lt-logo{height:7.5mm;width:auto;display:block;align-self:flex-start}.a21 .lt-logo{height:4.6mm}
 .tg-logo{height:11mm;width:auto;margin-top:7mm;align-self:center}
+.secb{border:1px solid var(--line);border-radius:14px;padding:10px 12px 4px;margin:12px 0;background:var(--bg)}
+.sech{margin:0 0 4px}.secn{font-size:17px;font-weight:500;border-color:transparent;background:transparent;padding-left:4px}.secn:hover,.secn:focus{border-color:var(--line)}
+select.secsel{width:auto;max-width:130px;font-size:13px}
+.recipe h4.rsec{margin:18px 0 2px;font-size:15px;font-weight:500}
+.wsec{display:flex;gap:8px;align-items:baseline;font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:500;margin:12px 2px 0}
+.hcols{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.hcols .hbig{font-size:72px}.hday{font-size:20px;margin-top:2px}.harr{font-size:40px;color:#5b4b42}
+@media(max-width:700px){.hcols{gap:14px;flex-direction:column;align-items:stretch}.hcols>div:last-child{border-top:1px solid #d7c1ae;padding-top:12px}.hcols .hbig{font-size:52px}.hday{font-size:16px}.harr{display:none}.hero{padding:18px 20px}.dayh{font-size:34px}.row>.grow:has(>.dayh){flex-basis:100%}
+.mtab tr:first-child{display:none}
+.mtab tr{display:grid;grid-template-columns:1fr 1fr;padding:10px 0;border-bottom:1px solid var(--line)}
+.mtab td{border:0;padding:3px 4px;white-space:normal;text-align:left!important}
+.mtab td:nth-child(1){grid-column:1/-1;font-size:17px}
+.mtab td:nth-child(2){grid-column:1/-1;color:var(--mut);font-size:13px;padding-top:0}
+.mtab td:nth-child(3)::before{content:'Cost ';color:var(--mut);font-size:12px}
+.mtab td:nth-child(4)::before{content:'Price ';color:var(--mut);font-size:12px}
+.mtab td:nth-child(5)::before{content:'Margin ';color:var(--mut);font-size:12px}
+.mtab td:nth-child(6)::before{content:'Suggested ';color:var(--mut);font-size:12px}
+.nif .row>label{flex:1 1 40%}.nif .row>label.grow{flex-basis:100%}}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><img class="wm-logo hdr" src="brand/folk-logo.png" alt="FOLk"><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -487,9 +505,7 @@ function editor(i){
  ${verUI(i)}${pNotes(p.id).length?`<details class="ver"><summary>Bake notes · ${pNotes(p.id).length}</summary>${notesList(p.id,5)}</details>`:''}<div class="row"><label>Category${sel(P+'.cat',[['Bakery','Bakery'],['Drinks','Drinks'],['Other','Other']],p.cat||'Bakery')}</label><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label><label>Yield defined by${sel(P+'.yt',[['weight','Weight per unit'],['batch','Units per batch']],p.yt)}</label></div>
  <div class="row"><label>Net weight per unit (g)${inp(P+'.unitG',p.unitG,'',1)}</label>${bt?`<label>Units per batch${inp(P+'.batch',p.batch,'',1)}</label>`:''}${pc&&bt?`<label>Flour per batch (g)${inp(P+'.flourG',p.flourG,'',1)}</label>`:''}<label>Sell price${inp(P+'.price',p.price,'',1)}</label><label>Portions per unit${inp(P+'.por',p.por||1,'',1)}</label><label>Price per portion${inp(P+'.sp',p.sp||0,'',1)}</label><label>Labour min / unit${inp(P+'.lab',p.lab,'',1)}</label><label>Units per oven tray${inp(P+'.tray',p.tray||0,'',1)}</label><label>Oven °C${inp(P+'.temp',p.temp||0,'',1)}</label></div>
  <h4>Ingredients ${pc?'(flour = 100%)':bt?'(amounts for one batch)':'(amounts for one unit)'}</h4>
- ${p.ings.map((g,j)=>`<div class="row"><select class="grow" onchange="pickI(${i},${j},this.value)">${opts(g.n)}</select>${inp(`${P}.ings.${j}.${pc?'pct':'amt'}`,pc?g.pct:g.amt,'',1)}<span class="mut">${pc?'%':bu(g.n)}</span><button class="g" onclick="del('${P}.ings',${j})">×</button></div>`).join('')}
- ${p.ings.length?'':'<p class="mut">No ingredients yet. Add them below.</p>'}<datalist id="ingl">${S.ings.map(g=>`<option value="${esc(g.n)}">`).join('')}</datalist>
- <div class="row qrow"><input id="ri-n" class="grow" list="ingl" placeholder="Add ingredient: type to search" oninput="riU(this.value,${pc})" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#ri-a').focus()}"><input id="ri-a" type="number" step="any" placeholder="${pc?'%':'amount'}" onkeydown="if(event.key=='Enter'){event.preventDefault();riAdd(${i})}"><span class="mut" id="ri-u">${pc?'%':''}</span><button class="b sm" onclick="riAdd(${i})">Add</button></div>
+ ${ingEd(i)}
  <h4>Steps in order, with minutes</h4>${p.steps.map((s,j)=>`<div class="row">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${inp(`${P}.steps.${j}.mins`,s.mins,'',1)}<span class="mut">min</span><button class="g" onclick="del('${P}.steps',${j})">×</button></div><div class="row"><input class="grow" placeholder="Instructions for this step (optional)" value="${esc(s.d||'')}" onchange="up('${P}.steps.${j}.d',this.value)"></div>`).join('')}<div class="row qrow"><input id="rs-n" class="grow" placeholder="Add step, e.g. Proof" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#rs-m').focus()}"><input id="rs-m" type="number" step="any" placeholder="min" onkeydown="if(event.key=='Enter'){event.preventDefault();rsAdd(${i})}"><span class="mut">min</span><button class="b sm" onclick="rsAdd(${i})">Add</button></div>
  <h4>Notes for the person making it</h4><textarea rows="3" onchange="up('${P}.notes',this.value)">${esc(p.notes||'')}</textarea>
  <h4>Label</h4><div class="row"><label>Shelf life (days)${inp(P+'.shelf',p.shelf,'',1)}</label><label class="grow">Storage advice${inp(P+'.store',p.store)}</label></div>
@@ -605,7 +621,7 @@ function alerts(){
  return out?`<h2>Price changes</h2>${out}`:''}
 function menu(){
  const T0=+S.set.margin||0,rows=S.prods.map(p=>{const c=calc(p);return{p,c,g:mg(p),sug:Math.ceil(c.cost/(1-Math.min(T0,95)/100)*20)/20}}).sort((a,b)=>a.g-b.g);
- return alerts()+`<h2>Menu margins</h2><p class="mut">Lowest margin first. Your target is ${T0}%.</p><div class="scroll"><table><tr><th>Item</th><th>Category</th><th class="n">Cost</th><th class="n">Price</th><th class="n">Margin</th><th class="n">Suggested price</th></tr>${rows.map(r=>`<tr><td>${esc(r.p.name)}${por(r.p)>1?`<br><span class="mut">${esc(pinfo(r.p))}</span>`:''}</td><td>${esc(r.p.cat||'Bakery')}</td><td class="n">${m(r.c.cost)}</td><td class="n">${m(r.p.price)}</td><td class="n">${r.g.toFixed(0)}%${r.g<T0?' ▾ below target':''}</td><td class="n">${m(r.sug)}</td></tr>`).join('')}</table></div>`}
+ return alerts()+`<h2>Menu margins</h2><p class="mut">Lowest margin first. Your target is ${T0}%.</p><div class="scroll"><table class="mtab"><tr><th>Item</th><th>Category</th><th class="n">Cost</th><th class="n">Price</th><th class="n">Margin</th><th class="n">Suggested price</th></tr>${rows.map(r=>`<tr><td>${esc(r.p.name)}${por(r.p)>1?`<br><span class="mut">${esc(pinfo(r.p))}</span>`:''}</td><td>${esc(r.p.cat||'Bakery')}</td><td class="n">${m(r.c.cost)}</td><td class="n">${m(r.p.price)}</td><td class="n">${r.g.toFixed(0)}%${r.g<T0?' ▾ below target':''}</td><td class="n">${m(r.sug)}</td></tr>`).join('')}</table></div>`}
 function guide(){
  if(S.set.noguide)return'';
  const st=[[S.ings.some(g=>g.price>0),'Add your ingredients with prices','Ingredients'],[S.prods.some(p=>p.ings.length&&calc(p).cost>0),'Build a product from them','Products'],[S.orders.length>0||Object.keys(S.par||{}).length>0,'Add orders or daily targets','Orders']];
@@ -642,7 +658,7 @@ function recipe(i){
  <div class="pw"><img class="wm-logo" src="${LOGO()}" alt="FOLk"><span class="wm2">Speciality Coffee</span></div><p class="mut">${esc(p.cat||'Bakery')} · version ${p.cv||1}</p><h2 class="rt">${esc(p.name)}</h2>${p.img?`<img class="rph" src="${p.img}" alt="">`:''}
  <div class="noprint row"><label>Making (units)<input type="number" min="1" value="${want}" onchange="vq['${p.id}']=+this.value||1;draw()"></label></div>
  <p>Makes <b>${n}</b> × ${p.unitG} g${por(p)>1?` (cut into ${por(p)} portions)`:''}${bt?` (${n/b} batch${n/b>1?'es':''})`:''}${total?` · total time ${hm(total)}`:''}</p>
- <h3>Ingredients</h3><table>${c.lines.map((l,k)=>`<tr><td>${esc(l.n)}</td><td class="n">${fq(l.g*n,bu(l.n))}</td>${p.mode=='pct'?`<td class="n mut">${p.ings[k].pct}%</td>`:''}</tr>`).join('')}</table>
+ <h3>Ingredients</h3>${recTbl(p,c,n)}
  <h3>Method</h3><ol class="steps">${p.steps.map((s,j)=>`<li><span class="bx" onclick="this.classList.toggle('done')"></span><div><b>${esc(s.n)}</b> <span class="mut">${hm(+s.mins||0)} · start ${fm(st[j])}</span>${s.d?`<div>${esc(s.d)}</div>`:''}</div></li>`).join('')}</ol>
  ${p.notes?`<h3>Notes</h3><p style="white-space:pre-wrap">${esc(p.notes)}</p>`:''}${p.store?`<p class="mut">Storage: ${esc(p.store)} · shelf life ${p.shelf} days</p>`:''}<h3>Bake notes</h3><div class="noprint">${noteBox(p.id,'rv')}</div>${notesList(p.id)||'<p class="mut">No notes yet.</p>'}</div>`}
 
@@ -930,12 +946,12 @@ function today(){
   const tile=(q,a,ok,sub,on)=>`<button class="rc${ok?'':' warn'}" onclick="${on}"><span class="q">${q}</span><span class="a"><b>${ok?'✓':'!'}</b> ${a}</span>${sub?`<span class="mut">${sub}</span>`:''}</button>`;
   rc=`<div class="rcg">`+
    tile('What should I bake?',`${items} items, ${act.length} product${act.length>1?'s':''}`,!diff.length,diff.length?`Forecast differs for ${diff.slice(0,2).map(p=>esc(p.name)).join(', ')}${diff.length>2?'…':''}`:S.set.useFc?'Counter amounts from forecast':'',"ov='forecast';go('Orders')")+
-   tile('When do I start?',`Start ${hh(first)}`,true,`Ready by ${esc((S.set.ready||'').slice(11,16))}`,"go('Kitchen')")+
+   tile('When do I start?',whenT(first),true,`Ready ${whenT(end)}`,"go('Kitchen')")+
    tile('Enough ingredients?',`${hv} of ${N.length} ticked`,hv==N.length,hv<N.length?'Tick the list below':'',"hvOpen=true;draw();setTimeout(()=>{const e=document.getElementById('hv');e&&e.scrollIntoView({behavior:'smooth'})},50)")+
    tile('Will it fit in the oven?',o.loads.length>1?`${o.loads.length} loads, ${hm(o.totm)}`:o.loads.length?'One load':o.miss.length?'Not set up':'No bake step',o.loads.length<=1&&!o.miss.length,o.loads.length>1?`Start the first load ${hm(o.extra)} earlier`:o.miss.length?`Set trays on ${o.miss.length} recipe${o.miss.length>1?'s':''}`:'',"go('Plan')")+
    tile('Will I make money?',mo.profit>=0?`${m(mo.profit)} profit`:`${m(-mo.profit)} loss`,mo.profit>0,`Sales ${m(mo.rev)} · cost ${m(mo.cost)}${mo.waste>.005?` · leftovers ${m(mo.waste)}`:''}${mo.guess?' · assumes all sells':''}`,"go('Plan')")+`</div>`}
  return guide()+`<div class="row"><div class="grow"><div class="mut">${d==tdy()?'Today':'Planned day'}</div><h2 class="dayh">${dlab(d)}</h2></div><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button></div>`+
- (act.length?`<div class="card hero"><div class="mut">First start</div><div class="hbig">${hh(first)}</div><div class="mut">to have everything ready by ${esc((S.set.ready||'').slice(11,16))}</div></div>${rc}
+ (act.length?`${heroHTML(first,d)}${rc}
  <div class="row"><b class="grow">To make</b><span class="mut">${nd} of ${act.length} done</span><button class="g sm" onclick="go('Kitchen')">Kitchen board</button></div><div class="bar"><i style="width:${nd/act.length*100}%"></i></div>
  ${act.map(p=>{const i=S.prods.indexOf(p),x=pdone(p);return`<div class="trow"><label class="chip chk"><input type="checkbox"${x?' checked':''} onchange="dn('${p.id}',this.checked)"> <span class="${x?'mut':''}">${bakeN(p.id,tot[p.id])} × ${esc(p.name)}</span></label><button class="g sm" onclick="vw=${i};go('Products')">Recipe</button><button class="b sm" onclick="goCook(${i})">Cook</button></div>`}).join('')}
  ${N.length?`<details id="hv" class="card"${hvOpen?' open':''} ontoggle="hvOpen=this.open" style="margin-top:20px"><summary><b>Ingredients for this day</b> <span class="mut">${hv} of ${N.length} ticked</span></summary>${N.map((x,k)=>{const on=S.have[d+'|'+key(x.n)];return`<div class="trow"><label class="chip chk"><input type="checkbox"${on?' checked':''} onchange="setHave(${k},this.checked)"> <span class="${on?'mut':''}">${esc(x.n)}</span></label><span>${fq(x.g,x.u)}</span></div>`}).join('')}</details>`:''}`
@@ -999,7 +1015,7 @@ function addNI(){
  const f=$('#ni');f&&f.scrollIntoView({block:'center'});const x=$('#ni-n');x&&x.focus()}
 function newForm(){
  const d=nI;
- return`<div id="ni" class="card ni"><b>Add an ingredient</b><div class="row"><label class="grow">Name<input id="ni-n" value="${esc(d.n)}" placeholder="e.g. Butter" oninput="nI.n=this.value" onkeydown="niKey(event)"></label><label>Pack price<input type="number" step="any" value="${esc(d.price)}" placeholder="0.00" oninput="nI.price=this.value" onkeydown="niKey(event)"></label><label>Pack size<input type="number" step="any" value="${esc(d.size)}" oninput="nI.size=this.value" onkeydown="niKey(event)"></label><label>Unit<select onchange="nI.unit=this.value">${UN.map(x=>`<option${x==d.unit?' selected':''}>${x}</option>`).join('')}</select></label><label>Waste %<input type="number" step="any" value="${esc(d.waste)}" oninput="nI.waste=this.value" onkeydown="niKey(event)"></label></div><details class="qa"><summary>Supplier and allergens</summary><div class="row"><label class="grow">Supplier (optional)<input value="${esc(d.sup)}" oninput="nI.sup=this.value" onkeydown="niKey(event)"></label></div><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${d.al.includes(a)?' checked':''} onchange="niAl('${a}')"> ${a}</label>`).join('')}</div></details><div class="row" style="margin-top:14px"><button class="b" onclick="addNI()">Save and add next</button><span class="mut">Tip: press Enter to save</span></div></div>`}
+ return`<div id="ni" class="card nif"><b>Add an ingredient</b><div class="row"><label class="grow">Name<input id="ni-n" value="${esc(d.n)}" placeholder="e.g. Butter" oninput="nI.n=this.value" onkeydown="niKey(event)"></label><label>Pack price<input type="number" step="any" value="${esc(d.price)}" placeholder="0.00" oninput="nI.price=this.value" onkeydown="niKey(event)"></label><label>Pack size<input type="number" step="any" value="${esc(d.size)}" oninput="nI.size=this.value" onkeydown="niKey(event)"></label><label>Unit<select onchange="nI.unit=this.value">${UN.map(x=>`<option${x==d.unit?' selected':''}>${x}</option>`).join('')}</select></label><label>Waste %<input type="number" step="any" value="${esc(d.waste)}" oninput="nI.waste=this.value" onkeydown="niKey(event)"></label></div><details class="qa"><summary>Supplier and allergens</summary><div class="row"><label class="grow">Supplier (optional)<input value="${esc(d.sup)}" oninput="nI.sup=this.value" onkeydown="niKey(event)"></label></div><div class="chips">${AL.map(a=>`<label class="chip"><input type="checkbox"${d.al.includes(a)?' checked':''} onchange="niAl('${a}')"> ${a}</label>`).join('')}</div></details><div class="row" style="margin-top:14px"><button class="b" onclick="addNI()">Save and add next</button><span class="mut">Tip: press Enter to save</span></div></div>`}
 
 // faster recipe entry: quick-add rows, templates, Done
 let tpl=false,tplName='';
@@ -1203,7 +1219,7 @@ function home(){
  return`<div class="home"><div class="hh"><div class="mut">${greet}</div><div class="hdate"><h2 class="dayh" style="margin:2px 0 0;color:var(--fg)">${new Date().toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'long'})}</h2></div></div>
  ${bkNag()}${sbNag()}
  <div class="hgrid">
- ${tile(IC.Today,'Today',act.length?`${items} items · ${act.length} product${act.length>1?'s':''}${first?` · first start ${hh(first)}`:''}`:'Nothing planned yet',"shd(0);go('Today')",true)}
+ ${tile(IC.Today,'Today',act.length?`${items} items · ${act.length} product${act.length>1?'s':''}${first?` · first start ${whenT(first)}`:''}`:'Nothing planned yet',"shd(0);go('Today')",true)}
  ${tile(HI.kitchen,'Kitchen board',doing.length?`Doing: ${tmr||esc(doing.map(e=>e.n).join(', '))}`:E.length?`${stepsDone} of ${E.length} steps done`:'No steps today',"shd(0);go('Kitchen')",true)}
  ${tile(IC.Orders,'Orders',picks.length?`${picks.length} today · ${open} to collect`:'No orders today',"ov='orders';go('Orders')")}
  ${tile(HI.sales,'Record sales',rec?'Done for today ✓':'At closing time',"salesFor('${d}')")}
@@ -1281,7 +1297,7 @@ function labels(){
  if(S.set.tag==null)S.set.tag='Made to share';
  const list=L.pid=='all'?S.prods.filter(p=>q[p.id]>0):S.prods.filter(p=>p.id==L.pid);
  const made=new Date(L.made+'T12:00'),code=L.code||L.made.replace(/-/g,'').slice(2);
- const info=p=>{const c=calc(p).lines.filter(l=>l.n&&l.g>0).sort((a,b)=>b.g-a.g),A=n=>(gi(n)||{al:[]}).al;return{c,A,al:[...new Set(c.flatMap(l=>A(l.n)))],bb:new Date(made.getTime()+(+p.shelf||0)*864e5)}};
+ const info=p=>{const c=mergeL(calc(p).lines).sort((a,b)=>b.g-a.g),A=n=>(gi(n)||{al:[]}).al;return{c,A,al:[...new Set(c.flatMap(l=>A(l.n)))],bb:new Date(made.getTime()+(+p.shelf||0)*864e5)}};
  const ingTxt=(c,A)=>c.map(l=>esc(l.n)+(A(l.n).length?' (<b>'+esc(A(l.n).join(', ').toUpperCase())+'</b>)':'')).join(', ');
  const classic=p=>{const{c,A,al,bb}=info(p);return`<div class="lb"><b class="ln">${esc(p.name)}</b><div>Ingredients: ${ingTxt(c,A)}.</div>${al.length?`<div><b>Contains: ${esc(al.join(', '))}</b></div>`:''}${S.set.may?`<div>${esc(S.set.may)}</div>`:''}<div>Net weight ${p.unitG} g · Baked ${dstr(made)} · <b>Best before ${dstr(bb)}</b></div>${p.store?`<div>${esc(p.store)}</div>`:''}<div>Batch ${esc(code)}</div><div class="biz">${esc(S.set.biz)}${S.set.addr?', '+esc(S.set.addr):''}</div>${L.price?`<div class="pr">${m(p.price)}</div>`:''}</div>`};
  const table=p=>{const{c,A,al,bb}=info(p);return`<div class="lb lt"><div class="lt-in"><div class="lt-top"><img class="lt-logo" src="${LOGO()}" alt="FOLk"></div><div class="lt-name">${esc(p.name)}</div><div class="lt-sub">NET ${p.unitG} G${S.set.tag?' · '+esc(S.set.tag.toUpperCase()):''}${L.price?' · '+m(p.price):''}</div><div>${ingTxt(c,A)}.</div>${al.length?`<div class="lt-b">Contains ${esc(al.join(', ').toLowerCase())}.</div>`:''}${S.set.may?`<div class="lt-m">${esc(S.set.may)}</div>`:''}${p.store?`<div class="lt-m">${esc(p.store)}</div>`:''}<div class="lt-ft"><span>BAKED ${dshort(made)} · ${esc(code)}</span><b>BEST BEFORE ${dshort(bb)}</b></div><div class="lt-biz">${esc(S.set.biz)}${S.set.addr?' · '+esc(S.set.addr):''}</div></div></div>`};
@@ -1302,6 +1318,53 @@ const LOGO=()=>(S.set&&S.set.logo)||'brand/folk-logo.png';
 function setLogo(){const i=document.querySelector('header .wm-logo');if(i&&i.getAttribute('src')!=LOGO())i.setAttribute('src',LOGO())}
 function logoUp(el){const f=el.files&&el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{if(f.type=='image/svg+xml'||f.size<250000){S.set.logo=r.result;save();setLogo();draw();flash('Logo updated');return}const im=new Image();im.onload=()=>{const k=Math.min(1,320/im.height),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.set.logo=c.toDataURL('image/png');save();setLogo();draw();flash('Logo updated')};im.src=r.result};r.readAsDataURL(f);el.value=''}
 setInterval(setLogo,2000);setLogo();
+
+// ===== Recipe sections (e.g. base and filling) =====
+VF.push('secs');
+const secsOf=p=>Array.isArray(p.secs)&&p.secs.length?p.secs:null;
+function grp(p,items){
+ const ss=secsOf(p);if(!ss)return[{name:'',k:0,items}];
+ const g=ss.map((n,k)=>({name:n,k,items:[]}));
+ items.forEach(it=>{let k=ss.indexOf((p.ings[it.j]||{}).sec);if(k<0)k=0;g[k].items.push(it)});
+ return g}
+function secAdd(i){const p=S.prods[i];if(!secsOf(p)){p.secs=['Base','Filling'];p.ings.forEach(l=>l.sec='Base')}else{let n='New section',k=2;while(p.secs.includes(n))n='New section '+k++;p.secs.push(n)}save();draw();setTimeout(()=>{const a=document.querySelectorAll('.secn');const x=a[a.length-1];x&&(x.focus(),x.select())},30)}
+function secRen(i,k,v){const p=S.prods[i],o=p.secs[k];v=(v||'').trim();if(!v||v==o){draw();return}if(p.secs.includes(v)){flash('That section already exists');draw();return}p.secs[k]=v;p.ings.forEach(l=>{if(l.sec==o||(k==0&&!p.secs.includes(l.sec)))l.sec=v});save();draw()}
+function secDel(i,k){const p=S.prods[i],o=p.secs[k];snap(`Section “${o}” removed`);p.secs.splice(k,1);const to=p.secs[0];p.ings.forEach(l=>{if(l.sec==o)l.sec=to});if(p.secs.length<2){delete p.secs;p.ings.forEach(l=>delete l.sec)}save();draw()}
+function secMove(i,j,v){S.prods[i].ings[j].sec=v;save();draw()}
+const rid=k=>k?'-'+k:'';
+function riU(v,pc,k){const u=$('#ri-u'+rid(k||0));if(u)u.textContent=pc?'%':(gi(v)?bu(v):'')}
+function riAdd(i,k){
+ k=k||0;const p=S.prods[i],pc=p.mode=='pct',ss=secsOf(p),sn=ss?ss[k]:undefined,n=($('#ri-n'+rid(k)).value||'').trim(),v=+$('#ri-a'+rid(k)).value||0;
+ if(!n){$('#ri-n'+rid(k)).focus();return}
+ let g=gi(n);if(!g){g={n,price:0,size:1,unit:'kg',al:[],waste:0};S.ings.push(g);flash(`Added ${n} to Ingredients. Set its price there.`)}
+ const l=p.ings.find(x=>key(x.n)==key(g.n)&&(!ss||(ss.includes(x.sec)?x.sec:ss[0])==sn));
+ if(l){if(pc)l.pct=v;else l.amt=v;flash(`${g.n} updated`)}else{const o={n:g.n,pct:pc?v:0,amt:pc?0:v};if(ss)o.sec=sn;p.ings.push(o)}
+ save();draw();const x=$('#ri-n'+rid(k));x&&(x.focus(),x.scrollIntoView({block:'center'}))}
+function ingEd(i){
+ const p=S.prods[i],P=`prods.${i}`,pc=p.mode=='pct',ss=secsOf(p);
+ const opts=v=>S.ings.map(g=>`<option${key(g.n)==key(v)?' selected':''}>${esc(g.n)}</option>`).join('');
+ const line=(g,j)=>`<div class="row"><select class="grow" onchange="pickI(${i},${j},this.value)">${opts(g.n)}</select>${inp(`${P}.ings.${j}.${pc?'pct':'amt'}`,pc?g.pct:g.amt,'',1)}<span class="mut">${pc?'%':bu(g.n)}</span>${ss?`<select class="secsel" title="Move to section" onchange="secMove(${i},${j},this.value)">${ss.map(s=>`<option${(ss.includes(g.sec)?g.sec:ss[0])==s?' selected':''}>${esc(s)}</option>`).join('')}</select>`:''}<button class="g" onclick="del('${P}.ings',${j})">×</button></div>`;
+ const qrow=k=>`<div class="row qrow"><input id="ri-n${rid(k)}" class="grow" list="ingl" placeholder="${ss?`Add to ${esc(ss[k])}: type to search`:'Add ingredient: type to search'}" oninput="riU(this.value,${pc},${k})" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#ri-a${rid(k)}').focus()}"><input id="ri-a${rid(k)}" type="number" step="any" placeholder="${pc?'%':'amount'}" onkeydown="if(event.key=='Enter'){event.preventDefault();riAdd(${i},${k})}"><span class="mut" id="ri-u${rid(k)}">${pc?'%':''}</span><button class="b sm" onclick="riAdd(${i},${k})">Add</button></div>`;
+ const G=grp(p,p.ings.map((g,j)=>({g,j})));
+ return`<datalist id="ingl">${S.ings.map(g=>`<option value="${esc(g.n)}">`).join('')}</datalist>`+
+  (ss?G.map(s=>`<div class="secb"><div class="row sech"><input class="secn grow" value="${esc(s.name)}" onchange="secRen(${i},${s.k},this.value)" aria-label="Section name"><span class="mut">${s.items.length} ingredient${s.items.length==1?'':'s'}</span><button class="g sm" onclick="secDel(${i},${s.k})">Remove section</button></div>${s.items.map(x=>line(x.g,x.j)).join('')}${qrow(s.k)}</div>`).join('')
+  :`${p.ings.map(line).join('')}${p.ings.length?'':'<p class="mut">No ingredients yet. Add them below.</p>'}${qrow(0)}`)+
+  `<p><button class="g sm" onclick="secAdd(${i})">+ ${ss?'Add another section':'Split into sections, e.g. base and filling'}</button></p>`}
+function recTbl(p,c,n){const pc=p.mode=='pct';return grp(p,c.lines.map((l,j)=>({...l,j}))).filter(g=>g.items.length).map(g=>`${g.name?`<h4 class="rsec">${esc(g.name)}</h4>`:''}<table>${g.items.map(l=>`<tr><td>${esc(l.n)}</td><td class="n">${fq(l.g*n,bu(l.n))}</td>${pc?`<td class="n mut">${p.ings[l.j].pct}%</td>`:''}</tr>`).join('')}</table>`).join('')||'<p class="mut">No ingredients yet.</p>'}
+function wRows(p,n,cls){
+ const L=calc(p).lines.map((l,j)=>({...l,j})).filter(l=>l.n&&l.g>0),one=!!S.set.oneBowl,ss=secsOf(p);
+ const html=grp(p,L).filter(g=>g.items.length).map(g=>{let run=0;const d=g.items.filter(l=>wIs(p.id,l.j)).length;return(g.name?`<div class="wsec"><span class="grow">${esc(g.name)}</span><span class="mut">${d} of ${g.items.length}</span></div>`:'')+g.items.map(l=>{const on=wIs(p.id,l.j),u=bu(l.n),q=l.g*n;if(u!='each')run+=q;return`<button class="wi ${cls||''}${on?' on':''}" onclick="event.stopPropagation();wTog('${p.id}',${l.j})"><span class="wb">${on?'✓':''}</span><span class="grow wn">${esc(l.n)}</span><span class="wq">${fq(q,u)}</span>${one&&u!='each'?`<span class="wr">${ss?esc(g.name)+' bowl':'bowl'} ≈ ${fq(run,'g')}</span>`:''}</button>`}).join('')}).join('');
+ return{L,done:L.filter(l=>wIs(p.id,l.j)).length,html}}
+const mergeL=lines=>{const m={};lines.filter(l=>l.n&&l.g>0).forEach(l=>{const k=key(l.n);m[k]=m[k]?{...m[k],g:m[k].g+l.g}:{...l}});return Object.values(m)};
+(TPL.find(x=>x.k=='cake')||{p:{}}).p.secs=['Sponge','Filling'];
+
+// ===== Today: clear start and ready times =====
+const dayRel=t=>{const d=tz(new Date(t)).slice(0,10),t0=tdy();return d==t0?'Today':d==addD(t0,1)?'Tomorrow':d==addD(t0,-1)?'Yesterday':new Date(t).toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'short'})};
+const whenT=t=>`${dayRel(t)} ${hh(t)}`;
+const untilT=t=>{const mn=Math.round((t-Date.now())/6e4),a=Math.abs(mn),s=a>=60?`${Math.floor(a/60)} h${a%60?' '+a%60+' min':''}`:`${a} min`;return mn>0?`in ${s}`:mn==0?'now':`${s} ago`};
+function heroHTML(first,d){
+ const end=endOf(d),full=new Date(end).toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'long'}),past=first<Date.now();
+ return`<div class="card hero"><div class="hcols"><div><div class="mut">${past?'Started':'Start'}</div><div class="hday">${dayRel(first)}</div><div class="hbig">${hh(first)}</div><div class="mut">${untilT(first)}</div></div><div class="harr" aria-hidden="true">→</div><div><div class="mut">Ready</div><div class="hday">${dayRel(end)}</div><div class="hbig">${hh(end)}</div><div class="mut">${full}</div></div></div></div>`}
 
 draw();
 </script></body></html>
