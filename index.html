@@ -1738,6 +1738,7 @@ async function impAdd(){const R=impR;if(!R)return;
 function impApply(R){
  const made=[];let firstI=null;
  [...R].sort((a,b)=>(b.sub?1:0)-(a.sub?1:0)).forEach(r=>{
+  if(r.update){const ex=S.prods.find(x=>key(x.name)==key(r.name));if(ex){impUpd(ex,r,made);if(firstI==null)firstI=S.prods.indexOf(ex);return}}
   const ings=r.ings.map(l=>{if(subOf(l.n))return{n:subOf(l.n).name,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})};
    const names=[l.n,...(l.m||[])];let g=null;for(const n of names){g=S.ings.find(x=>key(x.n)==key(n));if(g)break}
    if(!g){g={n:l.n,price:0,size:1,unit:l.u=='each'?'each':l.u=='ml'?'l':'kg',al:l.al||[],waste:0};S.ings.push(g);made.push(l.n)}
@@ -1786,6 +1787,14 @@ async function buySave(){const r=buyR;if(!r)return;try{if(typeof sb!='undefined'
 window.addEventListener('hashchange',()=>{if(/^#buy=/.test(location.hash))buyShow()});
 setTimeout(()=>{if(/^#buy=/.test(location.hash))buyShow()},700);
 
+
+// update an existing recipe by name (from Claude), keeping the old one as a version
+function impUpd(p,r,made){ensV(p);
+ if(vchg(p)){const n=nextV(p);p.vers.push({v:n,date:tdy(),note:'Before Claude’s change',data:snapR(p)});p.cv=n}
+ if(Array.isArray(r.steps)&&r.steps.length)p.steps=r.steps.map(([n,mins,d])=>({n,mins,...(d?{d}:{})}));
+ if(Array.isArray(r.ings)&&r.ings.length)p.ings=r.ings.map(l=>{if(subOf(l.n))return{n:subOf(l.n).name,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})};let g=null;for(const n of [l.n,...(l.m||[])]){g=S.ings.find(x=>key(x.n)==key(n));if(g)break}if(!g){g={n:l.n,price:0,size:1,unit:l.u=='each'?'each':l.u=='ml'?'l':'kg',al:l.al||[],waste:0};S.ings.push(g);made.push(l.n)}return{n:g.n,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})}});
+ ['notes','store'].forEach(k=>{if(typeof r[k]=='string')p[k]=r[k]});['batch','unitG','temp','lab','shelf','tray'].forEach(k=>{if(+r[k]>0)p[k]=+r[k]});
+ const n=nextV(p);p.vers.push({v:n,date:tdy(),note:r.vnote||'Changed by Claude',data:snapR(p)});p.cv=n}
 // ===== Claude inbox: recipes and purchases Claude sends arrive here by themselves =====
 let inboxCode,inboxOK=null,inboxBusy=false,inboxSeen=0;
 function buyApply(r){
@@ -1804,7 +1813,7 @@ async function inboxCheck(){
    if(c.error||!c.data||!c.data.length)continue;
    const pre=JSON.stringify(S),pv=row.payload||{};let msg='';
    try{
-    if(row.kind=='add'){const R=Array.isArray(pv.recipes)?pv.recipes:[pv];if(!R.every(x=>x&&x.name&&Array.isArray(x.ings)))throw 0;const {made}=impApply(R);msg=`From Claude: ${R.length>1?R.length+' recipes added':R[0].name+' added'}${made.length?`. New: ${made.join(', ')}`:''}`}
+    if(row.kind=='add'){const R=Array.isArray(pv.recipes)?pv.recipes:[pv];if(!R.every(x=>x&&x.name&&(Array.isArray(x.ings)||x.update)))throw 0;const {made}=impApply(R);msg=`From Claude: ${R.length>1?R.length+' recipes added':R[0].name+(R[0].update&&S.prods.some(p=>key(p.name)==key(R[0].name))?' updated (old one kept as a version)':' added')}${made.length?`. New: ${made.join(', ')}`:''}`}
     else if(row.kind=='buy'){buyApply(pv);msg=`From Claude: purchase from ${pv.sup||'shop'} recorded, ${pv.lines.length} item${pv.lines.length==1?'':'s'}`}
     else continue;
    }catch(e){S=JSON.parse(pre);continue}
