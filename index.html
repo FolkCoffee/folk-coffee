@@ -518,6 +518,40 @@ input[type=file]{max-width:100%;min-width:0}
 .wrep>summary{cursor:pointer;padding:8px 0}
 .otot{margin:4px 0 2px}
 .olinks{margin-top:26px;gap:12px;align-items:center}
+/* ===== Look v2: colour means something ===== */
+:root{--now:#ecd7c6;--now-fg:#1d1b19;--now-mut:#5b4b42}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16120f;--fg:#f3ede6;--mut:#a39486;--line:#332a24;--soft:#1f1915;--now:#3e2f25;--now-fg:#f6efe8;--now-mut:#c9b8a8}}
+:root[data-theme="dark"]{--bg:#16120f;--fg:#f3ede6;--mut:#a39486;--line:#332a24;--soft:#1f1915;--now:#3e2f25;--now-fg:#f6efe8;--now-mut:#c9b8a8}
+body{font-variant-numeric:tabular-nums}
+/* beige = now: cards and boxes go quiet */
+.card,.box,.ded,.dset{background:var(--bg)}
+.card{border-color:var(--line)}
+.ofm{border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0;padding:16px 0}
+.now2{background:var(--now);color:var(--now-fg)}.now2 .mut{color:var(--now-mut)}
+nav button.nv.on{background:var(--now);color:var(--now-fg)}
+.bd{background:transparent;border:1px solid var(--line);color:var(--mut)}
+/* tabs look like tabs, not buttons */
+.row.sub{gap:22px;border-bottom:1px solid var(--line);margin-bottom:14px;padding-bottom:0}
+.sub .g,.sub .g.on{border:0;border-radius:0;background:none;padding:10px 0;margin-bottom:-1px;color:var(--mut);border-bottom:2px solid transparent}
+.sub .g.on{color:var(--fg);border-bottom-color:var(--fg);font-weight:500}
+/* Today timeline: product colour on every job */
+.it:before{border-color:var(--lc,#b9ad9a)}
+.it.d:before{background:var(--lc,var(--fg));border-color:var(--lc,var(--fg))}
+.it.c{background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--lc,var(--line))}
+.it.c:before{background:var(--lc,var(--now));border-color:var(--lc,var(--fg))}
+.it.on{background:var(--now);color:var(--now-fg);border-color:var(--now);border-left:4px solid var(--lc,var(--fg))}
+.it.on .mut{color:var(--now-mut)}
+.it.late{border-left-color:var(--bd)}
+/* readable timer: bar fills, amber in the last 5 minutes, red when over */
+.tb2{height:8px;border-radius:99px;background:color-mix(in srgb,var(--now-fg) 12%,transparent);overflow:hidden;margin:10px 0 2px}
+.tb2 i{display:block;height:100%;width:0;background:var(--ok);border-radius:99px;transition:width 1s linear}
+.tb2.warn i{background:var(--wn)}.tb2.over i{background:var(--bd);width:100%!important}
+.it.on .kcd{font-size:40px}
+.kcd.over{color:var(--bd);text-decoration:none}
+/* small logo on inner screens */
+@media(max-width:860px){body.inner .wm-logo.hdr{height:24px}body.inner header .wm2{display:none}body.inner header{padding-top:12px}}
+/* product colours on the recipe list and kitchen lanes match */
+.pcl{width:6px}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><img class="wm-logo hdr" src="brand/folk-logo.png" alt="FOLk"><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -1577,16 +1611,16 @@ function today(){
  const missed=isT?ev.filter(e=>kst(e)!=2&&e.t<=now):[],nx=todo.filter(e=>!e.carry&&!(isT&&e.t<=now)).sort((a,b)=>a.st-b.st)[0];
  const fdTag=e=>e.fd!=d?`<span class="bd">for ${new Date(e.fd+'T12:00').toLocaleDateString('en-IE',{weekday:'short'})}</span>`:'';
  const item=e=>{if(e.pk)return pkItem(e);const s=kst(e),late=s==0&&e.st<now&&isT,act=e.cur&&s!=2;
-  if(s==2)return`<div class="it d" onclick="kSet('${e.k}',0,0,'${e.fd}')" title="Tap to undo"><div class="row"><span class="tm">${hh(e.st)}</span><span class="grow">${esc(e.n)} · ${esc(e.ps[0].name)}</span>${fdTag(e)}<span class="mut sm2">✓ done</span></div></div>`;
-  return`<div class="it${act?' c':''}${s==1?' on':''}${late?' late':''}"><div class="row"><span class="tm">${e.carry?'<span class="mut">from</span> '+hh(e.st):hh(e.st)}</span><span class="grow"><b>${esc(e.n)}</b> · ${bakeN(e.ps[0].id,e.ps[0].q)} × ${esc(e.ps[0].name)}</span>${fdTag(e)}</div>
+  if(s==2)return`<div class="it d" style="--lc:${pcol(e.ps[0].id)}" onclick="kSet('${e.k}',0,0,'${e.fd}')" title="Tap to undo"><div class="row"><span class="tm">${hh(e.st)}</span><span class="grow">${esc(e.n)} · ${esc(e.ps[0].name)}</span>${fdTag(e)}<span class="mut sm2">✓ done</span></div></div>`;
+  return`<div class="it${act?' c':''}${s==1?' on':''}${late?' late':''}" style="--lc:${pcol(e.ps[0].id)}"><div class="row"><span class="tm">${e.carry?'<span class="mut">from</span> '+hh(e.st):hh(e.st)}</span><span class="grow"><b>${esc(e.n)}</b> · <span class="pn">${bakeN(e.ps[0].id,e.ps[0].q)} × ${esc(e.ps[0].name)}</span></span>${fdTag(e)}</div>
   <div class="ix"><span class="mut">${e.carry?`started ${dayRel(e.st).toLowerCase()} · until ${hh(e.t)}`:`${hm(Math.round((e.t-e.st)/6e4))} · until ${hh(e.t)}`}${late?' · <span class="lt">late</span>':''}</span>${e.dsc?`<div>${esc(e.dsc)}</div>`:''}${act&&e.first&&s==0?`<div class="ing2">${ingLine(e.ps[0].id,e.ps[0].q)}</div>`:''}
-  ${act?`<div class="row" style="margin-top:6px">${s==1?`${tTimer(e)}<span class="grow"></span><button class="g sm" onclick="kPlus(event,'${e.k}',5,'${e.fd}')">+5 min</button><button class="b sm" onclick="kSet('${e.k}',2,true,'${e.fd}')">Done</button>`:`<span class="grow"></span>${e.first?`<button class="g sm" onclick="goCook(${S.prods.findIndex(p=>p.id==e.ps[0].id)})">Weigh</button>`:''}<button class="g sm" onclick="kSet('${e.k}',2,0,'${e.fd}')">Mark done</button><button class="b sm" onclick="kSet('${e.k}',1,0,'${e.fd}')">Start</button>`}</div>`:''}</div></div>`};
+  ${act&&s==1?tBar(e):''}${act?`<div class="row" style="margin-top:6px">${s==1?`${tTimer(e)}<span class="grow"></span><button class="g sm" onclick="kPlus(event,'${e.k}',5,'${e.fd}')">+5 min</button><button class="b sm" onclick="kSet('${e.k}',2,true,'${e.fd}')">Done</button>`:`<span class="grow"></span>${e.first?`<button class="g sm" onclick="goCook(${S.prods.findIndex(p=>p.id==e.ps[0].id)})">Weigh</button>`:''}<button class="g sm" onclick="kSet('${e.k}',2,0,'${e.fd}')">Mark done</button><button class="b sm" onclick="kSet('${e.k}',1,0,'${e.fd}')">Start</button>`}</div>`:''}</div></div>`};
  const block=(t,list)=>list.length?`<div class="h3">${t}</div><div class="tl">${list.map(item).join('')}</div>`:'';
  const vis=[...ev.filter(e=>(tShowDone||kst(e)!=2)&&(tShowLate||!missed.includes(e))),...pkEv(d).filter(e=>tShowDone||!e.dn)].sort((a,b)=>a.st-b.st),hr=e=>new Date(e.st).getHours();
  const carry=vis.filter(e=>e.carry),rest=vis.filter(e=>!e.carry);
  const head=`<div class="row"><div class="grow"><div class="mut">${isT?'Today':(r=>['Tomorrow','Yesterday'].includes(r)?r:'Work day')(dayRel(dS(d)+432e5))}</div><h2 class="dayh">${new Date(d+'T12:00').toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'short'})}</h2></div><button class="g sm" onclick="shd(-1)" aria-label="Previous day">‹</button>${isT?'':'<button class="g sm" onclick="shd(0)">Today</button>'}<button class="g sm" onclick="shd(1)" aria-label="Next day">›</button><button class="g sm" onclick="pd('${d}')" title="Print the bake plan for this day">Print</button></div>`;
  if(!ev.length){const n=nextJob(d);return guide()+head+`<div class="card"><p class="chalk">Nothing to do ${isT?'today':'this day'}</p>${n?`<p>Next job: <b>${esc(n.n)}</b> · ${esc(n.ps[0].name)}, ${whenT(n.st)}</p><p><button class="b" onclick="setDay('${tz(new Date(n.st)).slice(0,10)}')">Go to that day</button></p>`:'<p class="mut">Add orders or daily targets and your jobs appear here, on the day you need to do them.</p><div class="row"><button class="b" onclick="ov=\'targets\';go(\'Orders\')">Set daily targets</button><button class="g" onclick="ov=\'orders\';go(\'Orders\')">Add an order</button></div>'}</div>`+pickups(d)+checks(d)}
- const nowBox=`<div class="now2">${doing.length?doing.map(e=>`<div class="row"><div class="grow"><div class="mut">Doing now</div><b>${esc(e.n)}</b> · ${esc(e.ps[0].name)}</div>${tTimer(e)}</div>`).join(''):''}${nx?`<div class="row"><div class="grow"><div class="mut">${doing.length?'Next':'First job'}</div><b>${esc(nx.n)}</b> · ${esc(nx.ps[0].name)}</div><div class="nxt"><b>${hh(nx.st)}</b><div class="mut">${isT?untilT(nx.st):''}</div></div></div>`:(!doing.length?(missed.length?'<div><b>Nothing else to start today.</b></div>':'<div><b>All done for this day.</b></div>'):'')}</div>`;
+ const nowBox=`<div class="now2">${doing.length?doing.map(e=>`<div class="row"><div class="grow"><div class="mut">Doing now</div><b>${esc(e.n)}</b> · ${esc(e.ps[0].name)}</div>${tTimer(e)}</div>${tBar(e)}`).join(''):''}${nx?`<div class="row"><div class="grow"><div class="mut">${doing.length?'Next':'First job'}</div><b>${esc(nx.n)}</b> · ${esc(nx.ps[0].name)}</div><div class="nxt"><b>${hh(nx.st)}</b><div class="mut">${isT?untilT(nx.st):''}</div></div></div>`:(!doing.length?(missed.length?'<div><b>Nothing else to start today.</b></div>':'<div><b>All done for this day.</b></div>'):'')}</div>`;
  return guide()+head+nowBox+
   `<div class="row" style="margin-top:4px"><span class="mut grow">${done.length} of ${ev.length} jobs done</span>${done.length?`<button class="g sm" onclick="tShowDone=!tShowDone;draw()">${tShowDone?'Hide done':'Show done'}</button>`:''}</div><div class="bar"><i style="width:${ev.length?done.length/ev.length*100:0}%"></i></div>`+
   (missed.length?`<div class="miss"><span class="grow"><b>${missed.length} earlier job${missed.length==1?'':'s'}</b> not ticked</span><button class="g sm" onclick="tShowLate=!tShowLate;draw()">${tShowLate?'Hide':'Show'}</button><button class="b sm" onclick="kDoneBefore('${d}')">Mark all done</button></div>`:'')+block('Carried over',carry)+block('Morning',rest.filter(e=>hr(e)<12))+block('Afternoon',rest.filter(e=>hr(e)>=12&&hr(e)<17))+block('Evening',rest.filter(e=>hr(e)>=17))+
@@ -1993,6 +2027,14 @@ function svA(i){const d=idr[i],g=S.ings[i];if(!d||!g)return;
  delete idr[i];save();draw()}
 // open offline: cache the app on the phone
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+
+// ===== Look v2 =====
+PAL.length=0;PAL.push('#4d84b8','#8e5572','#2a8f86','#a0663f','#d1798c','#5b5fc7','#7d8a3a','#6b7a8f');
+function tBar(e){const T=ktm(e);if(!T)return'';const end=tEnd(e,T);return`<div class="tb2" data-s="${T.s}" data-e="${end}"><i></i></div>`}
+function tbTick(){const n=Date.now();document.querySelectorAll('.tb2').forEach(b=>{const s=+b.dataset.s,e=+b.dataset.e,f=Math.min(1,Math.max(0,(n-s)/((e-s)||1)));b.firstElementChild.style.width=(f*100)+'%';b.classList.toggle('warn',e-n<3e5&&n<e);b.classList.toggle('over',n>=e)})}
+setInterval(tbTick,1000);
+const vSet0=vSet;
+vSet=function(h){vSet0(h);document.body.classList.toggle('inner',tab!='Today');tbTick()};
 
 draw();
 </script></body></html>
