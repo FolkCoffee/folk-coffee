@@ -417,7 +417,7 @@ select.secsel{width:auto;max-width:130px;font-size:13px}
 .rcost{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:12px 0;margin:8px 0 4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .week2{display:flex;flex-direction:column;margin-top:12px;border-top:1px solid var(--line)}
 .day2{padding:12px 2px;border-bottom:1px solid var(--line)}
-.day2 .row{margin:0;flex-wrap:nowrap;align-items:center;min-height:40px}.day2 .dl{min-height:0}.day2 .row>*{white-space:nowrap}
+.day2 .row{margin:0;flex-wrap:nowrap;align-items:center;min-height:40px}.day2 .dl{min-height:0}.day2 .row>*{white-space:nowrap}.day2 .row>b,.day2 .row>.mut{min-width:0;overflow:hidden;text-overflow:ellipsis}.day2 .row>button{flex:none}
 .pcl{width:5px;align-self:stretch;border-radius:3px;background:var(--lc,#ccc);flex:none}
 .day2 .dl{margin:4px 0 0;line-height:1.6}
 .day2.empty b{font-weight:400;color:var(--mut)}
@@ -446,7 +446,9 @@ input[type=file]{max-width:100%;min-width:0}
 .ohd{margin-top:22px;padding-bottom:6px;border-bottom:1px solid var(--line);align-items:baseline}
 .lnk+.lnk{margin-left:4px}
 .oact .lnk{font-size:14px;padding:6px 4px}
-.orw .oact{flex-wrap:nowrap}
+.orw .oact{flex-wrap:wrap;row-gap:4px}.orw .oact .lnk{margin-left:0}
+@media(max-width:420px){#v table:not(.stab) td,#v table:not(.stab) th{white-space:normal;overflow-wrap:anywhere}.stab .nw{white-space:normal;width:auto;min-width:84px}}
+@media(max-width:420px){.orw .oact .g.sm{padding:7px 12px}.orw .tm{min-width:42px}.day2 .row .g.sm{padding:7px 12px}}
 /* batch 3 */
 .ed{padding:0 0 10px}
 .edbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:6px;background:var(--bg);border-bottom:1px solid var(--line)}
