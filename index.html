@@ -552,6 +552,8 @@ nav button.nv.on{background:var(--now);color:var(--now-fg)}
 @media(max-width:860px){header .top{display:none}header{padding-top:0}#v{padding-top:14px}}
 /* product colours on the recipe list and kitchen lanes match */
 .pcl{width:6px}
+/* times */
+.tchg{gap:10px;margin:4px 0 0;align-items:center}.tchg input{width:auto;padding:4px 8px}.whenr input[type=time]{width:auto}
 /* targets */
 .tgl{border-top:1px solid var(--line);margin-top:6px}.tgr{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.tgr .grow{display:flex;flex-direction:column;min-width:0}.tgr .tq{width:84px;text-align:right}.tgb{white-space:nowrap}
 /* add-by-link */
@@ -1245,7 +1247,9 @@ const untilT=t=>{const mn=Math.round((t-Date.now())/6e4),a=Math.abs(mn),s=a>=60?
 
 // ===== Multi-day bakes: start the day before, cross-day kitchen board =====
 VF.push('pre');
-const pEnd=(p,d)=>p&&p.pre?new Date(addD(d,-1)+'T'+p.pre).getTime():endOf(d);
+const pTot=p=>p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4;
+const pWhen=p=>p.when||(p.pre?{k:'ready',day:-1,t:p.pre}:{k:'ready',day:0,t:''});
+const pEnd=(p,d)=>{if(!p)return endOf(d);const w=pWhen(p),base=addD(d,+w.day||0);let t=w.t?new Date(base+'T'+w.t).getTime():(+w.day?new Date(base+'T16:00').getTime():endOf(d));if(w.k=='start')t+=pTot(p);return t+(+((S.shift||{})[d+'|'+p.id])||0)*6e4};
 const dS=d=>new Date(d+'T00:00').getTime(),dE=d=>dS(addD(d,1));
 function dayWork(d){
  const out=[];
@@ -1255,9 +1259,10 @@ function dayWork(d){
 function early(d){
  const L={};dayWork(d).filter(e=>e.fd!=d).forEach(e=>{const k=e.ps[0].id+'@'+e.fd;(L[k]=L[k]||{id:e.ps[0].id,name:e.ps[0].name,q:bakeN(e.ps[0].id,e.ps[0].q),fd:e.fd,steps:[]}).steps.push(e)});
  return Object.values(L).map(l=>{const M=(S.kb||{})[l.fd]||{};l.steps.sort((a,b)=>a.j-b.j);l.today=l.steps.filter(e=>e.st>=dS(d)&&e.st<dE(d));l.first=l.today[0]||l.steps[0];l.done=l.today.length&&l.today.every(e=>M[e.k]==2);return l}).filter(l=>l.today.length).sort((a,b)=>a.first.st-b.first.st)}
-function setPre(i,v){S.prods[i].pre=v?(S.prods[i].pre||'16:00'):'';save();draw()}
-function preUI(i){const p=S.prods[i],P=`prods.${i}`,rt=(S.set.ready||'T07:00').slice(11,16);
- return`<div class="row"><label>When is it ready?<select onchange="setPre(${i},this.value)"><option value=""${p.pre?'':' selected'}>On the day, by ${rt}</option><option value="1"${p.pre?' selected':''}>The day before</option></select></label>${p.pre?`<label>Ready by<input type="time" value="${esc(p.pre)}" onchange="up('${P}.pre',this.value||'16:00')"></label>`:''}<span class="mut grow">${p.pre?'For an order on Saturday, this is finished on Friday by this time.':'Steps count back from the ready time, into the day before if needed.'}</span></div>`}
+function setWhen(i,k,v){const p=S.prods[i],w={...pWhen(p)};w[k]=k=='day'?+v:v;if(!w.t)w.t=w.k=='start'?'05:00':(+w.day?'16:00':(S.set.ready||'T07:00').slice(11,16));if(k=='k'&&v=='start'&&!p.when)w.t='05:00';p.when=w;delete p.pre;save();draw()}
+function preUI(i){const p=S.prods[i],w=pWhen(p),rt=(S.set.ready||'T07:00').slice(11,16),t=w.t||(+w.day?'16:00':rt);
+ const d=addD(tdy(),1),end=pEnd(p,d)-(+((S.shift||{})[d+'|'+p.id])||0)*6e4,st=end-pTot(p),wd=x=>new Date(x).toLocaleDateString('en-IE',{weekday:'short'});
+ return`<div class="row whenr"><label>Time<select onchange="setWhen(${i},'k',this.value)"><option value="ready"${w.k!='start'?' selected':''}>Ready by</option><option value="start"${w.k=='start'?' selected':''}>Start at</option></select></label><label>Day<select onchange="setWhen(${i},'day',this.value)"><option value="0"${+w.day?'':' selected'}>on the day</option><option value="-1"${+w.day?' selected':''}>the day before</option></select></label><label>At<input type="time" value="${esc(t)}" onchange="setWhen(${i},'t',this.value)"></label></div><p class="mut sm2">For ${wd(new Date(d+'T12:00'))}: start <b>${wd(st)} ${hh(st)}</b> · ready <b>${wd(end)} ${hh(end)}</b>. You can move a single day from Today.</p>`}
 // kitchen state per bake day
 function kSet(k,n,auto,fd){
  fd=fd||pday();const E=sched(fd),e=E.find(x=>x.k==k);if(!e)return;
@@ -1306,7 +1311,7 @@ function today(){
  const item=e=>{if(e.pk)return pkItem(e);const s=kst(e),late=s==0&&e.st<now&&isT,act=e.cur&&s!=2;
   if(s==2)return`<div class="it d" style="--lc:${pcol(e.ps[0].id)}" onclick="kSet('${e.k}',0,0,'${e.fd}')" title="Tap to undo"><div class="row"><span class="tm">${hh(e.st)}</span><span class="grow">${esc(e.n)} · ${esc(e.ps[0].name)}</span>${fdTag(e)}<span class="mut sm2">✓ done</span></div></div>`;
   return`<div class="it${act?' c':''}${s==1?' on':''}${late?' late':''}" style="--lc:${pcol(e.ps[0].id)}"><div class="row"><span class="tm">${e.carry?'<span class="mut">from</span> '+hh(e.st):hh(e.st)}</span><span class="grow"><b>${esc(e.n)}</b> · <span class="pn">${bakeN(e.ps[0].id,e.ps[0].q)} × ${esc(e.ps[0].name)}</span></span>${fdTag(e)}</div>
-  <div class="ix"><span class="mut">${e.carry?`started ${dayRel(e.st).toLowerCase()} · until ${hh(e.t)}`:`${hm(Math.round((e.t-e.st)/6e4))} · until ${hh(e.t)}`}${late?' · <span class="lt">late</span>':''}</span>${e.dsc?`<div>${esc(e.dsc)}</div>`:''}${act&&e.first&&s==0?`<div class="ing2">${ingLine(e.ps[0].id,e.ps[0].q)}</div>`:''}
+  <div class="ix"><span class="mut">${e.carry?`started ${dayRel(e.st).toLowerCase()} · until ${hh(e.t)}`:`${hm(Math.round((e.t-e.st)/6e4))} · until ${hh(e.t)}`}${late?' · <span class="lt">late</span>':''}</span>${e.dsc?`<div>${esc(e.dsc)}</div>`:''}${tChgUI(e)}${act&&e.first&&s==0?`<div class="ing2">${ingLine(e.ps[0].id,e.ps[0].q)}</div>`:''}
   ${act&&s==1?tBar(e):''}${act?`<div class="row" style="margin-top:6px">${s==1?`${tTimer(e)}<span class="grow"></span><button class="g sm" onclick="kPlus(event,'${e.k}',5,'${e.fd}')">+5 min</button><button class="b sm" onclick="kSet('${e.k}',2,true,'${e.fd}')">Done</button>`:`<span class="grow"></span>${e.first?`<button class="g sm" onclick="goCook(${S.prods.findIndex(p=>p.id==e.ps[0].id)})">Weigh</button>`:''}<button class="g sm" onclick="kSet('${e.k}',2,0,'${e.fd}')">Mark done</button><button class="b sm" onclick="kSet('${e.k}',1,0,'${e.fd}')">Start</button>`}</div>`:''}</div></div>`};
  const block=(t,list)=>list.length?`<div class="h3">${t}</div><div class="tl">${list.map(item).join('')}</div>`:'';
  const vis=[...ev.filter(e=>(tShowDone||kst(e)!=2)&&(tShowLate||!missed.includes(e))),...pkEv(d).filter(e=>tShowDone||!e.dn)].sort((a,b)=>a.st-b.st),hr=e=>new Date(e.st).getHours();
@@ -1738,6 +1743,20 @@ async function impAdd(){const R=impR;if(!R)return;
  flash(`${R.length>1?R.length+' recipes':R[0].name} added.${made.length?` New ingredients: ${made.join(', ')}. Set their prices in Ingredients.`:''}`)}
 window.addEventListener('hashchange',impShow);
 setTimeout(impShow,600);setTimeout(()=>{if(impR)impShow()},2500);
+
+
+// ===== Move one day's job: start at a different time, for that day only =====
+VF.push('when');
+const tChg=new Set();
+function tShiftKey(e){return e.fd+'|'+e.ps[0].id}
+function tSetStart(fd,pid,j,v){if(!v)return;const e=sched(fd).find(x=>x.ps[0].id==pid&&x.j==j);if(!e)return;const day=tz(new Date(e.st)).slice(0,10),want=new Date(day+'T'+v).getTime();S.shift=S.shift||{};const k=fd+'|'+pid;S.shift[k]=(+S.shift[k]||0)+Math.round((want-e.st)/6e4);if(!S.shift[k])delete S.shift[k];tChg.delete(k);save();draw();flash('Time changed for this day only')}
+function tReset(k){if(S.shift)delete S.shift[k];tChg.delete(k);save();draw()}
+function tChgUI(e){if(e.pk||e.carry||kst(e)!=0)return'';const k=tShiftKey(e),sh=+((S.shift||{})[k])||0,p=S.prods.find(x=>x.id==e.ps[0].id);if(!p)return'';
+ const L=sched(e.fd).filter(x=>x.ps[0].id==p.id),first=L[0],ready=L.length?L[L.length-1].t:0;if(!first||first.k!=e.k)return sh?`<div class="mut sm2">moved ${hm(Math.abs(sh))} ${sh<0?'earlier':'later'} today</div>`:'';
+ const pk=S.orders.filter(o=>o.date==e.fd&&o.pid==p.id&&o.time&&!o.par).map(o=>({c:o.cust,t:new Date(e.fd+'T'+o.time).getTime()})).sort((a,b)=>a.t-b.t)[0];
+ const warn=pk&&ready>pk.t?`<div class="sm2 st-bad">Ready ${hh(ready)}, after ${esc(pk.c)}’s pickup at ${hh(pk.t)}</div>`:'';
+ const open=tChg.has(k);
+ return`${warn}<div class="row tchg">${sh?`<span class="mut sm2">Moved ${hm(Math.abs(sh))} ${sh<0?'earlier':'later'} for this day</span><button class="lnk" onclick="tReset('${k}')">Reset</button>`:''}${open?`<label class="sm2">Start at <input type="time" value="${hh(e.st)}" onchange="tSetStart('${e.fd}','${p.id}',${e.j},this.value)"></label><button class="lnk" onclick="tChg.delete('${k}');draw()">Cancel</button>`:`<button class="lnk" onclick="tChg.add('${k}');draw()">Change time</button>`}</div>`}
 
 draw();
 </script></body></html>
