@@ -553,6 +553,7 @@ nav button.nv.on{background:var(--now);color:var(--now-fg)}
 /* product colours on the recipe list and kitchen lanes match */
 .pcl{width:6px}
 /* add-by-link */
+.impr{padding:8px 0;border-bottom:1px solid var(--line)}.impin{max-height:80vh;overflow:auto}
 .impbox{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;padding:16px}
 .impin{background:var(--bg);color:var(--fg);border-radius:18px;padding:18px 18px 14px;max-width:480px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);margin-bottom:calc(env(safe-area-inset-bottom,0px) + 70px)}
 @media(min-width:861px){.impbox{align-items:center}.impin{margin-bottom:0}}
@@ -1701,23 +1702,29 @@ vSet=function(h){vSet0(h);document.body.classList.toggle('inner',tab!='Today');t
 // ===== Add a recipe from a link (#add=...) =====
 // The link carries the recipe; you confirm on the phone and it lands in Recipes.
 let impR=null;
-function impRead(){try{const m=location.hash.match(/^#add=([\w-]+)/);if(!m)return null;const b=m[1].replace(/-/g,'+').replace(/_/g,'/');const s=decodeURIComponent(escape(atob(b+'==='.slice((b.length+3)%4))));const r=JSON.parse(s);return r&&r.name&&Array.isArray(r.ings)?r:null}catch(e){return null}}
+function impRead(){try{const m=location.hash.match(/^#add=([\w-]+)/);if(!m)return null;const b=m[1].replace(/-/g,'+').replace(/_/g,'/');const s=decodeURIComponent(escape(atob(b+'==='.slice((b.length+3)%4))));const r=JSON.parse(s);const L=Array.isArray(r.recipes)?r.recipes:[r];return L.length&&L.every(x=>x&&x.name&&Array.isArray(x.ings))?L:null}catch(e){return null}}
+const impLine=l=>`${l.a}${l.u=='each'?' ×':l.u=='ml'?' ml':' g'} ${esc(l.n)}`;
 function impShow(){impR=impRead();const old=document.getElementById('imp');old&&old.remove();if(!impR)return;
  const el=document.createElement('div');el.id='imp';el.className='impbox';
- const dup=S.prods.some(p=>key(p.name)==key(impR.name));
- el.innerHTML=`<div class="impin"><div class="mut sm2">Add this recipe?</div><h3 style="margin:2px 0 6px">${esc(impR.name)}</h3><div class="mut">${impR.ings.map(l=>`${l.a}${l.u=='each'?' ×':' g'} ${esc(l.n)}`).join(' · ')}</div>${impR.batch?`<div class="mut sm2" style="margin-top:6px">Makes ${impR.batch} × ${impR.unitG} g · ${impR.steps.length} steps</div>`:''}${dup?`<p class="sm2 st-warn">You already have a recipe called ${esc(impR.name)}. This adds a second one.</p>`:''}${typeof sb!='undefined'&&sb&&!sbUser?`<p class="sm2 st-warn">You’re not signed in on this screen, so the recipe would stay here and not reach your phone app. Open the link from the FOLk app instead, or sign in under More → Settings first.</p>`:''}<div class="row" style="margin-top:12px"><button class="g" onclick="impClose()">Cancel</button><span class="grow"></span><button class="b" onclick="impAdd()">Add</button></div></div>`;
+ const dup=impR.filter(r=>S.prods.some(p=>key(p.name)==key(r.name))).map(r=>r.name);
+ el.innerHTML=`<div class="impin"><div class="mut sm2">${impR.length>1?`Add these ${impR.length} recipes?`:'Add this recipe?'}</div>${impR.map(r=>`<div class="impr"><b>${esc(r.name)}</b>${r.sub?' <span class="bd">sub-recipe</span>':''}<div class="mut sm2">${r.ings.length?r.ings.map(impLine).join(' · '):'no ingredients yet'}${r.batch&&!r.sub?` · makes ${r.batch}`:''}</div></div>`).join('')}${dup.length?`<p class="sm2 st-warn">You already have ${dup.map(esc).join(', ')}. ${dup.length>1?'These are':'This is'} added as a second copy.</p>`:''}${typeof sb!='undefined'&&sb&&!sbUser?`<p class="sm2 st-warn">You’re not signed in on this screen, so the recipes would stay here and not reach your phone app. Open the link from the FOLk app instead, or sign in under More → Settings first.</p>`:''}<div class="row" style="margin-top:12px"><button class="g" onclick="impClose()">Cancel</button><span class="grow"></span><button class="b" onclick="impAdd()">Add</button></div></div>`;
  document.body.appendChild(el)}
 function impClose(){impR=null;const el=document.getElementById('imp');el&&el.remove();try{history.replaceState(null,'',location.pathname+location.search)}catch(e){location.hash=''}}
-async function impAdd(){const r=impR;if(!r)return;
+async function impAdd(){const R=impR;if(!R)return;
  // make sure the latest synced data is here first, so nothing from another device is overwritten
  try{if(typeof sb!='undefined'&&sb&&sbUser&&typeof pull=='function')await pull()}catch(e){}
- const made=[];
- const ings=r.ings.map(l=>{const names=[l.n,...(l.m||[])];let g=null;for(const n of names){g=S.ings.find(x=>key(x.n)==key(n));if(g)break}
-  if(!g){g={n:l.n,price:0,size:1,unit:l.u=='each'?'each':'kg',al:l.al||[],waste:0};S.ings.push(g);made.push(l.n)}
-  return{n:g.n,amt:+l.a||0,pct:0}});
- const p={id:nid(),name:r.name,cat:r.cat||'Bakery',mode:'amt',yt:'batch',batch:+r.batch||1,unitG:+r.unitG||100,price:+r.price||0,lab:+r.lab||0,flourG:1000,shelf:+r.shelf||3,tray:+r.tray||0,temp:+r.temp||0,store:r.store||'Keep in a cool, dry place.',notes:r.notes||'',ings,steps:(r.steps||[]).map(([n,mins])=>({n,mins}))};
- S.prods.push(p);ensV(p);save();impClose();tab='Products';ed=null;cm=null;vw=S.prods.length-1;draw();fx();window.scrollTo(0,0);
- flash(made.length?`${r.name} added. New ingredients: ${made.join(', ')}. Set their prices in Ingredients.`:`${r.name} added`)}
+ const made=[];let firstI=null;
+ [...R].sort((a,b)=>(b.sub?1:0)-(a.sub?1:0)).forEach(r=>{
+  const ings=r.ings.map(l=>{if(subOf(l.n))return{n:subOf(l.n).name,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})};
+   const names=[l.n,...(l.m||[])];let g=null;for(const n of names){g=S.ings.find(x=>key(x.n)==key(n));if(g)break}
+   if(!g){g={n:l.n,price:0,size:1,unit:l.u=='each'?'each':l.u=='ml'?'l':'kg',al:l.al||[],waste:0};S.ings.push(g);made.push(l.n)}
+   return{n:g.n,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})}});
+  const p={id:nid(),name:r.name,cat:r.cat||'Bakery',mode:'amt',yt:'batch',batch:+r.batch||1,unitG:+r.unitG||100,price:+r.price||0,lab:+r.lab||0,flourG:1000,shelf:+r.shelf||3,tray:+r.tray||0,temp:+r.temp||0,store:r.store||'Keep in a cool, dry place.',notes:r.notes||'',ings,steps:(r.steps||[]).map(([n,mins])=>({n,mins}))};
+  if(Array.isArray(r.secs)&&r.secs.length>1)p.secs=[...r.secs];
+  if(r.sub){p.sub=true;p.batch=1;p.wAuto=true}
+  S.prods.push(p);if(p.sub)p.unitG=estW(p)||p.unitG;ensV(p);if(firstI==null&&!p.sub)firstI=S.prods.length-1});
+ save();impClose();tab='Products';ed=null;cm=null;vw=firstI;if(vw==null)vw=S.prods.length-1;draw();fx();window.scrollTo(0,0);
+ flash(`${R.length>1?R.length+' recipes':R[0].name} added.${made.length?` New ingredients: ${made.join(', ')}. Set their prices in Ingredients.`:''}`)}
 window.addEventListener('hashchange',impShow);
 setTimeout(impShow,600);setTimeout(()=>{if(impR)impShow()},2500);
 
