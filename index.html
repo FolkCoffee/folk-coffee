@@ -552,6 +552,8 @@ nav button.nv.on{background:var(--now);color:var(--now-fg)}
 @media(max-width:860px){header .top{display:none}header{padding-top:0}#v{padding-top:14px}}
 /* product colours on the recipe list and kitchen lanes match */
 .pcl{width:6px}
+/* targets */
+.tgl{border-top:1px solid var(--line);margin-top:6px}.tgr{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.tgr .grow{display:flex;flex-direction:column;min-width:0}.tgr .tq{width:84px;text-align:right}.tgb{white-space:nowrap}
 /* add-by-link */
 .impr{padding:8px 0;border-bottom:1px solid var(--line)}.impin{max-height:80vh;overflow:auto}
 .impbox{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;padding:16px}
@@ -736,8 +738,16 @@ const pinfo=p=>{const c=calc(p).cost/por(p),pp=pprice(p);return`per portion: cos
 function pd(d){S.set.ready=d+'T'+(S.set.ready||'T07:00').slice(11,16);tab='Plan';save();draw();fx()}
 function setPar(id,k,v){S.par=S.par||{};(S.par[id]=S.par[id]||{})[k]=+v||0;save()}
 
+let tgD=null;
+function tgCopy(to){const d=tgD;S.prods.filter(p=>!p.sub).forEach(p=>{const v=((S.par||{})[p.id]||{})[d]||0;to.forEach(k=>{if(k!=d)setParQ(p.id,k,v)})});save();draw();flash(`Copied ${DN[d]} to ${to.length==7?'every day':to.map(k=>DN[k]).join(', ')}`)}
+function setParQ(id,k,v){S.par=S.par||{};S.par[id]=S.par[id]||{};if(+v>0)S.par[id][k]=+v;else delete S.par[id][k]}
 function targets(){
- return`<p class="mut">How many of each item you want ready on each weekday. They are added to that day’s plan automatically as “Counter”.</p><div class="scroll"><table><tr><th>Item</th>${DN.map(d=>`<th class="n">${d}</th>`).join('')}</tr>${S.prods.map(p=>`<tr><td>${esc(p.name)}</td>${DN.map((d,k)=>`<td class="n"><input class="tq" type="number" min="0" value="${((S.par||{})[p.id]||{})[k]||''}" onchange="setPar('${p.id}',${k},this.value)"></td>`).join('')}</tr>`).join('')}</table></div>`}
+ if(tgD==null)tgD=dow(tdy());const d=tgD,L=S.prods.filter(p=>!p.sub),P=id=>(S.par||{})[id]||{};
+ const wk=p=>DN.reduce((a,_,k)=>a+(+P(p.id)[k]||0),0),tot=L.reduce((a,p)=>a+(+P(p.id)[d]||0),0);
+ return`<p class="mut">How many of each item you want ready on each weekday, in pieces. They are added to that day’s plan as “Counter”, on top of customer orders, and rounded up to whole batches.</p>
+ <div class="row sub tgd">${DN.map((n,k)=>`<button class="g${k==d?' on':''}" onclick="tgD=${k};draw()">${n}</button>`).join('')}</div>
+ <div class="tgl">${L.map(p=>{const v=P(p.id)[d]||'',b=p.yt=='batch'?Math.max(+p.batch||1,1):1;return`<div class="tgr"><span class="grow"><b>${esc(p.name)}</b><span class="mut sm2">${b>1?`batch of ${b} · `:''}week ${wk(p)}${v&&b>1&&v%b?` · <b>bakes ${Math.ceil(v/b)*b}</b>`:''}</span></span><input class="tq" type="number" min="0" inputmode="numeric" value="${v}" aria-label="${esc(p.name)} on ${DN[d]}" onchange="setPar('${p.id}',${d},this.value);draw()"></div>`}).join('')||'<p class="mut">Add products first.</p>'}</div>
+ <div class="row" style="margin-top:12px"><span class="mut grow">${DN[d]}: ${tot} pieces in total</span><button class="g sm" onclick="tgCopy([0,1,2,3,4])">Copy to Mon–Fri</button><button class="g sm" onclick="tgCopy([0,1,2,3,4,5,6])">Copy to every day</button></div>`}
 
 
 
