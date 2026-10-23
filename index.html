@@ -557,6 +557,7 @@ nav button.nv.on{background:var(--now);color:var(--now-fg)}
 /* targets */
 .tgl{border-top:1px solid var(--line);margin-top:6px}.tgr{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.tgr .grow{display:flex;flex-direction:column;min-width:0}.tgr .tq{width:84px;text-align:right}.tgb{white-space:nowrap}
 /* add-by-link */
+.icode{font:500 15px/1.4 ui-monospace,Menlo,monospace;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;word-break:break-all;user-select:all}
 .buyl{gap:6px;flex-wrap:nowrap;align-items:center}.buyl input{width:58px;padding:6px 6px;min-width:0}.buyl input.bpp{width:72px}.impin .row:last-child{flex-wrap:nowrap}.buyl select{width:68px;padding:6px}
 .impr{padding:8px 0;border-bottom:1px solid var(--line)}.impin{max-height:80vh;overflow:auto}
 .impbox{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;padding:16px}
@@ -1004,7 +1005,7 @@ async function sbInit(){
  sbUser=ses&&ses.user||null;
  sb.auth.onAuthStateChange((ev,s)=>{const u=s&&s.user||null;if((u&&u.id)==(sbUser&&sbUser.id))return;sbUser=u;if(u)afterLogin();else{unsub();sst('out')}draw()});
  if(sbUser)afterLogin();else sst('out');draw()}
-async function afterLogin(){await pull(true);sub()}
+async function afterLogin(){await pull(true);sub();setTimeout(()=>{if(typeof inboxCheck=='function')inboxCheck()},1500)}
 async function pull(first){
  if(!sb||!sbUser)return;
  let res;try{res=await sb.from('planner_state').select('data,updated_at').eq('owner',sbUser.id).maybeSingle()}catch(e){res={error:e}}
@@ -1047,7 +1048,7 @@ function syncUI(){
 const hasPrev=()=>{try{return!!localStorage.getItem('folk-before-sync')}catch(e){return false}};
 function usePrev(){let x=null;try{x=JSON.parse(localStorage.getItem('folk-before-sync'))}catch(e){}if(!x||!Array.isArray(x.prods)){flash('Nothing to restore');return}snap('Switched to this device’s earlier data');S=x;mig();save();try{localStorage.removeItem('folk-before-sync')}catch(e){}draw()}
 function sbNag(){return sbCfg()&&sb&&!sbUser?`<div class="card noprint"><div class="row"><div class="grow"><b>Not syncing</b><div class="mut">Sign in to share your data with your other devices.</div></div><button class="b" onclick="go('Settings')">Sign in</button></div></div>`:''}
-const settingsS=T.Settings;T.Settings=()=>syncUI()+settingsS();
+const settingsS=T.Settings;T.Settings=()=>syncUI()+(typeof inboxUI=='function'?inboxUI():'')+settingsS();
 const todayS=T.Today;T.Today=()=>sbNag()+todayS();
 function rst(){snap(sbUser?'Everything was reset, on all your devices':'Everything was reset');S=def();mig();save();draw()}
 document.querySelector('header .top').insertAdjacentHTML('afterend','<div id="sst" class="sst"></div>');
@@ -1731,6 +1732,10 @@ function impClose(){impR=null;const el=document.getElementById('imp');el&&el.rem
 async function impAdd(){const R=impR;if(!R)return;
  // make sure the latest synced data is here first, so nothing from another device is overwritten
  try{if(typeof sb!='undefined'&&sb&&sbUser&&typeof pull=='function')await pull()}catch(e){}
+ const {made,firstI}=impApply(R);
+ save();impClose();tab='Products';ed=null;cm=null;vw=firstI;if(vw==null)vw=S.prods.length-1;draw();fx();window.scrollTo(0,0);
+ flash(`${R.length>1?R.length+' recipes':R[0].name} added.${made.length?` New ingredients: ${made.join(', ')}. Set their prices in Ingredients.`:''}`)}
+function impApply(R){
  const made=[];let firstI=null;
  [...R].sort((a,b)=>(b.sub?1:0)-(a.sub?1:0)).forEach(r=>{
   const ings=r.ings.map(l=>{if(subOf(l.n))return{n:subOf(l.n).name,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})};
@@ -1742,8 +1747,7 @@ async function impAdd(){const R=impR;if(!R)return;
   if(r.sub){p.sub=true;p.batch=1;p.wAuto=true}
   if(+r.por>1)p.por=+r.por;if(r.sell=='slice'){p.sell='slice';p.sp=+r.sp||0;p.price=Math.round(p.sp*por(p)*100)/100}
   S.prods.push(p);if(p.sub)p.unitG=estW(p)||p.unitG;ensV(p);if(firstI==null&&!p.sub)firstI=S.prods.length-1});
- save();impClose();tab='Products';ed=null;cm=null;vw=firstI;if(vw==null)vw=S.prods.length-1;draw();fx();window.scrollTo(0,0);
- flash(`${R.length>1?R.length+' recipes':R[0].name} added.${made.length?` New ingredients: ${made.join(', ')}. Set their prices in Ingredients.`:''}`)}
+ return{made,firstI}}
 window.addEventListener('hashchange',impShow);
 setTimeout(impShow,600);setTimeout(()=>{if(impR)impShow()},2500);
 
@@ -1781,6 +1785,46 @@ async function buySave(){const r=buyR;if(!r)return;try{if(typeof sb!='undefined'
  buyR=null;impClose();tab='Buy';bSave()}
 window.addEventListener('hashchange',()=>{if(/^#buy=/.test(location.hash))buyShow()});
 setTimeout(()=>{if(/^#buy=/.test(location.hash))buyShow()},700);
+
+// ===== Claude inbox: recipes and purchases Claude sends arrive here by themselves =====
+let inboxCode,inboxOK=null,inboxBusy=false,inboxSeen=0;
+function buyApply(r){
+ bF={date:r.date||tdy(),sup:r.sup||'',lines:(r.lines||[]).filter(l=>+l.packs>0&&+l.price>0).map(l=>{const g=buyMatch(l);if(!g&&l.al)S.ings.push({n:l.n,price:0,size:+l.size||1,unit:l.unit||'kg',al:l.al,waste:0});const g2=buyMatch(l);return{n:g2?g2.n:l.n,packs:+l.packs,size:+l.size||(g2?g2.size:1),unit:l.unit||(g2?g2.unit:'kg'),price:+l.tot&&+l.packs?Math.round(l.tot/l.packs*1000)/1000:+l.price}})};
+ if(!bF.lines.length)throw new Error('empty');bSave()}
+function inboxToast(msg){$('#cf').innerHTML=`<div class="toast"><span>${esc(msg)}</span><button class="g" onclick="undo()">Undo</button></div>`;clearTimeout(tmr);tmr=setTimeout(()=>{$('#cf').innerHTML=''},20000)}
+async function inboxCheck(){
+ if(inboxBusy||typeof sb=='undefined'||!sb||!sbUser||busy())return;inboxBusy=true;
+ try{
+  const q=await sb.from('planner_inbox').select('id,kind,payload').is('done_at',null).order('id').limit(10);
+  if(q.error){inboxOK=false;return}inboxOK=true;if(!q.data||!q.data.length)return;
+  await pull();
+  for(const row of q.data){
+   // claim it first, so a second device that is also open doesn't add it twice
+   const c=await sb.from('planner_inbox').update({done_at:new Date().toISOString()}).eq('id',row.id).is('done_at',null).select('id');
+   if(c.error||!c.data||!c.data.length)continue;
+   const pre=JSON.stringify(S),pv=row.payload||{};let msg='';
+   try{
+    if(row.kind=='add'){const R=Array.isArray(pv.recipes)?pv.recipes:[pv];if(!R.every(x=>x&&x.name&&Array.isArray(x.ings)))throw 0;const {made}=impApply(R);msg=`From Claude: ${R.length>1?R.length+' recipes added':R[0].name+' added'}${made.length?`. New: ${made.join(', ')}`:''}`}
+    else if(row.kind=='buy'){buyApply(pv);msg=`From Claude: purchase from ${pv.sup||'shop'} recorded, ${pv.lines.length} item${pv.lines.length==1?'':'s'}`}
+    else continue;
+   }catch(e){S=JSON.parse(pre);continue}
+   save();draw();lastS=pre;inboxToast(msg);inboxSeen++}
+ }catch(e){}finally{inboxBusy=false}}
+setInterval(()=>{if(!document.hidden)inboxCheck()},60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(inboxCheck,1500)});
+setTimeout(inboxCheck,4000);
+function inboxNewCode(){const a=new Uint8Array(18);crypto.getRandomValues(a);return'folk-'+[...a].map(b=>'abcdefghjkmnpqrstuvwxyz23456789'[b%31]).join('')}
+async function inboxLoad(){if(!sb||!sbUser)return;const q=await sb.from('planner_inbox_keys').select('code').maybeSingle();if(q.error){inboxOK=false;inboxCode=null}else{inboxOK=true;inboxCode=q.data?q.data.code:null}draw()}
+async function inboxMake(){if(!sb||!sbUser)return;const code=inboxNewCode();const q=await sb.from('planner_inbox_keys').upsert({owner:sbUser.id,code});if(q.error){flash('Could not save the code. Did you run the inbox setup in Supabase?');inboxOK=false;draw();return}inboxCode=code;inboxOK=true;draw();flash('Inbox code ready')}
+async function inboxCopy(){try{await navigator.clipboard.writeText(inboxCode);flash('Code copied. Paste it to Claude.')}catch(e){flash('Select the code and copy it')}}
+async function inboxSqlCopy(){try{const t=await (await fetch('supabase-inbox.sql',{cache:'no-store'})).text();await navigator.clipboard.writeText(t);flash('Setup copied. Paste it into Supabase → SQL Editor and press Run.')}catch(e){window.open('supabase-inbox.sql','_blank')}}
+function inboxUI(){
+ if(typeof sb=='undefined'||!sb||!sbUser)return'';
+ if(inboxCode===undefined&&inboxOK!==false){inboxCode=null;setTimeout(inboxLoad,0)}
+ const h='<h2>Claude inbox</h2>';
+ if(inboxOK===false)return h+`<div class="card"><p class="mut">Lets Claude send recipes and receipts straight into your app. One-time setup in Supabase:</p><ol class="mut sm2"><li>Tap <b>Copy setup</b>.</li><li>In Supabase open <b>SQL Editor → New query</b>, paste, press <b>Run</b>.</li><li>Come back and tap <b>Check again</b>.</li></ol><div class="row"><button class="b" onclick="inboxSqlCopy()">Copy setup</button><button class="g" onclick="inboxOK=null;inboxCode=undefined;draw()">Check again</button><a class="lnk" href="supabase-inbox.sql" target="_blank">View it</a></div></div>`;
+ if(!inboxCode)return h+`<div class="card"><p class="mut">Make a code and give it to Claude. With it Claude can only add items to your inbox. It can’t see your recipes, prices or orders.</p><button class="b" onclick="inboxMake()">Create inbox code</button></div>`;
+ return h+`<div class="card"><p class="mut" style="margin-top:0">Give this code to Claude. What Claude sends appears here by itself when the app is open, with Undo.</p><div class="row"><code class="icode grow">${esc(inboxCode)}</code><button class="b sm" onclick="inboxCopy()">Copy</button></div><div class="row"><span class="mut sm2 grow">${inboxSeen?`${inboxSeen} item${inboxSeen==1?'':'s'} received on this device.`:'Checks every minute while the app is open.'}</span><button class="g sm" onclick="inboxCheck()">Check now</button><button class="lnk" onclick="if(confirm('Make a new code? The old one stops working.'))inboxMake()">New code</button></div></div>`}
 
 draw();
 </script></body></html>
