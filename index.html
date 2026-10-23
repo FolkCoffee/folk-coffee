@@ -479,6 +479,30 @@ input[type=file]{max-width:100%;min-width:0}
  .bln .bpk{width:64px}.bln .bpr{width:76px}.bsz input{width:66px;padding-left:8px;padding-right:4px}.bsz select{width:64px}
  .edbar{margin:0 -16px 6px;padding:10px 16px}
 }
+/* drinks */
+.dset{margin:14px 0}.dset>summary{cursor:pointer}
+.dcrow{align-items:flex-end;gap:8px 12px}
+.dcrow input{width:90px}
+.dsz{min-width:96px;display:inline-block}
+.dlist{border-top:1px solid var(--line);margin-top:10px}
+.drw{border-bottom:1px solid var(--line);padding:8px 0}
+.dhd{display:flex;width:100%;background:none;border:0;font:inherit;color:var(--fg);padding:6px 0;cursor:pointer;text-align:left;gap:8px}
+.dhd b{font-weight:500;font-size:16px}
+.dsrow{display:flex;align-items:baseline;gap:12px;padding:2px 0 4px;font-size:15px}
+.dsrow .dsz{min-width:96px;color:var(--mut)}
+.dpr{min-width:52px}.dco{min-width:84px;font-size:13px}
+.doat{margin-left:auto;font-size:14px;white-space:nowrap}
+.ded{margin-top:8px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
+.dszb{padding:6px 0 10px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.dszb input[type=number]{width:84px}
+.bsz2{font-size:.7em;opacity:.7}
+.bnt{font-size:.8em;opacity:.8;margin-top:8px}
+@media(max-width:700px){
+ .dsrow{gap:8px;font-size:14px}
+ .dsrow .dsz{min-width:78px}
+ .dco{min-width:0}
+ .dszb input[type=number]{width:72px}
+}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><img class="wm-logo hdr" src="brand/folk-logo.png" alt="FOLk"><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -1824,6 +1848,72 @@ function setMk(i,v){const p=S.prods[i];if(v===''||v==null){p.wAuto=true;p.unitG=
 function riU(v,pc,k){const u=$('#ri-u'+rid(k||0));if(u)u.textContent=pc?'%':(gi(v)?bu(v):'');const s=subOf(v),a=$('#ri-a'+rid(k||0));if(s&&a&&!pc&&!a.value){a.value=Math.round(+s.unitG||0);a.select&&setTimeout(()=>a.select(),0)}}
 function pickI(i,j,v){const L=S.prods[i].ings[j];if(v=='__new'){const n='New ingredient '+(S.ings.length+1);S.ings.push({n,price:0,size:1,unit:'kg',al:[],waste:0});L.n=n;tab='Ingredients'}else{L.n=v;const s=subOf(v);if(s&&S.prods[i].mode!='pct'&&!(+L.amt))L.amt=Math.round(+s.unitG||0)}save();draw()}
 VF.push('wAuto');
+
+// ===== Coffee and drinks: sizes, regular or oat milk, real cost per cup =====
+const DSZ=['Espresso cup','8oz','12oz'];
+function drInit(){
+ if(S.dr)return;
+ const ing=(n,price,size,unit,re)=>{let g=S.ings.find(x=>re.test(x.n));if(!g){g={n,price,size,unit,al:n=='Milk'?['Milk']:[],waste:0,typ:1};S.ings.push(g)}return g.n};
+ const cof=ing('Coffee beans',28,1,'kg',/^(coffee|coffee beans|espresso beans|beans)$/i),milk=ing('Milk',1.3,1,'l',/^(milk|whole milk|full fat milk)$/i),oat=ing('Oat milk',2.6,1,'l',/^oat/i);
+ const choc=ing('Chocolate powder',12,1,'kg',/chocolate powder|hot choc|cocoa/i),chai=ing('Chai',20,1,'kg',/chai/i),tea=ing('Tea bags',6,100,'each',/tea ?bag|^tea$/i);
+ const d=(name,s,price,cg,ml,ex)=>({id:'d'+nid(),name,sizes:[{s,price,cg,ml,ex:ex||[]}]});
+ S.dr={cof,milk,oat,waste:10,oatUp:0,typ:1,cups:{'Espresso cup':{cup:0.08,lid:0.03},'8oz':{cup:0.11,lid:0.04},'12oz':{cup:0.13,lid:0.05}},
+  items:[d('Espresso','Espresso cup',2.8,18,0),d('Short americano','8oz',3.0,18,0),d('Americano','12oz',3.4,18,0),d('Flat white','8oz',3.7,18,160),d('Cappuccino','12oz',3.9,18,220),d('Latte','12oz',3.9,18,280),
+   d('Mocha','12oz',4.4,18,250,[{n:choc,a:25}]),d('Hot chocolate','12oz',3.9,0,300,[{n:choc,a:30}]),d('Chai latte','12oz',4.2,0,280,[{n:chai,a:25}]),d('Tea','12oz',2.8,0,20,[{n:tea,a:1}])]};
+ save()}
+const dIng=n=>S.ings.find(g=>key(g.n)==key(n||''));
+// cost of one drink, regular or oat
+function dCost(sz,oat){const D=S.dr,c=D.cups[sz.s]||{},mi=dIng(oat?D.oat:D.milk);
+ const coffee=(+sz.cg||0)*ppu(dIng(D.cof)),milk=(+sz.ml||0)*(1+(+D.waste||0)/100)*ppu(mi),ex=(sz.ex||[]).reduce((a,x)=>a+(+x.a||0)*ppu(dIng(x.n)),0),cup=(+c.cup||0)+(+c.lid||0)+(+c.sl||0);
+ return{coffee,milk,ex,cup,tot:coffee+milk+ex+cup}}
+const dPrice=(sz,oat)=>(+sz.price||0)+(oat?+S.dr.oatUp||0:0);
+const dMg=(sz,oat)=>{const p=dPrice(sz,oat);return p?(p-dCost(sz,oat).tot)/p*100:0};
+const dHasMilk=sz=>+sz.ml>20;
+let dOpen=new Set();
+function dUp(i,j,k,v){const z=S.dr.items[i].sizes[j];z[k]=k=='s'?v:(+v||0);save();draw()}
+function dName(i,v){v=(v||'').trim();if(v)S.dr.items[i].name=v;save();draw()}
+function dEx(i,j,x,k,v){const e=S.dr.items[i].sizes[j].ex[x];e[k]=k=='a'?(+v||0):v;if(k=='n'&&v&&!dIng(v)){S.ings.push({n:v.trim(),price:0,size:1,unit:'kg',al:[],waste:0});flash(`Added ${v.trim()} to Ingredients. Set its price there.`)}save();draw()}
+function dExAdd(i,j){S.dr.items[i].sizes[j].ex.push({n:'',a:0});save();draw()}
+function dExDel(i,j,x){S.dr.items[i].sizes[j].ex.splice(x,1);save();draw()}
+function dSzAdd(i){const it=S.dr.items[i],l=it.sizes[it.sizes.length-1],s=['8oz','12oz','Espresso cup'].find(x=>!it.sizes.some(z=>z.s==x))||'12oz',big=s=='12oz'&&l.s=='8oz';it.sizes.push({s,price:Math.round(((+l.price||0)+(big?0.4:-0.4))*10)/10,cg:l.cg,ml:Math.round((+l.ml||0)*(big?1.6:1/1.6)),ex:(l.ex||[]).map(e=>({...e,a:Math.round((+e.a||0)*(big?1.4:1/1.4)*10)/10}))});it.sizes.sort((a,b)=>DSZ.indexOf(a.s)-DSZ.indexOf(b.s));save();draw()}
+function dSzDel(i,j){const it=S.dr.items[i];if(it.sizes.length<2){dDel(i);return}it.sizes.splice(j,1);save();draw()}
+function dAdd(){S.dr.items.push({id:'d'+nid(),name:'New drink',sizes:[{s:'12oz',price:0,cg:18,ml:0,ex:[]}]});dOpen.add(S.dr.items[S.dr.items.length-1].id);save();draw();setTimeout(()=>{const a=document.querySelectorAll('.dnm');a.length&&(a[a.length-1].focus(),a[a.length-1].select())},30)}
+function dDel(i){snap(`${S.dr.items[i].name} removed`);S.dr.items.splice(i,1);save();draw()}
+function dSet(k,v){S.dr[k]=k=='cof'||k=='milk'||k=='oat'?v:(+v||0);save();draw()}
+function dCup(s,k,v){S.dr.cups[s]=S.dr.cups[s]||{};S.dr.cups[s][k]=+v||0;save();draw()}
+function dIngP(n,v){const g=dIng(n);if(g){g.price=+v||0;delete g.typ;g.pdate=tdy();save();draw()}}
+const pct=g=>`<span class="st-${mst(g)}">${mdot(g)}${g.toFixed(0)}%</span>`;
+function drinks(){
+ drInit();const D=S.dr,T0=+S.set.margin||65;
+ const ingSel=(k,lab)=>{const g=dIng(D[k]),u=g?BASE[g.unit]:'g';return`<div class="row dcrow"><label class="grow">${lab}<select onchange="dSet('${k}',this.value)">${S.ings.map(x=>`<option${key(x.n)==key(D[k])?' selected':''}>${esc(x.n)}</option>`).join('')}</select></label>${g?`<label>Pack price<input type="number" step="any" value="${g.price}" onchange="dIngP('${esc(g.n)}',this.value)"></label><span class="mut">per ${g.size} ${esc(g.unit)} · ${u=='each'?m(ppu(g))+' each':m(ppu(g)*1000)+(u=='ml'?' / l':' / kg')}${g.typ?' · <b class="st-warn">typical price, check</b>':''}</span>`:''}</div>`};
+ const setup=`<details class="card dset"${D.typ?' open':''}><summary><b>What a cup costs you</b> <span class="mut">coffee, milk, cups</span></summary>
+  ${D.typ?'<p class="mut sm2">These start with typical café amounts and prices, marked “check”. Put in your own and every drink updates.</p>':''}
+  ${ingSel('cof','Coffee')}${ingSel('milk','Regular milk')}${ingSel('oat','Oat milk')}
+  <div class="row"><label>Steaming waste %<input type="number" step="any" value="${D.waste}" onchange="dSet('waste',this.value)"></label><label>Oat milk extra charge (€)<input type="number" step="any" value="${D.oatUp}" onchange="dSet('oatUp',this.value)"></label>${+D.oatUp?'':'<span class="mut grow sm2">No extra charge for oat. Oat drinks cost you more, so the oat column shows their lower margin.</span>'}</div>
+  ${(()=>{const o=S.ings.filter(g=>g.typ&&![D.cof,D.milk,D.oat].some(n=>key(n)==key(g.n)));return o.length?`<h4>Other drink ingredients</h4>${o.map(g=>`<div class="row dcrow"><b class="grow">${esc(g.n)}</b><label>Pack price<input type="number" step="any" value="${g.price}" onchange="dIngP('${esc(g.n)}',this.value)"></label><span class="mut">per ${g.size} ${esc(g.unit)} · <b class="st-warn">typical price, check</b></span></div>`).join('')}`:''})()}
+  <h4>Cup, lid and sleeve per size</h4>${DSZ.map(s=>{const c=D.cups[s]||{};return`<div class="row dcrow"><b class="dsz">${s}</b><label>Cup<input type="number" step="any" value="${+c.cup||0}" onchange="dCup('${s}','cup',this.value)"></label><label>Lid<input type="number" step="any" value="${+c.lid||0}" onchange="dCup('${s}','lid',this.value)"></label><label>Sleeve<input type="number" step="any" value="${+c.sl||0}" onchange="dCup('${s}','sl',this.value)"></label></div>`}).join('')}
+  ${D.typ?`<p><button class="g sm" onclick="delete S.dr.typ;save();draw()">I’ve checked these</button></p>`:''}</details>`;
+ const rowsFor=(it,i)=>it.sizes.map((z,j)=>{const r=dCost(z,0),o=dCost(z,1),hm=dHasMilk(z);return`<div class="dsrow"><span class="dsz">${esc(z.s)}</span><span class="dpr">${m(dPrice(z,0))}</span><span class="mut dco">cost ${m(r.tot)}</span>${pct(dMg(z,0))}<span class="doat">${hm?`<span class="mut">oat</span> ${pct(dMg(z,1))}`:''}</span></div>`}).join('');
+ const edit=(it,i)=>`<div class="ded"><div class="row"><label class="grow">Name<input class="dnm" value="${esc(it.name)}" onchange="dName(${i},this.value)"></label></div>${it.sizes.map((z,j)=>{const r=dCost(z,0);return`<div class="dszb"><div class="row"><label>Size<select onchange="dUp(${i},${j},'s',this.value)">${DSZ.map(s=>`<option${s==z.s?' selected':''}>${s}</option>`).join('')}</select></label><label>Price (€)<input type="number" step="any" value="${z.price}" onchange="dUp(${i},${j},'price',this.value)"></label><label>Coffee (g)<input type="number" step="any" value="${z.cg}" onchange="dUp(${i},${j},'cg',this.value)"></label><label>Milk (ml)<input type="number" step="any" value="${z.ml}" onchange="dUp(${i},${j},'ml',this.value)"></label></div>
+   ${(z.ex||[]).map((e,x)=>{const g=dIng(e.n);return`<div class="row"><input class="grow" list="dingl" value="${esc(e.n)}" placeholder="Ingredient, e.g. syrup" onchange="dEx(${i},${j},${x},'n',this.value)"><input type="number" step="any" class="smin" value="${e.a}" onchange="dEx(${i},${j},${x},'a',this.value)"><span class="mut">${g?BASE[g.unit]:'g'}</span><button class="g sm" onclick="dExDel(${i},${j},${x})" aria-label="Remove">×</button></div>`}).join('')}
+   <div class="row"><button class="lnk" onclick="dExAdd(${i},${j})">+ Other ingredient</button><span class="grow"></span><span class="mut sm2">coffee ${m(r.coffee)} · milk ${m(r.milk)}${r.ex?` · other ${m(r.ex)}`:''} · cup ${m(r.cup)}</span>${it.sizes.length>1?`<button class="lnk" onclick="dSzDel(${i},${j})">Remove size</button>`:''}</div></div>`}).join('')}
+  <div class="row">${it.sizes.length<DSZ.length?`<button class="g sm" onclick="dSzAdd(${i})">+ Add a size</button>`:''}<span class="grow"></span><button class="lnk" onclick="dDel(${i})">Delete drink</button><button class="b sm" onclick="dOpen.delete('${it.id}');draw()">Done</button></div></div>`;
+ const list=D.items.map((it,i)=>{const op=dOpen.has(it.id);return`<div class="drw${op?' op':''}"><button class="dhd" onclick="dOpen.has('${it.id}')?dOpen.delete('${it.id}'):dOpen.add('${it.id}');draw()"><b class="grow">${esc(it.name)}</b><span class="mut">${op?'▴':'▾'}</span></button>${rowsFor(it,i)}${op?edit(it,i):''}</div>`}).join('');
+ const all=D.items.flatMap(it=>it.sizes.map(z=>({it,z}))),low=all.filter(x=>dMg(x.z,0)<T0).length,lowO=all.filter(x=>dHasMilk(x.z)&&dMg(x.z,1)<T0).length;
+ return`<datalist id="dingl">${S.ings.map(g=>`<option value="${esc(g.n)}">`).join('')}</datalist><div class="row"><h2 class="grow" style="margin:0">Coffee and drinks</h2><button class="b" onclick="dAdd()">+ New drink</button></div>
+ <p class="mut">Cost per cup with coffee, milk (plus ${D.waste}% steaming waste), other ingredients and the cup. Margins against your ${T0}% target${low||lowO?`: <b class="st-bad">${low} below with regular milk${lowO?`, ${lowO} with oat`:''}</b>`:', all on target'}.</p>
+ ${setup}<div class="dlist">${list}</div>`}
+// drinks in Margins and on the menu board
+const menuD=T.Menu;
+T.Menu=()=>{const h=menuD();if(!S.dr||!S.dr.items.length)return h;const T0=+S.set.margin||65;
+ const rows=S.dr.items.flatMap((it,i)=>it.sizes.map(z=>({it,i,z,g:dMg(z,0)}))).sort((a,b)=>a.g-b.g);
+ return h+`<h3 style="margin-top:28px">Coffee and drinks</h3><div class="mlist">${rows.map(r=>`<button class="mrw" onclick="dOpen.add('${r.it.id}');go('Drinks')"><span class="grow"><b>${esc(r.it.name)}</b><span class="mut">${esc(r.z.s)}${dHasMilk(r.z)?` · oat ${dMg(r.z,1).toFixed(0)}%`:''}</span></span><span class="prm"><span>${m(r.z.price)}</span><span class="mut">cost ${m(dCost(r.z,0).tot)}</span></span><span class="prg st-${mst(r.g)}"><span>${mdot(r.g)}${r.g.toFixed(0)}%</span>${r.g<T0?`<span class="mut sug">→ ${m(Math.ceil(dCost(r.z,0).tot/(1-Math.min(T0,95)/100)*20)/20)}</span>`:''}</span></button>`).join('')}</div>`};
+const boardD=T.Board;
+T.Board=()=>{let h=boardD();if(!S.dr||!S.dr.items.length)return h;
+ const dal=it=>[...new Set(it.sizes.flatMap(z=>[...(dHasMilk(z)?(dIng(S.dr.milk)||{al:[]}).al||[]:[]),...(z.ex||[]).flatMap(e=>(dIng(e.n)||{al:[]}).al||[])]))].map(a=>AL.indexOf(a)+1).filter(x=>x>0).sort((a,b)=>a-b).join(',');
+ const col=`<div><h3>Coffee</h3>${S.dr.items.map(it=>`<div class="bi"><span>${esc(it.name)}${dal(it)?` <sup>${dal(it)}</sup>`:''}${it.sizes.length>1||it.sizes[0].s!='12oz'?` <span class="bsz2">${it.sizes.map(z=>z.s=='Espresso cup'?'':esc(z.s)).filter(Boolean).join(' / ')}</span>`:''}</span><i></i><b>${it.sizes.map(z=>m(z.price)).join(' / ')}</b></div>`).join('')}${+S.dr.oatUp?`<p class="bnt">Oat milk +${m(S.dr.oatUp)}</p>`:'<p class="bnt">Oat milk available</p>'}</div>`;
+ return h.includes('<div class="bcols">')?h.replace('<div class="bcols">','<div class="bcols">'+col):h.replace('<p class="chalk">Add prices to your products and the menu appears here</p>','<div class="bcols">'+col+'</div>')};
+G.find(g=>g[0]=='Recipes')[1].push('Drinks');TL.Products='Bakery';TL.Drinks='Coffee and drinks';T.Drinks=drinks;
 
 draw();
 </script></body></html>
