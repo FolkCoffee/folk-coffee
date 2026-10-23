@@ -446,6 +446,39 @@ input[type=file]{max-width:100%;min-width:0}
 .lnk+.lnk{margin-left:4px}
 .oact .lnk{font-size:14px;padding:6px 4px}
 .orw .oact{flex-wrap:nowrap}
+/* batch 3 */
+.ed{padding:0 0 10px}
+.edbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:6px;background:var(--bg);border-bottom:1px solid var(--line)}
+.edbar b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ed h4{margin:22px 0 6px}
+.ed h4 .mut{font-weight:400}
+.srow{flex-wrap:nowrap;gap:6px;margin:4px 0}
+.srow .grow{min-width:0}
+.smin{width:70px}
+.sd{margin:0 0 8px}
+.edmore{margin-top:22px;border-top:1px solid var(--line);padding-top:10px}
+.edmore>summary{cursor:pointer;padding:6px 0;font-weight:500}
+.imp{margin-bottom:16px}
+.imp .trow{gap:12px}
+.bhd{display:flex;gap:8px;font-size:12px;margin-top:10px;padding:0 2px}
+.bhd span:not(.grow){width:86px}
+.bln{flex-wrap:wrap;gap:6px;margin:6px 0;align-items:center}
+.bln .bn{min-width:160px}
+.bln .bpk,.bln .bpr{width:80px}
+.bsz{display:flex;gap:4px}.bsz input{width:64px}.bsz select{width:70px}
+.bnote{flex-basis:100%;font-size:13px;padding-left:2px}
+.spend{gap:8px 18px;margin-top:14px;flex-wrap:wrap}
+.ichg{font-size:13px;margin-right:6px;white-space:nowrap}
+.ihist{margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.ihist .trow{padding:6px 0;font-size:14px}
+@media(max-width:700px){
+ .bhd{gap:0}.bhd span:not(.grow){width:auto}.bhd .grow{display:none}.bhd span:nth-child(n+3):before{content:' · '}
+ .bln{padding:8px 0;border-bottom:1px solid var(--line)}
+ .bln>*{order:1}.bln .bn,.bln>button{order:0}.bln .bnote{order:2}
+ .bln .bn{flex:1 1 calc(100% - 60px);min-width:0}
+ .bln .bpk{width:64px}.bln .bpr{width:76px}.bsz input{width:66px;padding-left:8px;padding-right:4px}.bsz select{width:64px}
+ .edbar{margin:0 -16px 6px;padding:10px 16px}
+}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><img class="wm-logo hdr" src="brand/folk-logo.png" alt="FOLk"><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -487,7 +520,7 @@ function plan(){
  act.forEach(p=>{let t=end;[...p.steps].reverse().forEach(s=>{const st=t-(+s.mins||0)*6e4,k=st+'|'+key(s.n)+'|'+t;(ev[k]=ev[k]||{st,t,n:s.n,ps:[]}).ps.push(p.name);t=st})});
  const rows=Object.values(ev).sort((a,b)=>a.st-b.st||a.t-b.t);
  let rev=0,cost=0,shop={};
- act.forEach(p=>{const c=calc(p);rev+=q[p.id]*p.price;cost+=q[p.id]*c.cost;c.lines.forEach(l=>{const k=key(l.n);shop[k]=shop[k]||{n:l.n,g:0};shop[k].g+=l.g*q[p.id]})});
+ act.forEach(p=>{const c=calc(p);rev+=q[p.id]*p.price;cost+=q[p.id]*c.cost;(typeof xl=='function'?xl(c.lines):c.lines).forEach(l=>{const k=key(l.n);shop[k]=shop[k]||{n:l.n,g:0};shop[k].g+=l.g*q[p.id]})});
  h+=`<p class="mut noprint">Showing orders for <b>${dlab(pday())}</b>. Change the date above to see another day.</p><div class="pt">${esc(S.set.biz)} · Production plan · ${fm(end)}</div><div class="stats card"><div><div class="big">${m(rev)}</div>Revenue</div><div><div class="big">${m(cost)}</div>Cost incl. labour</div><div><div class="big">${rev?((rev-cost)/rev*100).toFixed(0):0}%</div>Margin</div></div>`;
  h+=`<h2>Bake schedule</h2><table class="stab"><tr><th>When</th><th>Step</th></tr>${rows.map(r=>`<tr><td class="nw">${fm(r.st)}–${hh(r.t)}</td><td><b>${esc(r.n)}</b><div class="mut">${esc(r.ps.join(', '))}</div></td></tr>`).join('')}</table>`;
  h+='<h2>Scaled formulas</h2>'+act.map(p=>{const c=calc(p);return`<h4>${esc(p.name)} × ${q[p.id]} (${(q[p.id]*p.unitG/1000).toFixed(2)} kg dough, hydration ${c.hyd.toFixed(0)}%)</h4><div class="scroll"><table>${c.lines.map(l=>`<tr><td>${esc(l.n)}</td><td class="n">${Math.round(l.g*q[p.id])} g</td></tr>`).join('')}</table></div>`}).join('');
@@ -539,7 +572,7 @@ function settings(){
 
 const AL=['Celery','Gluten','Crustaceans','Eggs','Fish','Lupin','Milk','Molluscs','Mustard','Nuts','Peanuts','Sesame','Soya','Sulphites'];
 const UN=['g','kg','ml','l','each'],FAC={g:1,kg:1000,ml:1,l:1000,each:1},BASE={g:'g',kg:'g',ml:'ml',l:'ml',each:'each'};
-const gi=n=>S.ings.find(g=>key(g.n)==key(n));
+const gi=n=>(typeof srIng=='function'&&srIng(n))||S.ings.find(g=>key(g.n)==key(n));
 const wf=g=>1-Math.min(+(g||{}).waste||0,90)/100;
 const ppu=g=>g?(+g.price||0)/((+g.size||1)*FAC[g.unit]):0;
 const bu=n=>{const g=gi(n);return g?BASE[g.unit]:'g'};
@@ -569,7 +602,7 @@ function newP(){S.prods.push({id:nid(),name:'New product',unitG:100,price:0,lab:
 function pickI(i,j,v){if(v=='__new'){const n='New ingredient '+(S.ings.length+1);S.ings.push({n,price:0,size:1,unit:'kg',al:[],waste:0});S.prods[i].ings[j].n=n;tab='Ingredients'}else S.prods[i].ings[j].n=v;save();draw()}
 function editor(i){
  const p=S.prods[i],c=calc(p),P=`prods.${i}`,pc=p.mode=='pct',bt=p.yt=='batch';
- const opts=v=>S.ings.map(g=>`<option${key(g.n)==key(v)?' selected':''}>${esc(g.n)}</option>`).join('');
+ const opts=v=>S.ings.filter(g=>!(typeof subOf=='function'&&subOf(g.n))).map(g=>`<option${key(g.n)==key(v)?' selected':''}>${esc(g.n)}</option>`).join('')+((S.prods.filter(x=>x.sub&&x.id!=S.prods[i].id)).map(x=>`<option${key(x.name)==key(v)?' selected':''}>${esc(x.name)}</option>`).join(''));
  const sug=Math.ceil(c.cost/(1-Math.min(+S.set.margin||0,95)/100)*20)/20;
  return`<section class="card"><div class="row"><button class="g" onclick="ed=null;draw()">← All products</button><button class="g" onclick="ed=null;vw=${i};draw()">View recipe</button><span class="grow"></span><button class="g" onclick="dupP(${i})">Duplicate</button><button class="g" onclick="delP(${i})">Delete</button></div>
  <div class="row">${inp(P+'.name',p.name,'grow big2')}</div>
@@ -601,7 +634,7 @@ function plan(){
  act.forEach(p=>{let t=pEnd(p,pday());[...p.steps].reverse().forEach(s=>{const st=t-(+s.mins||0)*6e4,k=st+'|'+key(s.n)+'|'+t;(ev[k]=ev[k]||{st,t,n:s.n,ps:[]}).ps.push(p.name);t=st})});
  const rows=Object.values(ev).sort((a,b)=>a.st-b.st||a.t-b.t);
  let rev=0,cost=0,tot=0,shop={};
- act.forEach(p=>{const c=calc(p);rev+=q[p.id]*p.price;cost+=q[p.id]*c.cost;c.lines.forEach(l=>{const k=key(l.n),g=gi(l.n),x=l.g*bq(p);shop[k]=shop[k]||{n:l.n,g:0,u:bu(l.n),c:0};shop[k].g+=x;shop[k].c+=x*ppu(g)/wf(g)})});
+ act.forEach(p=>{const c=calc(p);rev+=q[p.id]*p.price;cost+=q[p.id]*c.cost;(typeof xl=='function'?xl(c.lines):c.lines).forEach(l=>{const k=key(l.n),g=gi(l.n),x=l.g*bq(p);shop[k]=shop[k]||{n:l.n,g:0,u:bu(l.n),c:0};shop[k].g+=x;shop[k].c+=x*ppu(g)/wf(g)})});
  Object.values(shop).forEach(s=>tot+=s.c);
  h+=`<p class="mut noprint">Showing orders for <b>${dlab(pday())}</b>. Change the date above to see another day.</p><div class="pt">${esc(S.set.biz)} · Production plan · ${fm(end)}</div><div class="stats card"><div><div class="big">${m(rev)}</div>Revenue</div><div><div class="big">${m(cost)}</div>Cost incl. labour</div><div><div class="big">${rev?((rev-cost)/rev*100).toFixed(0):0}%</div>Margin</div></div>`;
  h+=`<h2>Bake schedule</h2><table class="stab"><tr><th>When</th><th>Step</th></tr>${rows.map(r=>`<tr><td class="nw">${fm(r.st)}–${hh(r.t)}</td><td><b>${esc(r.n)}</b><div class="mut">${esc(r.ps.join(', '))}</div></td></tr>`).join('')}</table>`;
@@ -808,7 +841,7 @@ function orders(){
  return`<div class="row seg">${t.map(x=>`<button class="g${ov==x[0]?' on':''}" onclick="ov='${x[0]}';draw()">${x[1]}</button>`).join('')}</div>`+(ov=='week'?weekv():ov=='targets'?targets():ordl())}
 
 function allergens(){
- const rows=S.prods.map(p=>({p,al:new Set(calc(p).lines.flatMap(l=>sg(l.n).al||[]))})).sort((a,b)=>(a.p.cat||'Bakery').localeCompare(b.p.cat||'Bakery')||a.p.name.localeCompare(b.p.name));
+ const rows=S.prods.filter(p=>!p.sub).map(p=>({p,al:new Set(calc(p).lines.flatMap(l=>sg(l.n).al||[]))})).sort((a,b)=>(a.p.cat||'Bakery').localeCompare(b.p.cat||'Bakery')||a.p.name.localeCompare(b.p.name));
  let last='';
  return`<div class="asheet"><div class="noprint row"><h2 class="grow" style="margin:0">Allergens</h2><button class="b" onclick="print()">Print sheet</button></div><p class="mut noprint">Allergens come from the ingredients you ticked on the Ingredients tab, so keep those up to date. Check with the FSAI or your local environmental health officer whether you need to display a sheet like this.</p><h2>${esc(S.set.biz)} · Allergen information</h2><div class="scroll"><table class="am"><tr><th>Item</th>${AL.map(a=>`<th class="v"><span>${a}</span></th>`).join('')}</tr>${rows.map(r=>{const c=r.p.cat||'Bakery',h=c!=last?`<tr><th colspan="15" class="cat">${esc(c)}</th></tr>`:'';last=c;return h+`<tr><td>${esc(r.p.name)}</td>${AL.map(a=>`<td class="cc">${r.al.has(a)?'●<span class="sr"> contains</span>':''}</td>`).join('')}</tr>`}).join('')}</table></div><p>● = contains. ${esc(S.set.may)}</p><p class="mut">Updated ${dstr(new Date())}</p></div>`}
 
@@ -1371,7 +1404,7 @@ function labels(){
  const list=L.pid=='all'?S.prods.filter(p=>q[p.id]>0):S.prods.filter(p=>p.id==L.pid);
  const made=new Date(L.made+'T12:00'),code=L.code||L.made.replace(/-/g,'').slice(2);
  const info=p=>{const c=mergeL(calc(p).lines).sort((a,b)=>b.g-a.g),A=n=>(gi(n)||{al:[]}).al;return{c,A,al:[...new Set(c.flatMap(l=>A(l.n)))],bb:new Date(made.getTime()+(+p.shelf||0)*864e5)}};
- const ingTxt=(c,A)=>c.map(l=>esc(l.n)+(A(l.n).length?' (<b>'+esc(A(l.n).join(', ').toUpperCase())+'</b>)':'')).join(', ');
+ const ingTxt=(c,A,dp)=>c.map(l=>{const s=(dp||0)<3&&typeof subOf=='function'&&subOf(l.n);if(s)return esc(l.n)+' ('+ingTxt(calc(s).lines.filter(x=>x.n&&x.g>0).sort((a,b)=>b.g-a.g),A,(dp||0)+1)+')';return esc(l.n)+(A(l.n).length?' (<b>'+esc(A(l.n).join(', ').toUpperCase())+'</b>)':'')}).join(', ');
  const classic=p=>{const{c,A,al,bb}=info(p);return`<div class="lb"><b class="ln">${esc(p.name)}</b><div>Ingredients: ${ingTxt(c,A)}.</div>${al.length?`<div><b>Contains: ${esc(al.join(', '))}</b></div>`:''}${S.set.may?`<div>${esc(S.set.may)}</div>`:''}<div>Net weight ${p.unitG} g · Baked ${dstr(made)} · <b>Best before ${dstr(bb)}</b></div>${p.store?`<div>${esc(p.store)}</div>`:''}<div>Batch ${esc(code)}</div><div class="biz">${esc(S.set.biz)}${S.set.addr?', '+esc(S.set.addr):''}</div>${L.price?`<div class="pr">${m(p.price)}</div>`:''}</div>`};
  const table=p=>{const{c,A,al,bb}=info(p);return`<div class="lb lt"><div class="lt-in"><div class="lt-top"><img class="lt-logo" src="${LOGO()}" alt="FOLk"></div><div class="lt-name">${esc(p.name)}</div><div class="lt-sub">NET ${p.unitG} G${S.set.tag?' · '+esc(S.set.tag.toUpperCase()):''}${L.price?' · '+m(p.price):''}</div><div>${ingTxt(c,A)}.</div>${al.length?`<div class="lt-b">Contains ${esc(al.join(', ').toLowerCase())}.</div>`:''}${S.set.may?`<div class="lt-m">${esc(S.set.may)}</div>`:''}${p.store?`<div class="lt-m">${esc(p.store)}</div>`:''}<div class="lt-ft"><span>BAKED ${dshort(made)} · ${esc(code)}</span><b>BEST BEFORE ${dshort(bb)}</b></div><div class="lt-biz">${esc(S.set.biz)}${S.set.addr?' · '+esc(S.set.addr):''}</div></div></div>`};
  const tag=p=>{const{c,A,al,bb}=info(p);return`<div class="tg"><div class="tg-f"><i class="tg-h"></i><img class="tg-logo" src="${LOGO()}" alt="FOLk"><span class="tg-sc">Speciality Coffee</span><span class="tg-n">${esc(p.name)}</span>${S.set.tag?`<span class="tg-t">${esc(S.set.tag)}</span>`:''}</div><div class="tg-b"><i class="tg-h"></i><div>${ingTxt(c,A)}.</div>${al.length?`<div class="lt-b">Contains ${esc(al.join(', ').toLowerCase())}.</div>`:''}${S.set.may?`<div class="lt-m">${esc(S.set.may)}</div>`:''}<div class="tg-d">Net ${p.unitG} g${L.price?' · '+m(p.price):''}<br><b>Best before ${dshort(bb)}</b><br>Baked ${dshort(made)} · ${esc(code)}</div><div class="tg-th">${esc(S.set.thanks||'See you at the table')}</div><div class="lt-biz">${esc(S.set.biz)}${S.set.addr?' · '+esc(S.set.addr):''}</div></div></div>`};
@@ -1415,11 +1448,11 @@ function riAdd(i,k){
  save();draw();const x=$('#ri-n'+rid(k));x&&(x.focus(),x.scrollIntoView({block:'center'}))}
 function ingEd(i){
  const p=S.prods[i],P=`prods.${i}`,pc=p.mode=='pct',ss=secsOf(p);
- const opts=v=>S.ings.map(g=>`<option${key(g.n)==key(v)?' selected':''}>${esc(g.n)}</option>`).join('');
+ const opts=v=>S.ings.filter(g=>!(typeof subOf=='function'&&subOf(g.n))).map(g=>`<option${key(g.n)==key(v)?' selected':''}>${esc(g.n)}</option>`).join('')+((S.prods.filter(x=>x.sub&&x.id!=S.prods[i].id)).map(x=>`<option${key(x.name)==key(v)?' selected':''}>${esc(x.name)}</option>`).join(''));
  const line=(g,j)=>`<div class="row"><select class="grow" onchange="pickI(${i},${j},this.value)">${opts(g.n)}</select>${inp(`${P}.ings.${j}.${pc?'pct':'amt'}`,pc?g.pct:g.amt,'',1)}<span class="mut">${pc?'%':bu(g.n)}</span>${ss?`<select class="secsel" title="Move to section" onchange="secMove(${i},${j},this.value)">${ss.map(s=>`<option${(ss.includes(g.sec)?g.sec:ss[0])==s?' selected':''}>${esc(s)}</option>`).join('')}</select>`:''}<button class="g" onclick="del('${P}.ings',${j})">×</button></div>`;
  const qrow=k=>`<div class="row qrow"><input id="ri-n${rid(k)}" class="grow" list="ingl" placeholder="${ss?`Add to ${esc(ss[k])}: type to search`:'Add ingredient: type to search'}" oninput="riU(this.value,${pc},${k})" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#ri-a${rid(k)}').focus()}"><input id="ri-a${rid(k)}" type="number" step="any" placeholder="${pc?'%':'amount'}" onkeydown="if(event.key=='Enter'){event.preventDefault();riAdd(${i},${k})}"><span class="mut" id="ri-u${rid(k)}">${pc?'%':''}</span><button class="b sm" onclick="riAdd(${i},${k})">Add</button></div>`;
  const G=grp(p,p.ings.map((g,j)=>({g,j})));
- return`<datalist id="ingl">${S.ings.map(g=>`<option value="${esc(g.n)}">`).join('')}</datalist>`+
+ return`<datalist id="ingl">${S.ings.map(g=>`<option value="${esc(g.n)}">`).join('')}${S.prods.filter(x=>x.sub&&x.id!=S.prods[i].id).map(x=>`<option value="${esc(x.name)}">sub-recipe</option>`).join('')}</datalist>`+
   (ss?G.map(s=>`<div class="secb"><div class="row sech"><input class="secn grow" value="${esc(s.name)}" onchange="secRen(${i},${s.k},this.value)" aria-label="Section name"><span class="mut">${s.items.length} ingredient${s.items.length==1?'':'s'}</span><button class="g sm" onclick="secDel(${i},${s.k})">Remove section</button></div>${s.items.map(x=>line(x.g,x.j)).join('')}${qrow(s.k)}</div>`).join('')
   :`${p.ings.map(line).join('')}${p.ings.length?'':'<p class="mut">No ingredients yet. Add them below.</p>'}${qrow(0)}`)+
   `<p><button class="g sm" onclick="secAdd(${i})">+ ${ss?'Add another section':'Split into sections, e.g. base and filling'}</button></p>`}
@@ -1569,10 +1602,10 @@ function recipeX(i){const h=recipe(i),p=S.prods[i],c=calc(p),g=mg(p);
  return k<0?h:h.slice(0,k)+bar+h.slice(k)}
 // margins: status dot instead of "below target" on every line
 function menu(){
- const T0=+S.set.margin||65,rows=S.prods.map(p=>({p,c:calc(p),g:mg(p)})).sort((a,b)=>a.g-b.g);
+ const T0=+S.set.margin||65,rows=S.prods.filter(p=>!p.sub).map(p=>({p,c:calc(p),g:mg(p)})).sort((a,b)=>a.g-b.g);
  const n={ok:0,warn:0,bad:0};rows.forEach(r=>n[mst(r.g)]++);
  return alerts()+`<h2>Margins</h2><p class="mut">Lowest first. Your target is ${T0}%, set in Settings. ${n.bad?`<b class="st-bad">${n.bad} well below</b> · `:''}${n.warn?`<b class="st-warn">${n.warn} close</b> · `:''}${n.ok} on target.</p>
- <div class="mlist">${rows.map(r=>{const s=mst(r.g),i=S.prods.indexOf(r.p);return`<button class="mrw" onclick="vw=${i};ed=null;go('Products')"><span class="grow"><b>${esc(r.p.name)}</b><span class="mut">${esc(r.p.cat||'Bakery')}${por(r.p)>1?' · '+esc(pinfo(r.p)):''}</span></span><span class="prm"><span>${m(r.p.price)}</span><span class="mut">cost ${m(r.c.cost)}</span></span><span class="prg st-${s}"><span>${mdot(r.g)}${r.g.toFixed(0)}%</span>${s!='ok'?`<span class="mut sug">→ ${m(sug(r.p))}</span>`:''}</span></button>`}).join('')}</div>
+ <div class="mlist">${rows.map(r=>{const s=mst(r.g),i=S.prods.indexOf(r.p);return`<button class="mrw" onclick="vw=${i};ed=null;go('Products')"><span class="grow"><b>${esc(r.p.name)}</b><span class="mut">${esc(r.p.cat||'Bakery')}${por(r.p)>1?' · '+esc(pinfo(r.p)):''}</span></span><span class="prm"><span>${priceTxt(r.p)}</span><span class="mut">cost ${m(sellOf(r.p)=='slice'?r.c.cost/por(r.p):r.c.cost)}</span></span><span class="prg st-${s}"><span>${mdot(r.g)}${r.g.toFixed(0)}%</span>${s!='ok'?`<span class="mut sug">→ ${m(sellOf(r.p)=='slice'?sug(r.p)/por(r.p):sug(r.p))}</span>`:''}</span></button>`}).join('')}</div>
  <p class="mut sm2">The arrow shows the price that would hit your target.</p>`}
 // orders week: starts today, quiet empty days
 function weekv(){
@@ -1661,6 +1694,126 @@ G.length=0;G.push(['Today',['Today','Kitchen']],['Orders',['Orders']],['Recipes'
 TL.Plan='Bake plan';TL.Shop='Shopping list';
 function go(t){if(t=='Home')t='Today';if(t=='Products'&&tab=='Products'){ed=null;vw=null}tab=t;draw();fx()}
 if(tab=='Home')tab='Today';
+
+// ===== Batch 3: sub-recipes, whole vs slice, purchases and price history, tighter editor =====
+VF.push('sub','sell');
+// ---------- sub-recipes: a recipe used as an ingredient (levain, frosting, caramel) ----------
+const subOf=n=>S.prods.find(x=>x.sub&&key(x.name)==key(n||''));
+const srStk=new Set();
+// a sub-recipe looks like an ingredient priced at its own cost per kg, with its allergens
+function srIng(n){const p=subOf(n);if(!p||srStk.has(p.id))return undefined;srStk.add(p.id);
+ try{const c=calc(p),w=+p.unitG||1,al=[...new Set(c.lines.flatMap(l=>(gi(l.n)||{al:[]}).al||[]))];return{n:p.name,price:c.cost/w*1000,size:1,unit:'kg',al,waste:0,sr:p.id,sup:''}}finally{srStk.delete(p.id)}}
+// expand sub-recipe lines into the raw ingredients you buy
+function xl(lines,dep){dep=dep||0;const out=[];lines.forEach(l=>{const s=dep<4&&l.n&&l.g?subOf(l.n):null;if(s){const f=l.g/(+s.unitG||1);out.push(...xl(calc(s).lines.map(x=>({...x,g:x.g*f})),dep+1))}else out.push(l)});return out}
+const estW=p=>{const b=p.yt=='batch'?Math.max(+p.batch||1,1):1;return Math.round(calc(p).lines.reduce((a,l)=>a+(bu(l.n)=='each'?l.g*55:l.g),0)*b)};
+function setSub(i,on){const p=S.prods[i];if(on){if(p.mode=='pct'&&p.yt!='batch')p.flourG=Math.round(calc(p).lines.filter(l=>/flour/i.test(l.n)).reduce((a,l)=>a+l.g,0))||p.flourG||1000;else if(p.mode!='pct'&&p.yt!='batch'){}p.yt='batch';p.batch=1;p.unitG=estW(p)||p.unitG;p.sub=true;p.price=0;p.sp=0;p.sell='whole'}else delete p.sub;save();draw()}
+const usedIn=p=>S.prods.filter(x=>x.id!=p.id&&x.ings.some(l=>key(l.n)==key(p.name)));
+// schedule: sub-recipe prep is its own lane, finished before the first product that uses it starts
+function sched(d){
+ const tot=totOf(d),out=[],seen=new Set();
+ const lane=(p,q,end)=>{let t=end;const a=[];for(let j=p.steps.length-1;j>=0;j--){const s=p.steps[j],st=t-(+s.mins||0)*6e4;a.unshift({k:p.id+'#'+j,j,fd:d,st,t,n:s.n||'Step '+(j+1),dsc:s.d||'',ps:[{id:p.id,name:p.name,q}]});t=st}return a};
+ let lv=S.prods.filter(p=>tot[p.id]>0).map(p=>{seen.add(p.id);const e=pEnd(p,d),a=lane(p,tot[p.id],e);out.push(...a);return{p,n:bakeN(p.id,tot[p.id]),st:a.length?a[0].st:e}});
+ for(let r=0;r<4&&lv.length;r++){
+  const need={};lv.forEach(({p,n,st})=>calc(p).lines.forEach(l=>{const s=subOf(l.n);if(!s||s.id==p.id||seen.has(s.id))return;const x=need[s.id]=need[s.id]||{s,q:0,end:Infinity};x.q+=l.g*n/(+s.unitG||1);x.end=Math.min(x.end,st)}));
+  lv=Object.values(need).map(({s,q,end})=>{seen.add(s.id);q=Math.max(1,Math.ceil(q-1e-6));const a=lane(s,q,end);out.push(...a);return{p:s,n:bakeN(s.id,q),st:a.length?a[0].st:end}})}
+ return out.sort((a,b)=>a.st-b.st||a.t-b.t)}
+// what to buy for a day: sub-recipes expanded into raw ingredients
+function need(d){const tot=totOf(d),sh={};S.prods.filter(p=>tot[p.id]>0).forEach(p=>{const n=bakeN(p.id,tot[p.id]);xl(calc(p).lines).forEach(l=>{if(!l.n||!l.g)return;const k=key(l.n);sh[k]=sh[k]||{n:l.n,g:0,u:bu(l.n)};sh[k].g+=l.g*n})});return Object.values(sh).sort((a,b)=>a.n.localeCompare(b.n))}
+// Today: ingredients for jobs you start; a sub-recipe has its own job, so skip it inside the product
+function needW(d){const sh={};workDay(d).ev.filter(e=>e.first&&!e.carry).forEach(e=>{const p=S.prods.find(x=>x.id==e.ps[0].id);if(!p)return;const n=bakeN(p.id,e.ps[0].q);calc(p).lines.forEach(l=>{if(!l.n||!l.g||subOf(l.n))return;const k=key(l.n);sh[k]=sh[k]||{n:l.n,g:0,u:bu(l.n)};sh[k].g+=l.g*n})});return Object.values(sh).sort((a,b)=>a.n.localeCompare(b.n))}
+
+// ---------- whole vs slice ----------
+const sellOf=p=>p.sub?'none':p.sell||(+p.sp>0&&por(p)>1?'slice':'whole');
+const priceTxt=p=>sellOf(p)=='slice'?`${m(p.sp)} <span class="mut">/ slice</span>`:m(p.price);
+function setSell(i,v){const p=S.prods[i];p.sell=v;if(v=='slice'){p.por=por(p)>1?por(p):8;if(!+p.sp)p.sp=Math.round((+p.price||0)/p.por*20)/20;p.price=Math.round(p.sp*p.por*100)/100}else p.sp=0;save();draw()}
+function setSl(i,k,v){const p=S.prods[i];p[k]=Math.max(+v||0,k=='por'?1:0);p.price=Math.round((+p.sp||0)*por(p)*100)/100;save();draw()}
+
+// ---------- tighter recipe editor ----------
+const stN=new Set();
+function editor(i){
+ const p=S.prods[i],c=calc(p),P=`prods.${i}`,pc=p.mode=='pct',bt=p.yt=='batch',g=mg(p),sv=sellOf(p),num=(k,v,cls)=>inp(`${P}.${k}`,v,cls||'',1);
+ const bar=`<div class="edbar"><button class="g sm" onclick="edDone(${i})" aria-label="Back">←</button><b class="grow">${esc(p.name)}</b>${p.sub?`<span>${m(c.cost/(+p.unitG||1)*1000)} <span class="mut">/ kg</span></span>`:`<span class="mut">cost</span> <span>${m(c.cost)}</span><span class="st-${mst(g)}">${mdot(g)}${g.toFixed(0)}%</span>`}<button class="b sm" onclick="edDone(${i})">Done</button></div>`;
+ const sell=p.sub?`<p class="mut">Used in ${usedIn(p).map(x=>esc(x.name)).join(', ')||'no recipes yet'}. Add it to a recipe like any ingredient, by its name. Its cost, allergens and prep time follow automatically.</p>`
+  :`<div class="row"><label>Sell as<select onchange="setSell(${i},this.value)"><option value="whole"${sv=='whole'?' selected':''}>Whole, one price</option><option value="slice"${sv=='slice'?' selected':''}>By the slice</option></select></label>${sv=='slice'?`<label>Slices per ${p.cat=='Drinks'?'unit':'cake'}<input type="number" step="1" value="${por(p)}" onchange="setSl(${i},'por',this.value)"></label><label>Price per slice<input type="number" step="any" value="${+p.sp||0}" onchange="setSl(${i},'sp',this.value)"></label><span class="mut grow">Whole = ${m(p.price)} · cost per slice ${m(c.cost/por(p))}</span>`:`<label>Price${num('price',p.price)}</label>`}</div>${g<(+S.set.margin||65)?`<p class="mut sm2">For a ${+S.set.margin||65}% margin: ${sv=='slice'?m(sug(p)/por(p))+' a slice':m(sug(p))}.</p>`:''}`;
+ const yieldR=p.sub?`<div class="row"><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label>${pc?`<label>Flour (g)${num('flourG',p.flourG)}</label>`:''}<label>Makes (g)${num('unitG',p.unitG)}</label><span class="mut grow">About ${estW(p)} g from the ingredients. Change it if it loses or gains weight.</span></div>`
+  :`<div class="row"><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label><label>Yield by${sel(P+'.yt',[['weight','Weight per unit'],['batch','Units per batch']],p.yt)}</label><label>Weight per unit (g)${num('unitG',p.unitG)}</label>${bt?`<label>Units per batch${num('batch',p.batch)}</label>`:''}${pc&&bt?`<label>Flour per batch (g)${num('flourG',p.flourG)}</label>`:''}</div>`;
+ const steps=p.steps.map((s,j)=>{const k=p.id+j,op=s.d||stN.has(k);return`<div class="row srow">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${num(`steps.${j}.mins`,s.mins,'smin')}<span class="mut">min</span><button class="g sm${s.d?' on':''}" title="Instructions" aria-label="Instructions" onclick="stN.has('${k}')?stN.delete('${k}'):stN.add('${k}');draw()">✎</button><button class="g sm" onclick="del('${P}.steps',${j})" aria-label="Remove step">×</button></div>${op?`<div class="row sd"><input class="grow" placeholder="Instructions for this step" value="${esc(s.d||'')}" onchange="up('${P}.steps.${j}.d',this.value)"></div>`:''}`}).join('');
+ return`<section class="ed">${bar}
+ <div class="row">${inp(P+'.name',p.name,'grow big2')}</div>
+ <div class="row"><label>Category${sel(P+'.cat',[['Bakery','Bakery'],['Drinks','Drinks'],['Other','Other']],p.cat||'Bakery')}</label><label class="chip"><input type="checkbox"${p.sub?' checked':''} onchange="setSub(${i},this.checked)"> Use in other recipes (levain, frosting…)</label></div>
+ ${sell}<h4>Yield</h4>${yieldR}${p.sub?'':preUI(i)}
+ <h4>Ingredients <span class="mut">${pc?'flour = 100%':p.sub||bt?'for one batch':'for one unit'}</span></h4>${ingEd(i)}
+ <h4>Steps <span class="mut">in order, with minutes</span></h4>${steps}<div class="row qrow"><input id="rs-n" class="grow" placeholder="Add step, e.g. Proof" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#rs-m').focus()}"><input id="rs-m" class="smin" type="number" step="any" placeholder="min" onkeydown="if(event.key=='Enter'){event.preventDefault();rsAdd(${i})}"><span class="mut">min</span><button class="b sm" onclick="rsAdd(${i})">Add</button></div>
+ <h4>Notes for the person making it</h4><textarea rows="2" onchange="up('${P}.notes',this.value)">${esc(p.notes||'')}</textarea>
+ <details class="edmore"><summary>More: labour, oven, label, photo, versions</summary>
+  <div class="row"><label>Labour min / unit${num('lab',p.lab)}</label><label>Units per oven tray${num('tray',p.tray||0)}</label><label>Oven °C${num('temp',p.temp||0)}</label>${sv=='whole'&&!p.sub?`<label>Portions (info only)${num('por',p.por||1)}</label>`:''}</div>
+  <div class="row"><label>Shelf life (days)${num('shelf',p.shelf)}</label><label class="grow">Storage advice${inp(P+'.store',p.store)}</label></div>
+  <div class="row">${p.img?`<img class="ph" src="${p.img}" alt="">`:''}<label class="chip">Photo<input type="file" accept="image/*" onchange="photo(${i},this)"></label>${p.img?`<button class="g sm" onclick="up('prods.${i}.img','')">Remove photo</button>`:''}</div>
+  ${verUI(i)}${pNotes(p.id).length?`<details class="ver"><summary>Bake notes · ${pNotes(p.id).length}</summary>${notesList(p.id,5)}</details>`:''}
+  <p class="mut sm2">Ingredients ${m(c.ing)} · with labour ${m(c.cost)}${c.hyd?` · hydration ${c.hyd.toFixed(0)}%`:''}</p>
+  <div class="row"><button class="g sm" onclick="dupP(${i})">Duplicate</button><button class="g sm" onclick="delP(${i})">Delete product</button></div>
+ </details>
+ <div class="row" style="margin-top:18px"><button class="b" onclick="edDone(${i})">Done</button><span class="mut">Changes save as you go.</span></div></section>`}
+
+// ---------- recipes list with sub-recipes in their own group ----------
+function prods(){
+ if(cm!=null&&S.prods[cm])return cookv(cm);
+ if(vw!=null&&S.prods[vw])return recipeX(vw);
+ if(ed!=null&&S.prods[ed])return editor(ed);
+ const cats=['All',...new Set(S.prods.filter(p=>!p.sub).map(p=>p.cat||'Bakery'))];
+ const ok=p=>p.name.toLowerCase().includes(pq.toLowerCase());
+ const row=([p,i])=>{const c=calc(p),g=mg(p);return`<button class="prw" data-n="${esc(p.name.toLowerCase())}" onclick="vw=${i};draw();fx();window.scrollTo(0,0)">${p.img?`<img class="pth" src="${p.img}" alt="">`:`<span class="pcl" style="--lc:${pcol(p.id)}"></span>`}<span class="grow prn"><b>${esc(p.name)}</b><span class="mut">${p.sub?`Used in ${usedIn(p).length} recipe${usedIn(p).length==1?'':'s'}`:`${esc(p.cat||'Bakery')} · ${p.unitG} g${sellOf(p)=='slice'?` · ${por(p)} slices`:''}`}</span></span>${p.sub?`<span class="prm"><span>${m(c.cost/(+p.unitG||1)*1000)}</span><span class="mut">per kg</span></span>`:`<span class="prm"><span>${priceTxt(p)}</span><span class="mut">cost ${m(sellOf(p)=='slice'?c.cost/por(p):c.cost)}</span></span><span class="prg st-${mst(g)}"><span>${mdot(g)}${g.toFixed(0)}%</span></span>`}</button>`};
+ const L=S.prods.map((p,i)=>[p,i]),main=L.filter(([p])=>!p.sub&&(pcat=='All'||(p.cat||'Bakery')==pcat)&&ok(p)),sb=L.filter(([p])=>p.sub&&ok(p));
+ return`<div class="row"><h2 class="grow" style="margin:0">Recipes</h2><button class="b" onclick="newP()">+ New product</button></div><div class="row"><input class="grow" placeholder="Search" value="${esc(pq)}" oninput="pq=this.value;flt('.prw[data-n]',pq)">${cats.length>2?cats.map(c=>`<button class="g sm${c==pcat?' on':''}" onclick="pcat='${c}';draw()">${c}</button>`).join(''):''}</div>
+ <div class="plist">${main.map(row).join('')||'<p class="mut">No products yet.</p>'}</div>${sb.length?`<h3 style="margin-top:26px">Sub-recipes <span class="mut">used inside other recipes</span></h3><div class="plist">${sb.map(row).join('')}</div>`:''}
+ <p class="mut sm2">${mdot(99)} at or above your ${+S.set.margin||65}% target · <span class="dot st-warn"></span>within 10% · <span class="dot st-bad"></span>well below. To make a sub-recipe, open a recipe, and tick “Use in other recipes”.</p>`}
+
+// ---------- purchases and price history ----------
+const pkU=h=>(+h.price||0)/((+h.size||1)*(FAC[h.unit]||1));
+const perTxt=(v,u)=>BASE[u]=='each'?m(v)+' each':m(v*1000)+' / '+(BASE[u]=='ml'?'l':'kg');
+function hChg(g){const H=g.hist||[];if(H.length<2)return null;const a=pkU(H[H.length-2]),b=pkU(H[H.length-1]);return a?((b-a)/a*100):null}
+const chgTxt=x=>x==null||Math.abs(x)<0.5?'':`<span class="${x>0?'st-bad':'st-ok'}">${x>0?'▲':'▼'} ${Math.abs(x).toFixed(0)}%</span>`;
+let bF=null,bImp=null;
+const bNew=()=>({date:tdy(),sup:'',lines:[{n:'',packs:1,size:'',unit:'kg',price:''}]});
+const sups=()=>[...new Set([...S.ings.map(g=>g.sup),...(S.buys||[]).map(b=>b.sup)].filter(Boolean))].sort();
+function bSet(k,v){bF[k]=v}
+function bLine(j,k,v){const L=bF.lines[j];L[k]=v;if(k=='n'){const g=S.ings.find(x=>key(x.n)==key(v));if(g){L.size=g.size;L.unit=g.unit;L.price=g.price;if(!bF.sup&&g.sup)bF.sup=g.sup}draw();setTimeout(()=>{const x=document.querySelectorAll('.bln')[j];x&&x.querySelector('.bpk').focus()},30);return}if(k!='n')draw()}
+function bAdd(){bF.lines.push({n:'',packs:1,size:'',unit:'kg',price:''});draw();setTimeout(()=>{const a=document.querySelectorAll('.bln .bn');a.length&&a[a.length-1].focus()},30)}
+function bDel(j){bF.lines.splice(j,1);if(!bF.lines.length)bF.lines.push({n:'',packs:1,size:'',unit:'kg',price:''});draw()}
+const costs=()=>Object.fromEntries(S.prods.map(p=>[p.id,calc(p).cost]));
+function bSave(){
+ const f=bF,L=f.lines.filter(l=>(l.n||'').trim()&&+l.price>0);if(!L.length){flash('Add at least one item with a price');return}
+ const before=costs();S.buys=S.buys||[];
+ const nw=[];L.forEach(l=>{let g=S.ings.find(x=>key(x.n)==key(l.n));if(!g){g={n:l.n.trim(),price:0,size:1,unit:l.unit||'kg',al:[],waste:0};S.ings.push(g);nw.push(g.n)}
+  const h={d:f.date,price:+l.price,size:+l.size||+g.size||1,unit:l.unit||g.unit||'kg',sup:f.sup||'',packs:+l.packs||1};
+  g.hist=g.hist||[];if(!g.hist.length&&+g.price>0&&g.pdate!=f.date)g.hist.push({d:g.pdate||'',price:+g.price,size:+g.size||1,unit:g.unit,sup:g.sup||'',start:1});
+  g.hist.push(h);g.hist.sort((a,b)=>(a.d||'').localeCompare(b.d||''));while(g.hist.length>40)g.hist.shift();
+  if(g.hist[g.hist.length-1]===h){if(h.price!=+g.price||h.size!=+g.size||h.unit!=g.unit){g.prev=g.price;g.pdate=f.date}g.price=h.price;g.size=h.size;g.unit=h.unit;if(f.sup)g.sup=f.sup}});
+ S.buys.unshift({id:'b'+nid(),date:f.date,sup:f.sup||'',lines:L.map(l=>({n:l.n.trim(),packs:+l.packs||1,size:+l.size||0,unit:l.unit||'',price:+l.price})),tot:L.reduce((a,l)=>a+(+l.packs||1)*(+l.price),0)});
+ S.buys.sort((a,b)=>b.date.localeCompare(a.date));
+ const after=costs();bImp=S.prods.filter(p=>Math.abs((after[p.id]||0)-(before[p.id]||0))>0.004).map(p=>({p,b:before[p.id],a:after[p.id],g:mg(p)})).sort((x,y)=>(y.a-y.b)-(x.a-x.b));
+ flash(nw.length?`Saved. New: ${nw.join(', ')}. Tick its allergens in Ingredients.`:`Purchase saved · ${L.length} item${L.length==1?'':'s'}`);bF=bNew();bF.date=f.date;save();draw();window.scrollTo(0,0)}
+function bRm(id){const b=(S.buys||[]).find(x=>x.id==id);if(!b)return;snap('Purchase removed');b.lines.forEach(l=>{const g=S.ings.find(x=>key(x.n)==key(l.n));if(g&&g.hist){const k=g.hist.findIndex(h=>h.d==b.date&&h.price==l.price&&(h.sup||'')==(b.sup||''));if(k>=0)g.hist.splice(k,1)}});S.buys=S.buys.filter(x=>x!=b);save();draw()}
+function buys(){
+ if(!bF)bF=bNew();const f=bF,B=S.buys||[],mo=tdy().slice(0,7),pm=addD(mo+'-01',-1).slice(0,7);
+ const sum=k=>B.filter(b=>b.date.slice(0,7)==k).reduce((a,b)=>a+b.tot,0),bySup={};B.filter(b=>b.date.slice(0,7)==mo).forEach(b=>bySup[b.sup||'No supplier']=(bySup[b.sup||'No supplier']||0)+b.tot);
+ const imp=bImp&&bImp.length?`<div class="card imp"><div class="row"><b class="grow">Recipe costs changed</b><button class="g sm" onclick="bImp=null;draw()">OK</button></div>${bImp.map(r=>{const s=mst(r.g),d=r.a-r.b;return`<div class="trow"><span class="grow">${esc(r.p.name)}</span><span class="mut">${m(r.b)} → <b>${m(r.a)}</b></span><span class="${d>0?'st-bad':'st-ok'}">${d>0?'+':''}${m(d)}</span>${r.p.sub?'<span class="mut">sub-recipe</span>':`<span class="st-${s}">${mdot(r.g)}${r.g.toFixed(0)}%</span>`}</div>`}).join('')}${bImp.some(r=>mst(r.g)!='ok'&&!r.p.sub)?`<p class="mut sm2">Products below your target are in red or amber. Open Margins to see the price that gets you back on target.</p><button class="g sm" onclick="go('Menu')">Open Margins</button>`:''}</div>`:'';
+ const tl=l=>(+l.packs||0)*(+l.price||0);
+ const form=`<div class="card ofm"><b>Record a purchase</b><div class="row"><label>Date<input type="date" value="${esc(f.date)}" onchange="bSet('date',this.value)"></label><label class="grow">Supplier<input list="supl" value="${esc(f.sup)}" onchange="bSet('sup',this.value)" placeholder="e.g. Musgraves"></label><datalist id="supl">${sups().map(s=>`<option value="${esc(s)}">`).join('')}</datalist><datalist id="ingl2">${S.ings.map(g=>`<option value="${esc(g.n)}">`).join('')}</datalist></div>
+  <div class="bhd mut"><span class="grow">Item</span><span>Packs</span><span>Pack size</span><span>Price / pack</span></div>
+  ${f.lines.map((l,j)=>`<div class="row bln"><input class="bn grow" list="ingl2" placeholder="Ingredient" value="${esc(l.n)}" onchange="bLine(${j},'n',this.value)"><input class="bpk" type="number" step="any" min="0" value="${esc(l.packs)}" aria-label="Packs" onchange="bLine(${j},'packs',this.value)"><span class="bsz"><input type="number" step="any" value="${esc(l.size)}" aria-label="Pack size" onchange="bLine(${j},'size',this.value)"><select aria-label="Unit" onchange="bLine(${j},'unit',this.value)">${UN.map(u=>`<option${u==l.unit?' selected':''}>${u}</option>`).join('')}</select></span><input class="bpr" type="number" step="any" min="0" value="${esc(l.price)}" placeholder="€" aria-label="Price per pack" onchange="bLine(${j},'price',this.value)"><button class="g sm" onclick="bDel(${j})" aria-label="Remove">×</button>${(()=>{const g=S.ings.find(x=>key(x.n)==key(l.n));if(!g||!+l.price)return'';const o=pkU(g),n=pkU({price:l.price,size:l.size||g.size,unit:l.unit||g.unit});const x=o?(n-o)/o*100:null;return`<span class="bnote mut">${x==null||Math.abs(x)<0.5?'same price as now':`${chgTxt(x)} vs ${perTxt(o,g.unit)}`}</span>`})()}</div>`).join('')}
+  <div class="row"><button class="lnk" onclick="bAdd()">+ Another item</button><span class="grow"></span><span>Total <b>${m(f.lines.reduce((a,l)=>a+tl(l),0))}</b></span></div>
+  <div class="row"><span class="mut grow sm2">Saving updates the ingredient price, keeps the old one in its history, and shows which recipes changed.</span><button class="b" onclick="bSave()">Save purchase</button></div></div>`;
+ const spend=B.length?`<div class="row spend"><span>This month <b>${m(sum(mo))}</b></span><span class="mut">Last month ${m(sum(pm))}</span>${Object.entries(bySup).sort((a,b)=>b[1]-a[1]).map(([s,v])=>`<span class="mut">${esc(s)} ${m(v)}</span>`).join('')}</div>`:'';
+ const list=B.length?B.slice(0,60).map(b=>`<details class="ir"><summary><div><span class="nm">${esc(b.sup||'No supplier')}</span><br><span class="sub">${dlab(b.date)} · ${b.lines.length} item${b.lines.length==1?'':'s'}</span></div><span>${m(b.tot)}</span><span class="mut">▾</span></summary><div class="body">${b.lines.map(l=>`<div class="trow"><span class="grow">${esc(l.n)}</span><span class="mut">${l.packs} × ${l.size?l.size+' '+esc(l.unit):'pack'}</span><span>${m(l.price)}</span></div>`).join('')}<div class="row" style="margin-top:10px"><span class="grow mut sm2">Removing it keeps the current prices.</span><button class="g sm" onclick="bRm('${b.id}')">Remove purchase</button></div></div></details>`).join(''):'<p class="mut">No purchases yet. Record your next delivery or receipt above.</p>';
+ return`<h2 style="margin:0 0 6px">Purchases</h2>`+imp+form+spend+`<h3 style="margin-top:24px">Recent</h3>`+list}
+// price history inside each ingredient, change badge in the list
+const ingT=T.Ingredients;
+T.Ingredients=()=>{let h=ingT();
+ h=h.replace(/<details class="ir" data-i="(\d+)"([\s\S]*?)<span class="mut">▾<\/span><\/summary><div class="body">/g,(all,i,mid)=>{const g=S.ings[+i];if(!g)return all;const x=hChg(g),H=(g.hist||[]).filter(e=>!e.start).slice(-6).reverse();
+  return`<details class="ir" data-i="${i}"${mid}${x!=null&&Math.abs(x)>=0.5?`<span class="ichg">${chgTxt(x)}</span>`:''}<span class="mut">▾</span></summary><div class="body">${H.length?`<div class="ihist"><div class="mut sm2">Last bought ${dlab(H[0].d)}${H[0].sup?' from '+esc(H[0].sup):''}</div>${H.map((e,k)=>{const prev=(g.hist||[])[(g.hist||[]).indexOf(e)-1],c=prev?(pkU(e)-pkU(prev))/(pkU(prev)||1)*100:null;return`<div class="trow"><span class="mut">${dlab(e.d)}</span><span class="grow">${esc(e.sup||'')}</span><span>${m(e.price)} <span class="mut">/ ${e.size} ${esc(e.unit)}</span></span><span>${chgTxt(c)}</span></div>`}).join('')}</div>`:''}`});
+ return h};
+G.find(g=>g[0]=='Costs')[1].splice(1,0,'Buy');TL.Buy='Purchases';T.Buy=buys;
 
 draw();
 </script></body></html>
