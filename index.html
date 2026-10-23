@@ -374,6 +374,8 @@ select.secsel{width:auto;max-width:130px;font-size:13px}
 .mtab td:nth-child(5)::before{content:'Margin ';color:var(--mut);font-size:12px}
 .mtab td:nth-child(6)::before{content:'Suggested ';color:var(--mut);font-size:12px}
 .nif .row>label{flex:1 1 40%}.nif .row>label.grow{flex-basis:100%}}
+.early{border-left:6px solid #69504c}
+.ln-for{display:inline-block;margin:4px 0 2px;font-size:12px;font-weight:500;letter-spacing:.04em;background:#ecd7c6;color:#3e302a;border-radius:999px;padding:2px 10px}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><img class="wm-logo hdr" src="brand/folk-logo.png" alt="FOLk"><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -504,7 +506,7 @@ function editor(i){
  <div class="row">${p.img?`<img class="ph" src="${p.img}" alt="">`:''}<label class="chip">Photo<input type="file" accept="image/*" onchange="photo(${i},this)"></label>${p.img?`<button class="g" onclick="up('prods.${i}.img','')">Remove photo</button>`:''}</div>
  ${verUI(i)}${pNotes(p.id).length?`<details class="ver"><summary>Bake notes · ${pNotes(p.id).length}</summary>${notesList(p.id,5)}</details>`:''}<div class="row"><label>Category${sel(P+'.cat',[['Bakery','Bakery'],['Drinks','Drinks'],['Other','Other']],p.cat||'Bakery')}</label><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label><label>Yield defined by${sel(P+'.yt',[['weight','Weight per unit'],['batch','Units per batch']],p.yt)}</label></div>
  <div class="row"><label>Net weight per unit (g)${inp(P+'.unitG',p.unitG,'',1)}</label>${bt?`<label>Units per batch${inp(P+'.batch',p.batch,'',1)}</label>`:''}${pc&&bt?`<label>Flour per batch (g)${inp(P+'.flourG',p.flourG,'',1)}</label>`:''}<label>Sell price${inp(P+'.price',p.price,'',1)}</label><label>Portions per unit${inp(P+'.por',p.por||1,'',1)}</label><label>Price per portion${inp(P+'.sp',p.sp||0,'',1)}</label><label>Labour min / unit${inp(P+'.lab',p.lab,'',1)}</label><label>Units per oven tray${inp(P+'.tray',p.tray||0,'',1)}</label><label>Oven °C${inp(P+'.temp',p.temp||0,'',1)}</label></div>
- <h4>Ingredients ${pc?'(flour = 100%)':bt?'(amounts for one batch)':'(amounts for one unit)'}</h4>
+ ${preUI(i)}<h4>Ingredients ${pc?'(flour = 100%)':bt?'(amounts for one batch)':'(amounts for one unit)'}</h4>
  ${ingEd(i)}
  <h4>Steps in order, with minutes</h4>${p.steps.map((s,j)=>`<div class="row">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${inp(`${P}.steps.${j}.mins`,s.mins,'',1)}<span class="mut">min</span><button class="g" onclick="del('${P}.steps',${j})">×</button></div><div class="row"><input class="grow" placeholder="Instructions for this step (optional)" value="${esc(s.d||'')}" onchange="up('${P}.steps.${j}.d',this.value)"></div>`).join('')}<div class="row qrow"><input id="rs-n" class="grow" placeholder="Add step, e.g. Proof" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#rs-m').focus()}"><input id="rs-m" type="number" step="any" placeholder="min" onkeydown="if(event.key=='Enter'){event.preventDefault();rsAdd(${i})}"><span class="mut">min</span><button class="b sm" onclick="rsAdd(${i})">Add</button></div>
  <h4>Notes for the person making it</h4><textarea rows="3" onchange="up('${P}.notes',this.value)">${esc(p.notes||'')}</textarea>
@@ -526,7 +528,7 @@ function plan(){
  if(!act.length)return h+`<p class="mut">No orders for <b>${dlab(pday())}</b>. Add orders or daily targets on the Orders tab, or change the Ready at date above.</p>`;
  const bs=p=>Math.max(+p.batch||1,1),bq=p=>p.yt=='batch'?Math.ceil(q[p.id]/bs(p))*bs(p):q[p.id];
  const end=new Date(S.set.ready).getTime(),ev={};
- act.forEach(p=>{let t=end;[...p.steps].reverse().forEach(s=>{const st=t-(+s.mins||0)*6e4,k=st+'|'+key(s.n)+'|'+t;(ev[k]=ev[k]||{st,t,n:s.n,ps:[]}).ps.push(p.name);t=st})});
+ act.forEach(p=>{let t=pEnd(p,pday());[...p.steps].reverse().forEach(s=>{const st=t-(+s.mins||0)*6e4,k=st+'|'+key(s.n)+'|'+t;(ev[k]=ev[k]||{st,t,n:s.n,ps:[]}).ps.push(p.name);t=st})});
  const rows=Object.values(ev).sort((a,b)=>a.st-b.st||a.t-b.t);
  let rev=0,cost=0,tot=0,shop={};
  act.forEach(p=>{const c=calc(p);rev+=q[p.id]*p.price;cost+=q[p.id]*c.cost;c.lines.forEach(l=>{const k=key(l.n),g=gi(l.n),x=l.g*bq(p);shop[k]=shop[k]||{n:l.n,g:0,u:bu(l.n),c:0};shop[k].g+=x;shop[k].c+=x*ppu(g)/wf(g)})});
@@ -652,7 +654,7 @@ function orders(){
 function recipe(i){
  const p=S.prods[i],c=calc(p),b=Math.max(+p.batch||1,1),bt=p.yt=='batch';
  const oq=dO().filter(o=>o.pid==p.id).reduce((a,o)=>a+o.qty,0),want=vq[p.id]||oq||(bt?b:1),n=bt?Math.ceil(want/b)*b:want;
- let t=new Date(S.set.ready).getTime();const st=[...p.steps].reverse().map(s=>t-=(+s.mins||0)*6e4).reverse();
+ let t=pEnd(p,pday());const st=[...p.steps].reverse().map(s=>t-=(+s.mins||0)*6e4).reverse();
  const total=p.steps.reduce((a,s)=>a+(+s.mins||0),0);
  return`<div class="recipe"><div class="noprint row"><button class="g" onclick="vw=null;draw()">← All products</button><span class="grow"></span><button class="g" onclick="vw=null;ed=${i};draw()">Edit</button><button class="b" onclick="cook(${i})">Cook mode</button><button class="g" onclick="print()">Print recipe</button></div>
  <div class="pw"><img class="wm-logo" src="${LOGO()}" alt="FOLk"><span class="wm2">Speciality Coffee</span></div><p class="mut">${esc(p.cat||'Bakery')} · version ${p.cv||1}</p><h2 class="rt">${esc(p.name)}</h2>${p.img?`<img class="rph" src="${p.img}" alt="">`:''}
@@ -933,7 +935,7 @@ function dupP(i){const c=JSON.parse(JSON.stringify(S.prods[i]));c.id=nid();c.nam
 // today
 function today(){
  const d=pday(),tot=totOf(d),act=S.prods.filter(p=>tot[p.id]>0),end=endOf(d),E=sched(d),M=S.kb[d]||{};
- let first=Infinity;act.forEach(p=>{first=Math.min(first,end-p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4)});
+ let first=Infinity;act.forEach(p=>{first=Math.min(first,pEnd(p,d)-p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4)});
  const pE=p=>E.filter(e=>e.ps.some(x=>x.id==p.id)),pdone=p=>!!S.done[d+'|'+p.id]||(pE(p).length>0&&pE(p).every(e=>M[e.k]==2));
  const nd=act.filter(pdone).length,low=act.filter(p=>mg(p)<(+S.set.margin||0));
  const picks=S.orders.map((o,i)=>[o,i]).filter(([o])=>o.date==d).sort((a,b)=>(a[0].time||'99').localeCompare(b[0].time||'99'));
@@ -1164,7 +1166,7 @@ setInterval(tick,1000);
 // each product's steps are their own events, keyed product#step
 function sched(d){
  const tot=totOf(d),end=endOf(d),out=[];
- S.prods.filter(p=>tot[p.id]>0).forEach(p=>{let t=end;const a=[];for(let j=p.steps.length-1;j>=0;j--){const s=p.steps[j],st=t-(+s.mins||0)*6e4;a.unshift({k:p.id+'#'+j,j,st,t,n:s.n||'Step '+(j+1),dsc:s.d||'',ps:[{id:p.id,name:p.name,q:tot[p.id]}]});t=st}out.push(...a)});
+ S.prods.filter(p=>tot[p.id]>0).forEach(p=>{let t=pEnd(p,d);const a=[];for(let j=p.steps.length-1;j>=0;j--){const s=p.steps[j],st=t-(+s.mins||0)*6e4;a.unshift({k:p.id+'#'+j,j,fd:d,st,t,n:s.n||'Step '+(j+1),dsc:s.d||'',ps:[{id:p.id,name:p.name,q:tot[p.id]}]});t=st}out.push(...a)});
  return out.sort((a,b)=>a.st-b.st||a.t-b.t)}
 const PAL=['#69504c','#a9b79f','#d9c39b','#8e9aa3','#c98f6f','#000000','#b5a8c9'];
 const pcol=pid=>PAL[Math.max(0,S.prods.findIndex(p=>p.id==pid))%PAL.length];
@@ -1179,20 +1181,20 @@ function kSet(k,n,auto){
  kAl=kAl.filter(a=>a.k!=k);rAlm();save();draw()}
 function kPlus(ev,k,min){ev.stopPropagation();const d=pday(),T=S.kbt&&S.kbt[d]&&S.kbt[d][k];if(T){T.x=(+T.x||0)+min;kAl=kAl.filter(a=>a.k!=k);rAlm();save();draw()}}
 function kitchen(){
- const d=pday(),E=sched(d),M=S.kb[d]||{},TT=(S.kbt||{})[d]||{},now=Date.now(),st=e=>M[e.k]||0;
- const lanes=[];E.forEach(e=>{let L=lanes.find(l=>l.id==e.ps[0].id);if(!L){L={id:e.ps[0].id,name:e.ps[0].name,q:bakeN(e.ps[0].id,e.ps[0].q),steps:[]};lanes.push(L)}L.steps.push(e)});
+ const d=pday(),E=dayWork(d),now=Date.now(),st=e=>(((S.kb||{})[e.fd]||{})[e.k])||0,TTf=e=>((S.kbt||{})[e.fd]||{})[e.k];
+ const lanes=[];E.forEach(e=>{const lk=e.ps[0].id+'@'+e.fd;let L=lanes.find(l=>l.key==lk);if(!L){L={key:lk,fd:e.fd,id:e.ps[0].id,name:e.ps[0].name,q:bakeN(e.ps[0].id,e.ps[0].q),steps:[]};lanes.push(L)}L.steps.push(e)});
  lanes.forEach(L=>{L.steps.sort((a,b)=>a.j-b.j);L.done=L.steps.filter(e=>st(e)==2).length;L.all=L.done==L.steps.length;L.cur=L.steps.find(e=>st(e)!=2);L.busy=!L.all&&(L.done>0||L.steps.some(e=>st(e)==1))});
  const active=lanes.filter(L=>L.busy).sort((a,b)=>a.cur.st-b.cur.st),wait=lanes.filter(L=>!L.busy&&!L.all).sort((a,b)=>a.cur.st-b.cur.st),fin=lanes.filter(L=>L.all);
  const doing=E.filter(e=>st(e)==1),nextUp=[...active,...wait].map(L=>L.cur).filter(e=>st(e)==0).sort((a,b)=>a.st-b.st)[0];
  const total=E.length,dn=E.filter(e=>st(e)==2).length;
- const timer=e=>{const T=TT[e.k];if(!T)return'';const end=tEnd(e,T),r=Math.round((end-now)/1000);return`<span class="kcd${r<0?' over':''}" data-end="${end}">${r>=0?fmt(r)+' left':'Over by '+fmt(-r)}</span>`};
+ const timer=e=>{const T=TTf(e);if(!T)return'';const end=tEnd(e,T),r=Math.round((end-now)/1000);return`<span class="kcd${r<0?' over':''}" data-end="${end}">${r>=0?fmt(r)+' left':'Over by '+fmt(-r)}</span>`};
  const stepRow=(L,e)=>{const s=st(e),isCur=e==L.cur,late=s==0&&isCur&&e.st<now;
-  if(s==2)return`<div class="ks done" onclick="kSet('${e.k}',0)" title="Tap to undo"><span class="ki">✓</span><span class="grow">${esc(e.n)}</span><span class="mut">undo</span></div>`;
+  if(s==2)return`<div class="ks done" onclick="kSet('${e.k}',0,0,'${e.fd}')" title="Tap to undo"><span class="ki">✓</span><span class="grow">${esc(e.n)}</span><span class="mut">undo</span></div>`;
   if(!isCur)return`<div class="ks later"><span class="ki">${e.j+1}</span><span class="grow">${esc(e.n)}</span><span class="mut">${kt(e.st,d)} · ${hm(Math.round((e.t-e.st)/6e4))}</span></div>`;
   return`<div class="ks cur${s==1?' doing':''}${late?' late':''}"><div class="row" style="margin:0"><span class="ki">${e.j+1}</span><div class="grow"><div class="kn">${esc(e.n)}</div><div class="mut">${kt(e.st,d)}–${kt(e.t,d)} · ${hm(Math.round((e.t-e.st)/6e4))}${late?' · should have started':''}</div>${e.dsc?`<div class="kd">${esc(e.dsc)}</div>`:''}</div></div>
-   <div class="row kx">${s==1?`${timer(e)}<span class="grow"></span><button class="g sm" onclick="kPlus(event,'${e.k}',5)">+5 min</button><button class="g sm" onclick="kSet('${e.k}',0)">Not yet</button><button class="b" onclick="kSet('${e.k}',2,true)">Done</button>`:`<span class="grow"></span><button class="g sm" onclick="kSet('${e.k}',2)">Mark done</button><button class="b" onclick="kSet('${e.k}',1)">Start</button>`}</div></div>`};
- const lane=L=>{const col=pcol(L.id),open=L.all?kOpen.has(L.id):!kShut.has(L.id),c=L.cur,stx=L.all?'✓ Finished':st(c)==1?`Doing: ${esc(c.n)}`:`Next: ${esc(c.n)} at ${hh(c.st)}`;
-  return`<section class="lane${L.busy?' on':''}${L.all?' fin':''}" style="--lc:${col}"><div class="ln-h" onclick="kTog('${L.id}',${L.all})"><div class="grow"><div class="ln-n">${esc(L.name)} <span class="ln-q">× ${L.q}</span></div><div class="ln-s">${stx} · ${L.done} of ${L.steps.length}</div></div>${L.all?'':`<button class="g sm" onclick="event.stopPropagation();goCook(${S.prods.findIndex(p=>p.id==L.id)})">Cook mode</button>`}<span class="ln-c">${open?'▴':'▾'}</span></div><div class="ln-bar"><i style="width:${L.done/L.steps.length*100}%"></i></div>${open?`<div class="ln-b">${laneIng(L)}${L.steps.map(e=>stepRow(L,e)).join('')}${L.all?noteBox(L.id,'kb'):`<details class="qa ln-note"><summary>Add a bake note</summary>${noteBox(L.id,'kb')}</details>`}</div>`:''}</section>`};
+   <div class="row kx">${s==1?`${timer(e)}<span class="grow"></span><button class="g sm" onclick="kPlus(event,'${e.k}',5,'${e.fd}')">+5 min</button><button class="g sm" onclick="kSet('${e.k}',0,0,'${e.fd}')">Not yet</button><button class="b" onclick="kSet('${e.k}',2,true,'${e.fd}')">Done</button>`:`<span class="grow"></span><button class="g sm" onclick="kSet('${e.k}',2,0,'${e.fd}')">Mark done</button><button class="b" onclick="kSet('${e.k}',1,0,'${e.fd}')">Start</button>`}</div></div>`};
+ const lane=L=>{const col=pcol(L.id),open=L.all?kOpen.has(L.key):!kShut.has(L.key),c=L.cur,stx=L.all?'✓ Finished':st(c)==1?`Doing: ${esc(c.n)}`:`Next: ${esc(c.n)} at ${hh(c.st)}`;
+  return`<section class="lane${L.busy?' on':''}${L.all?' fin':''}" style="--lc:${col}"><div class="ln-h" onclick="kTog('${L.key}',${L.all})"><div class="grow"><div class="ln-n">${esc(L.name)} <span class="ln-q">× ${L.q}</span></div>${L.fd!=d?`<div class="ln-for">For ${dlab(L.fd)}</div>`:''}<div class="ln-s">${stx} · ${L.done} of ${L.steps.length}</div></div>${L.all?'':`<button class="g sm" onclick="event.stopPropagation();goCook(${S.prods.findIndex(p=>p.id==L.id)})">Cook mode</button>`}<span class="ln-c">${open?'▴':'▾'}</span></div><div class="ln-bar"><i style="width:${L.done/L.steps.length*100}%"></i></div>${open?`<div class="ln-b">${laneIng(L)}${L.steps.map(e=>stepRow(L,e)).join('')}${L.all?noteBox(L.id,'kb'):`<details class="qa ln-note"><summary>Add a bake note</summary>${noteBox(L.id,'kb')}</details>`}</div>`:''}</section>`};
  return`<div class="row kh"><div class="grow"><div class="mut">Kitchen board</div><h2 class="dayh">${dlab(d)}</h2></div><div class="kclock">${hh(now)}</div></div>
  <div class="row">${kbig?'<button class="g" onclick="kBig(false)">Exit big screen</button>':'<button class="b" onclick="kBig(true)">Big screen</button><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button>'}<button class="g sm" onclick="setMute(${!muted})">${muted?'Sound off':'Sound on'}</button><span class="grow"></span><span class="mut">${dn} of ${total} steps done</span><button class="g sm" onclick="kreset()">Reset</button></div>
  ${E.length?`<div class="bar"><i style="width:${total?dn/total*100:0}%"></i></div>
@@ -1211,7 +1213,7 @@ function home(){
  const d=tdy(),tot=totOf(d),act=S.prods.filter(p=>tot[p.id]>0),E=sched(d),M=(S.kb||{})[d]||{},now=Date.now(),h=new Date().getHours();
  const greet=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
  const items=act.reduce((a,p)=>a+bakeN(p.id,tot[p.id]),0),stepsDone=E.filter(e=>M[e.k]==2).length;
- const first=act.length?Math.min(...act.map(p=>endOf(d)-p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4)):0;
+ const first=act.length?Math.min(...act.map(p=>pEnd(p,d)-p.steps.reduce((a,s)=>a+(+s.mins||0),0)*6e4)):0;
  const doing=E.filter(e=>M[e.k]==1),R=runTimers().filter(t=>t.d==d);
  const picks=S.orders.filter(o=>o.date==d),open=picks.filter(o=>!o.done).length,rec=(S.sales||{})[d];
  const tile=(icon,t,sub,on,big)=>`<button class="ht${big?' wide':''}" onclick="${on}"><span class="hic">${icon}</span><span class="htt">${t}</span><span class="hts">${sub}</span></button>`;
@@ -1253,8 +1255,8 @@ function notesList(pid,max){const L=pNotes(pid).slice(0,max||50);return L.length
 function goCook(i){if(!S.prods[i])return;tab='Products';tpl=false;ed=null;vw=i;cook(i);window.scrollTo(0,0)}
 
 // ===== Ingredients on the kitchen board (weigh ticks shared per day) =====
-const wIs=(pid,j)=>!!(((S.wk||{})[pday()]||{})[pid+'|'+j]);
-function wTog(pid,j){S.wk=S.wk||{};const W=S.wk[pday()]=S.wk[pday()]||{},k=pid+'|'+j;if(W[k])delete W[k];else W[k]=1;save();draw()}
+let wFd=null;const wIs=(pid,j)=>!!(((S.wk||{})[wFd||pday()]||{})[pid+'|'+j]);
+function wTog(pid,j,fd){const dd=fd||pday();S.wk=S.wk||{};const W=S.wk[dd]=S.wk[dd]||{},k=pid+'|'+j;if(W[k])delete W[k];else W[k]=1;save();draw()}
 function cook(i){cm=i;cs=0;ctReset();wake();draw()}
 function wRows(p,n,cls){
  const L=calc(p).lines.map((l,j)=>({...l,j})).filter(l=>l.n&&l.g>0),one=!!S.set.oneBowl;let run=0;
@@ -1353,7 +1355,7 @@ function ingEd(i){
 function recTbl(p,c,n){const pc=p.mode=='pct';return grp(p,c.lines.map((l,j)=>({...l,j}))).filter(g=>g.items.length).map(g=>`${g.name?`<h4 class="rsec">${esc(g.name)}</h4>`:''}<table>${g.items.map(l=>`<tr><td>${esc(l.n)}</td><td class="n">${fq(l.g*n,bu(l.n))}</td>${pc?`<td class="n mut">${p.ings[l.j].pct}%</td>`:''}</tr>`).join('')}</table>`).join('')||'<p class="mut">No ingredients yet.</p>'}
 function wRows(p,n,cls){
  const L=calc(p).lines.map((l,j)=>({...l,j})).filter(l=>l.n&&l.g>0),one=!!S.set.oneBowl,ss=secsOf(p);
- const html=grp(p,L).filter(g=>g.items.length).map(g=>{let run=0;const d=g.items.filter(l=>wIs(p.id,l.j)).length;return(g.name?`<div class="wsec"><span class="grow">${esc(g.name)}</span><span class="mut">${d} of ${g.items.length}</span></div>`:'')+g.items.map(l=>{const on=wIs(p.id,l.j),u=bu(l.n),q=l.g*n;if(u!='each')run+=q;return`<button class="wi ${cls||''}${on?' on':''}" onclick="event.stopPropagation();wTog('${p.id}',${l.j})"><span class="wb">${on?'✓':''}</span><span class="grow wn">${esc(l.n)}</span><span class="wq">${fq(q,u)}</span>${one&&u!='each'?`<span class="wr">${ss?esc(g.name)+' bowl':'bowl'} ≈ ${fq(run,'g')}</span>`:''}</button>`}).join('')}).join('');
+ const html=grp(p,L).filter(g=>g.items.length).map(g=>{let run=0;const d=g.items.filter(l=>wIs(p.id,l.j)).length;return(g.name?`<div class="wsec"><span class="grow">${esc(g.name)}</span><span class="mut">${d} of ${g.items.length}</span></div>`:'')+g.items.map(l=>{const on=wIs(p.id,l.j),u=bu(l.n),q=l.g*n;if(u!='each')run+=q;return`<button class="wi ${cls||''}${on?' on':''}" onclick="event.stopPropagation();wTog('${p.id}',${l.j},'${wFd||''}')"><span class="wb">${on?'✓':''}</span><span class="grow wn">${esc(l.n)}</span><span class="wq">${fq(q,u)}</span>${one&&u!='each'?`<span class="wr">${ss?esc(g.name)+' bowl':'bowl'} ≈ ${fq(run,'g')}</span>`:''}</button>`}).join('')}).join('');
  return{L,done:L.filter(l=>wIs(p.id,l.j)).length,html}}
 const mergeL=lines=>{const m={};lines.filter(l=>l.n&&l.g>0).forEach(l=>{const k=key(l.n);m[k]=m[k]?{...m[k],g:m[k].g+l.g}:{...l}});return Object.values(m)};
 (TPL.find(x=>x.k=='cake')||{p:{}}).p.secs=['Sponge','Filling'];
@@ -1365,6 +1367,50 @@ const untilT=t=>{const mn=Math.round((t-Date.now())/6e4),a=Math.abs(mn),s=a>=60?
 function heroHTML(first,d){
  const end=endOf(d),full=new Date(end).toLocaleDateString('en-IE',{weekday:'long',day:'numeric',month:'long'}),past=first<Date.now();
  return`<div class="card hero"><div class="hcols"><div><div class="mut">${past?'Started':'Start'}</div><div class="hday">${dayRel(first)}</div><div class="hbig">${hh(first)}</div><div class="mut">${untilT(first)}</div></div><div class="harr" aria-hidden="true">→</div><div><div class="mut">Ready</div><div class="hday">${dayRel(end)}</div><div class="hbig">${hh(end)}</div><div class="mut">${full}</div></div></div></div>`}
+
+// ===== Multi-day bakes: start the day before, cross-day kitchen board =====
+VF.push('pre');
+const pEnd=(p,d)=>p&&p.pre?new Date(addD(d,-1)+'T'+p.pre).getTime():endOf(d);
+const dS=d=>new Date(d+'T00:00').getTime(),dE=d=>dS(addD(d,1));
+function dayWork(d){
+ const out=[];
+ for(let i=0;i<4;i++){const x=addD(d,i),E=sched(x);if(!i){out.push(...E);continue}
+  const ids=[...new Set(E.filter(e=>e.st<dE(d)).map(e=>e.ps[0].id))];out.push(...E.filter(e=>ids.includes(e.ps[0].id)))}
+ return out}
+function early(d){
+ const L={};dayWork(d).filter(e=>e.fd!=d).forEach(e=>{const k=e.ps[0].id+'@'+e.fd;(L[k]=L[k]||{id:e.ps[0].id,name:e.ps[0].name,q:bakeN(e.ps[0].id,e.ps[0].q),fd:e.fd,steps:[]}).steps.push(e)});
+ return Object.values(L).map(l=>{const M=(S.kb||{})[l.fd]||{};l.steps.sort((a,b)=>a.j-b.j);l.today=l.steps.filter(e=>e.st>=dS(d)&&e.st<dE(d));l.first=l.today[0]||l.steps[0];l.done=l.today.length&&l.today.every(e=>M[e.k]==2);return l}).filter(l=>l.today.length).sort((a,b)=>a.first.st-b.first.st)}
+function earlyCard(d){
+ const L=early(d);if(!L.length)return'';
+ return`<div class="card early"><div class="row"><b class="grow">Start ${d==tdy()?'today':'this day'} for later bakes</b><button class="g sm" onclick="go('Kitchen')">Kitchen board</button></div>${L.map(l=>`<div class="trow"><div class="grow"><div class="${l.done?'mut':''}">${l.done?'✓ ':''}<b>${hh(l.first.st)}</b> · ${esc(l.today.map(e=>e.n).join(', '))}</div><div class="mut">${l.q} × ${esc(l.name)} · for ${dlab(l.fd)}</div></div><button class="g sm" onclick="vw=${S.prods.findIndex(p=>p.id==l.id)};go('Products')">Recipe</button></div>`).join('')}</div>`}
+const todayE=T.Today;
+T.Today=()=>{const h=todayE(),c=earlyCard(pday());if(!c)return h;for(const mk of['<div class="row"><b class="grow">To make</b>','<div class="card"><p class="chalk">Nothing baking yet']){const k=h.indexOf(mk);if(k>=0)return h.slice(0,k)+c+h.slice(k)}return c+h};
+function setPre(i,v){S.prods[i].pre=v?(S.prods[i].pre||'16:00'):'';save();draw()}
+function preUI(i){const p=S.prods[i],P=`prods.${i}`,rt=(S.set.ready||'T07:00').slice(11,16);
+ return`<div class="row"><label>When is it ready?<select onchange="setPre(${i},this.value)"><option value=""${p.pre?'':' selected'}>On the day, by ${rt}</option><option value="1"${p.pre?' selected':''}>The day before</option></select></label>${p.pre?`<label>Ready by<input type="time" value="${esc(p.pre)}" onchange="up('${P}.pre',this.value||'16:00')"></label>`:''}<span class="mut grow">${p.pre?'For an order on Saturday, this is finished on Friday by this time.':'Steps count back from the ready time, into the day before if needed.'}</span></div>`}
+// kitchen state per bake day
+function kSet(k,n,auto,fd){
+ fd=fd||pday();const E=sched(fd),e=E.find(x=>x.k==k);if(!e)return;
+ const M=S.kb[fd]=S.kb[fd]||{};S.kbt=S.kbt||{};const T=S.kbt[fd]=S.kbt[fd]||{};
+ M[k]=n;if(n==1)T[k]={s:Date.now(),x:0};else delete T[k];
+ if(n==2&&auto){const nx=E.find(x=>x.ps[0].id==e.ps[0].id&&x.j==e.j+1);if(nx&&!M[nx.k]){M[nx.k]=1;T[nx.k]={s:Date.now(),x:0};flash(`${nx.n} started`)}}
+ if(!Object.keys(T).length)delete S.kbt[fd];
+ kAl=kAl.filter(a=>a.k!=k);rAlm();save();draw()}
+function kPlus(ev,k,min,fd){ev.stopPropagation();fd=fd||pday();const T=S.kbt&&S.kbt[fd]&&S.kbt[fd][k];if(T){T.x=(+T.x||0)+min;kAl=kAl.filter(a=>a.k!=k);rAlm();save();draw()}}
+function kreset(){snap('Board reset');const ds=[...new Set([pday(),...dayWork(pday()).map(e=>e.fd)])];ds.forEach(d=>{delete S.kb[d];if(S.kbt)delete S.kbt[d];if(S.wk)delete S.wk[d]});kAl=[];rAlm();save();draw()}
+function laneIng(L){
+ const p=S.prods.find(x=>x.id==L.id);if(!p)return'';wFd=L.fd;const r=wRows(p,L.q,'wsm');wFd=null;if(!r.L.length)return'';
+ const open=kIng.has(L.key)?kIng.get(L.key):(!L.all&&L.done==0)||(r.done>0&&r.done<r.L.length);
+ return`<details class="ln-ing"${open?' open':''} ontoggle="kIngT('${L.key}',this.open)"><summary><b>Ingredients</b> <span class="mut">for ${L.q} · ${r.done} of ${r.L.length} weighed</span></summary><div class="wl">${r.html}</div></details>`}
+function tick(){
+ const now=Date.now();
+ document.querySelectorAll('[data-end]').forEach(el=>{const r=Math.round((+el.dataset.end-now)/1000);el.textContent=r>=0?fmt(r)+' left':'Over by '+fmt(-r);el.classList.toggle('over',r<0)});
+ const R=runTimers();
+ R.forEach(t=>{const id='e|'+t.d+'|'+t.k+'|'+t.end;if(now>=t.end&&now-t.end<180000&&!fired.has(id)){fired.add(id);ring(`${t.e.n} is done`,t.e,true)}});
+ dayWork(tdy()).forEach(e=>{const M=(S.kb||{})[e.fd]||{},id='s|'+e.fd+'|'+e.k;if(!M[e.k]&&now>=e.st&&now-e.st<180000&&!fired.has(id)){fired.add(id);ring(`Time to start: ${e.n}`,e,false)}});
+ kAl.forEach(a=>{if(a.strong&&a.n<6&&now-a.last>20000){a.n++;a.last=now;tone(3,880);buzz(true)}});
+ const tb=document.getElementById('tbar');
+ if(tb){const show=R.length&&!(tab=='Kitchen');const h=show?R.slice(0,3).map(t=>{const r=Math.round((t.end-now)/1000);return`<button class="tp${r<0?' over':''}" onclick="go('Kitchen')">${esc(t.e.n)} <b>${r>=0?fmt(r):'+'+fmt(-r)}</b></button>`}).join(''):'';if(tb.innerHTML!=h)tb.innerHTML=h}}
 
 draw();
 </script></body></html>
