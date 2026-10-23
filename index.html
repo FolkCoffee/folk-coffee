@@ -552,6 +552,10 @@ nav button.nv.on{background:var(--now);color:var(--now-fg)}
 @media(max-width:860px){header .top{display:none}header{padding-top:0}#v{padding-top:14px}}
 /* product colours on the recipe list and kitchen lanes match */
 .pcl{width:6px}
+/* add-by-link */
+.impbox{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;padding:16px}
+.impin{background:var(--bg);color:var(--fg);border-radius:18px;padding:18px 18px 14px;max-width:480px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);margin-bottom:calc(env(safe-area-inset-bottom,0px) + 70px)}
+@media(min-width:861px){.impbox{align-items:center}.impin{margin-bottom:0}}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><img class="wm-logo hdr" src="brand/folk-logo.png" alt="FOLk"><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -1693,6 +1697,29 @@ function tbTick(){const n=Date.now();document.querySelectorAll('.tb2').forEach(b
 setInterval(tbTick,1000);
 const vSet0=vSet;
 vSet=function(h){vSet0(h);document.body.classList.toggle('inner',tab!='Today');tbTick()};
+
+// ===== Add a recipe from a link (#add=...) =====
+// The link carries the recipe; you confirm on the phone and it lands in Recipes.
+let impR=null;
+function impRead(){try{const m=location.hash.match(/^#add=([\w-]+)/);if(!m)return null;const b=m[1].replace(/-/g,'+').replace(/_/g,'/');const s=decodeURIComponent(escape(atob(b+'==='.slice((b.length+3)%4))));const r=JSON.parse(s);return r&&r.name&&Array.isArray(r.ings)?r:null}catch(e){return null}}
+function impShow(){impR=impRead();const old=document.getElementById('imp');old&&old.remove();if(!impR)return;
+ const el=document.createElement('div');el.id='imp';el.className='impbox';
+ const dup=S.prods.some(p=>key(p.name)==key(impR.name));
+ el.innerHTML=`<div class="impin"><div class="mut sm2">Add this recipe?</div><h3 style="margin:2px 0 6px">${esc(impR.name)}</h3><div class="mut">${impR.ings.map(l=>`${l.a}${l.u=='each'?' ×':' g'} ${esc(l.n)}`).join(' · ')}</div>${impR.batch?`<div class="mut sm2" style="margin-top:6px">Makes ${impR.batch} × ${impR.unitG} g · ${impR.steps.length} steps</div>`:''}${dup?`<p class="sm2 st-warn">You already have a recipe called ${esc(impR.name)}. This adds a second one.</p>`:''}<div class="row" style="margin-top:12px"><button class="g" onclick="impClose()">Cancel</button><span class="grow"></span><button class="b" onclick="impAdd()">Add</button></div></div>`;
+ document.body.appendChild(el)}
+function impClose(){impR=null;const el=document.getElementById('imp');el&&el.remove();try{history.replaceState(null,'',location.pathname+location.search)}catch(e){location.hash=''}}
+async function impAdd(){const r=impR;if(!r)return;
+ // make sure the latest synced data is here first, so nothing from another device is overwritten
+ try{if(typeof sb!='undefined'&&sb&&sbUser&&typeof pull=='function')await pull()}catch(e){}
+ const made=[];
+ const ings=r.ings.map(l=>{const names=[l.n,...(l.m||[])];let g=null;for(const n of names){g=S.ings.find(x=>key(x.n)==key(n));if(g)break}
+  if(!g){g={n:l.n,price:0,size:1,unit:l.u=='each'?'each':'kg',al:l.al||[],waste:0};S.ings.push(g);made.push(l.n)}
+  return{n:g.n,amt:+l.a||0,pct:0}});
+ const p={id:nid(),name:r.name,cat:r.cat||'Bakery',mode:'amt',yt:'batch',batch:+r.batch||1,unitG:+r.unitG||100,price:+r.price||0,lab:+r.lab||0,flourG:1000,shelf:+r.shelf||3,tray:+r.tray||0,temp:+r.temp||0,store:r.store||'Keep in a cool, dry place.',notes:r.notes||'',ings,steps:(r.steps||[]).map(([n,mins])=>({n,mins}))};
+ S.prods.push(p);ensV(p);save();impClose();tab='Products';ed=null;cm=null;vw=S.prods.length-1;draw();fx();window.scrollTo(0,0);
+ flash(made.length?`${r.name} added. New ingredients: ${made.join(', ')}. Set their prices in Ingredients.`:`${r.name} added`)}
+window.addEventListener('hashchange',impShow);
+setTimeout(impShow,600);
 
 draw();
 </script></body></html>
