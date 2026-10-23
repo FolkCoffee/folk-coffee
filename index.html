@@ -1705,7 +1705,7 @@ function impRead(){try{const m=location.hash.match(/^#add=([\w-]+)/);if(!m)retur
 function impShow(){impR=impRead();const old=document.getElementById('imp');old&&old.remove();if(!impR)return;
  const el=document.createElement('div');el.id='imp';el.className='impbox';
  const dup=S.prods.some(p=>key(p.name)==key(impR.name));
- el.innerHTML=`<div class="impin"><div class="mut sm2">Add this recipe?</div><h3 style="margin:2px 0 6px">${esc(impR.name)}</h3><div class="mut">${impR.ings.map(l=>`${l.a}${l.u=='each'?' ×':' g'} ${esc(l.n)}`).join(' · ')}</div>${impR.batch?`<div class="mut sm2" style="margin-top:6px">Makes ${impR.batch} × ${impR.unitG} g · ${impR.steps.length} steps</div>`:''}${dup?`<p class="sm2 st-warn">You already have a recipe called ${esc(impR.name)}. This adds a second one.</p>`:''}<div class="row" style="margin-top:12px"><button class="g" onclick="impClose()">Cancel</button><span class="grow"></span><button class="b" onclick="impAdd()">Add</button></div></div>`;
+ el.innerHTML=`<div class="impin"><div class="mut sm2">Add this recipe?</div><h3 style="margin:2px 0 6px">${esc(impR.name)}</h3><div class="mut">${impR.ings.map(l=>`${l.a}${l.u=='each'?' ×':' g'} ${esc(l.n)}`).join(' · ')}</div>${impR.batch?`<div class="mut sm2" style="margin-top:6px">Makes ${impR.batch} × ${impR.unitG} g · ${impR.steps.length} steps</div>`:''}${dup?`<p class="sm2 st-warn">You already have a recipe called ${esc(impR.name)}. This adds a second one.</p>`:''}${typeof sb!='undefined'&&sb&&!sbUser?`<p class="sm2 st-warn">You’re not signed in on this screen, so the recipe would stay here and not reach your phone app. Open the link from the FOLk app instead, or sign in under More → Settings first.</p>`:''}<div class="row" style="margin-top:12px"><button class="g" onclick="impClose()">Cancel</button><span class="grow"></span><button class="b" onclick="impAdd()">Add</button></div></div>`;
  document.body.appendChild(el)}
 function impClose(){impR=null;const el=document.getElementById('imp');el&&el.remove();try{history.replaceState(null,'',location.pathname+location.search)}catch(e){location.hash=''}}
 async function impAdd(){const r=impR;if(!r)return;
@@ -1719,7 +1719,7 @@ async function impAdd(){const r=impR;if(!r)return;
  S.prods.push(p);ensV(p);save();impClose();tab='Products';ed=null;cm=null;vw=S.prods.length-1;draw();fx();window.scrollTo(0,0);
  flash(made.length?`${r.name} added. New ingredients: ${made.join(', ')}. Set their prices in Ingredients.`:`${r.name} added`)}
 window.addEventListener('hashchange',impShow);
-setTimeout(impShow,600);
+setTimeout(impShow,600);setTimeout(()=>{if(impR)impShow()},2500);
 
 draw();
 </script></body></html>
