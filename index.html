@@ -1071,7 +1071,7 @@ G[0][1].push('Kitchen');TL.Kitchen='Kitchen board';T.Kitchen=kitchen;T.Today=tod
 const planX=T.Plan;
 T.Plan=()=>{const d=pday();let h=planX();if(sched(d).length){const mo=money(d);h+=`<h2>Expected result</h2><div class="stats card"><div><div class="big">${m(mo.rev)}</div>Expected sales</div><div><div class="big">${mo.profit<0?'−':''}${m(Math.abs(mo.profit))}</div>Expected ${mo.profit<0?'loss':'profit'}</div><div><div class="big">${m(mo.waste)}</div>Expected leftovers</div></div><p class="mut">Customer orders count as sold. Counter items use your sales history when you have 3 weeks or more${mo.guess?'; items without history are assumed to sell out':''}.</p>`+ovenHTML(d)}return h};
 function draw(){
- ens();if(typeof matRep=='function')matRep();if(tab!='Products')tpl=false;
+ ens();if(typeof matRep=='function')matRep();if(typeof subSync=='function')subSync();if(tab!='Products')tpl=false;
  S.orders.forEach(o=>{if(!o.date)o.date=pday()});
  if(tab=='Tools'&&!S.set.tools)tab='Settings';
  const g=gof(tab)||G[0];last[g[0]]=tab;
@@ -1735,7 +1735,7 @@ function editor(i){
  const bar=`<div class="edbar"><button class="g sm" onclick="edDone(${i})" aria-label="Back">←</button><b class="grow">${esc(p.name)}</b>${p.sub?`<span>${m(c.cost/(+p.unitG||1)*1000)} <span class="mut">/ kg</span></span>`:`<span class="mut">cost</span> <span>${m(c.cost)}</span><span class="st-${mst(g)}">${mdot(g)}${g.toFixed(0)}%</span>`}<button class="b sm" onclick="edDone(${i})">Done</button></div>`;
  const sell=p.sub?`<p class="mut">Used in ${usedIn(p).map(x=>esc(x.name)).join(', ')||'no recipes yet'}. Add it to a recipe like any ingredient, by its name. Its cost, allergens and prep time follow automatically.</p>`
   :`<div class="row"><label>Sell as<select onchange="setSell(${i},this.value)"><option value="whole"${sv=='whole'?' selected':''}>Whole, one price</option><option value="slice"${sv=='slice'?' selected':''}>By the slice</option></select></label>${sv=='slice'?`<label>Slices per ${p.cat=='Drinks'?'unit':'cake'}<input type="number" step="1" value="${por(p)}" onchange="setSl(${i},'por',this.value)"></label><label>Price per slice<input type="number" step="any" value="${+p.sp||0}" onchange="setSl(${i},'sp',this.value)"></label><span class="mut grow">Whole = ${m(p.price)} · cost per slice ${m(c.cost/por(p))}</span>`:`<label>Price${num('price',p.price)}</label>`}</div>${g<(+S.set.margin||65)?`<p class="mut sm2">For a ${+S.set.margin||65}% margin: ${sv=='slice'?m(sug(p)/por(p))+' a slice':m(sug(p))}.</p>`:''}`;
- const yieldR=p.sub?`<div class="row"><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label>${pc?`<label>Flour (g)${num('flourG',p.flourG)}</label>`:''}<label>Makes (g)${num('unitG',p.unitG)}</label><span class="mut grow">About ${estW(p)} g from the ingredients. Change it if it loses or gains weight.</span></div>`
+ const yieldR=p.sub?`<div class="row"><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label>${pc?`<label>Flour (g)${num('flourG',p.flourG)}</label>`:''}<label>Makes (g)<input type="number" step="any" value="${esc(p.unitG)}" onchange="setMk(${i},this.value)"></label><span class="mut grow">${p.wAuto===false?`You set this by hand. Ingredients add up to ${estW(p)} g. <button class="lnk" onclick="setMk(${i},'')">Use the ingredient total</button>`:'Fills in from the ingredients. Type your own number if it loses or gains weight, e.g. a reduced caramel.'}</span></div>`
   :`<div class="row"><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label><label>Yield by${sel(P+'.yt',[['weight','Weight per unit'],['batch','Units per batch']],p.yt)}</label><label>Weight per unit (g)${num('unitG',p.unitG)}</label>${bt?`<label>Units per batch${num('batch',p.batch)}</label>`:''}${pc&&bt?`<label>Flour per batch (g)${num('flourG',p.flourG)}</label>`:''}</div>`;
  const steps=p.steps.map((s,j)=>{const k=p.id+j,op=s.d||stN.has(k);return`<div class="row srow">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${num(`steps.${j}.mins`,s.mins,'smin')}<span class="mut">min</span><button class="g sm${s.d?' on':''}" title="Instructions" aria-label="Instructions" onclick="stN.has('${k}')?stN.delete('${k}'):stN.add('${k}');draw()">✎</button><button class="g sm" onclick="del('${P}.steps',${j})" aria-label="Remove step">×</button></div>${op?`<div class="row sd"><input class="grow" placeholder="Instructions for this step" value="${esc(s.d||'')}" onchange="up('${P}.steps.${j}.d',this.value)"></div>`:''}`}).join('');
  return`<section class="ed">${bar}
@@ -1814,6 +1814,16 @@ T.Ingredients=()=>{let h=ingT();
   return`<details class="ir" data-i="${i}"${mid}${x!=null&&Math.abs(x)>=0.5?`<span class="ichg">${chgTxt(x)}</span>`:''}<span class="mut">▾</span></summary><div class="body">${H.length?`<div class="ihist"><div class="mut sm2">Last bought ${dlab(H[0].d)}${H[0].sup?' from '+esc(H[0].sup):''}</div>${H.map((e,k)=>{const prev=(g.hist||[])[(g.hist||[]).indexOf(e)-1],c=prev?(pkU(e)-pkU(prev))/(pkU(prev)||1)*100:null;return`<div class="trow"><span class="mut">${dlab(e.d)}</span><span class="grow">${esc(e.sup||'')}</span><span>${m(e.price)} <span class="mut">/ ${e.size} ${esc(e.unit)}</span></span><span>${chgTxt(c)}</span></div>`}).join('')}</div>`:''}`});
  return h};
 G.find(g=>g[0]=='Costs')[1].splice(1,0,'Buy');TL.Buy='Purchases';T.Buy=buys;
+
+
+// ===== Sub-recipes: amounts fill in by themselves =====
+// "Makes (g)" follows the ingredient total unless typed by hand
+function subSync(){S.prods.forEach(p=>{if(p.sub&&p.wAuto!==false){const w=estW(p);if(w>0&&w!=+p.unitG)p.unitG=w}})}
+function setMk(i,v){const p=S.prods[i];if(v===''||v==null){p.wAuto=true;p.unitG=estW(p)||p.unitG}else{p.wAuto=false;p.unitG=Math.max(+v||0,1)}save();draw()}
+// adding a sub-recipe to a recipe fills in one full batch
+function riU(v,pc,k){const u=$('#ri-u'+rid(k||0));if(u)u.textContent=pc?'%':(gi(v)?bu(v):'');const s=subOf(v),a=$('#ri-a'+rid(k||0));if(s&&a&&!pc&&!a.value){a.value=Math.round(+s.unitG||0);a.select&&setTimeout(()=>a.select(),0)}}
+function pickI(i,j,v){const L=S.prods[i].ings[j];if(v=='__new'){const n='New ingredient '+(S.ings.length+1);S.ings.push({n,price:0,size:1,unit:'kg',al:[],waste:0});L.n=n;tab='Ingredients'}else{L.n=v;const s=subOf(v);if(s&&S.prods[i].mode!='pct'&&!(+L.amt))L.amt=Math.round(+s.unitG||0)}save();draw()}
+VF.push('wAuto');
 
 draw();
 </script></body></html>
