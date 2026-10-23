@@ -921,7 +921,7 @@ function draw(){
  const cl=document.body.classList,pr=tab=='Products';
  cl.toggle('plab',tab=='Labels');cl.toggle('pal',tab=='Allergens');cl.toggle('pbd',tab=='Board');cl.toggle('prec',pr&&vw!=null&&!!S.prods[vw]);cl.toggle('cooking',pr&&cm!=null&&!!S.prods[cm]);cl.toggle('kbig',tab=='Kitchen'&&kbig);cl.toggle('pshop',tab=='Shop');
  if(tab=='Tools')tl()}
-setInterval(()=>{if(tab=='Kitchen'&&!document.querySelector('input:focus'))draw()},30000);
+setInterval(()=>{if((tab=='Kitchen'||tab=='Today')&&!busy()&&!document.getElementById('imp'))draw()},30000);
 
 // backup files
 const bkAge=()=>S.set.lastBk?Math.round((new Date(tdy()+'T12:00')-new Date(S.set.lastBk+'T12:00'))/864e5):null;
