@@ -556,6 +556,8 @@ nav button.nv.on{background:var(--now);color:var(--now-fg)}
 .tchg{gap:10px;margin:4px 0 0;align-items:center}.tchg input{width:auto;padding:4px 8px}.whenr input[type=time]{width:auto}
 /* targets */
 .tgl{border-top:1px solid var(--line);margin-top:6px}.tgr{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.tgr .grow{display:flex;flex-direction:column;min-width:0}.tgr .tq{width:84px;text-align:right}.tgb{white-space:nowrap}
+/* baker mode notes */
+.cknotes{margin-top:14px;border-top:1px solid var(--line)}.cknotes details{border-bottom:1px solid var(--line);padding:4px 0}.cknotes summary{cursor:pointer;padding:10px 0;font-weight:500}.ckn{white-space:pre-wrap;margin:0 0 10px;font-size:17px;line-height:1.55}
 /* add-by-link */
 .icode{font:500 15px/1.4 ui-monospace,Menlo,monospace;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 12px;word-break:break-all;user-select:all}
 .buyl{gap:6px;flex-wrap:nowrap;align-items:center}.buyl input{width:58px;padding:6px 6px;min-width:0}.buyl input.bpp{width:72px}.impin .row:last-child{flex-wrap:nowrap}.buyl select{width:68px;padding:6px}
@@ -709,7 +711,7 @@ function recipe(i){
  const oq=dO().filter(o=>o.pid==p.id).reduce((a,o)=>a+o.qty,0),want=vq[p.id]||oq||(bt?b:1),n=bt?Math.ceil(want/b)*b:want;
  let t=pEnd(p,pday());const st=[...p.steps].reverse().map(s=>t-=(+s.mins||0)*6e4).reverse();
  const total=p.steps.reduce((a,s)=>a+(+s.mins||0),0);
- return`<div class="recipe"><div class="noprint row"><button class="g" onclick="vw=null;draw()">← All products</button><span class="grow"></span><button class="g" onclick="vw=null;ed=${i};draw()">Edit</button><button class="b" onclick="cook(${i})">Cook mode</button><button class="g" onclick="print()">Print recipe</button></div>
+ return`<div class="recipe"><div class="noprint row"><button class="g" onclick="vw=null;draw()">← All products</button><span class="grow"></span><button class="g" onclick="vw=null;ed=${i};draw()">Edit</button><button class="b" onclick="cook(${i})">Baker mode</button><button class="g" onclick="print()">Print recipe</button></div>
  <div class="pw"><img class="wm-logo" src="${LOGO()}" alt="FOLk"><span class="wm2">Speciality Coffee</span></div><p class="mut">${esc(p.cat||'Bakery')} · version ${p.cv||1}</p><h2 class="rt">${esc(p.name)}</h2>${p.img?`<img class="rph" src="${p.img}" alt="">`:''}
  <div class="noprint row"><label>Making (units)<input type="number" min="1" value="${want}" onchange="vq['${p.id}']=+this.value||1;draw()"></label></div>
  <p>Makes <b>${n}</b> × ${p.unitG} g${por(p)>1?` (cut into ${por(p)} portions)`:''}${bt?` (${n/b} batch${n/b>1?'es':''})`:''}${total?` · total time ${hm(total)}`:''}</p>
@@ -787,8 +789,8 @@ function cmGo(k){if(cm==null||!S.prods[cm])return;const N=S.prods[cm].steps.leng
 function cookv(i){
  const p=S.prods[i],c=calc(p),N=p.steps.length,b=Math.max(+p.batch||1,1),bt=p.yt=='batch';
  const oq=dO().filter(o=>o.pid==p.id).reduce((a,o)=>a+o.qty,0),want=vq[p.id]||oq||(bt?b:1),n=bt?Math.ceil(want/b)*b:want,s=cs?p.steps[cs-1]:null;
- const body=cs==0?wList(p,c,n)
- :`<div class="mut">Step ${cs} of ${N}</div><h2 class="ck1">${esc(s.n)}</h2>${s.d?`<p class="ck2">${esc(s.d)}</p>`:''}${+s.mins?`<div class="timer"><div id="tm" class="tmv">${fmt(tL)}</div><button class="b big" id="tb" onclick="ctTog()">Start timer</button><button class="g" onclick="ctReset();tmUI()">Reset</button></div>`:''}${cs==N&&p.notes?`<p class="mut" style="white-space:pre-wrap">${esc(p.notes)}</p>`:''}${cs==N?noteBox(p.id,'ck')+(pNotes(p.id).length?'<div class="mut" style="margin-top:10px">Earlier notes</div>'+notesList(p.id,3):''):''}`;
+ const body=cs==0?wList(p,c,n)+ckNotes(p,false,true)
+ :`<div class="mut">Step ${cs} of ${N}</div><h2 class="ck1">${esc(s.n)}</h2>${s.d?`<p class="ck2">${esc(s.d)}</p>`:''}${+s.mins?`<div class="timer"><div id="tm" class="tmv">${fmt(tL)}</div><button class="b big" id="tb" onclick="ctTog()">Start timer</button><button class="g" onclick="ctReset();tmUI()">Reset</button></div>`:''}${ckNotes(p,cs==N)}`;
  return`<div class="cook"><div class="row"><button class="g" onclick="cookX()">Exit</button><span class="grow"></span><span class="mut">${esc(p.name)}</span></div><div class="dots">${[...Array(N+1)].map((_,k)=>`<i class="${k==cs?'on':k<cs?'dn':''}"></i>`).join('')}</div>${body}<div class="row cnav"><button class="g big" onclick="cmGo(-1)"${cs?'':' disabled'}>Back</button><button class="b big grow" onclick="cmGo(1)">${cs==N?'Finish':'Next'}</button></div></div>`}
 
 function board(){
@@ -1093,7 +1095,7 @@ function kitchen(){
   return`<div class="ks cur${s==1?' doing':''}${late?' late':''}"><div class="row" style="margin:0"><span class="ki">${e.j+1}</span><div class="grow"><div class="kn">${esc(e.n)}</div><div class="mut">${kt(e.st,d)}–${kt(e.t,d)} · ${hm(Math.round((e.t-e.st)/6e4))}${late?' · should have started':''}</div>${e.dsc?`<div class="kd">${esc(e.dsc)}</div>`:''}</div></div>
    <div class="row kx">${s==1?`${timer(e)}<span class="grow"></span><button class="g sm" onclick="kPlus(event,'${e.k}',5,'${e.fd}')">+5 min</button><button class="g sm" onclick="kSet('${e.k}',0,0,'${e.fd}')">Not yet</button><button class="b" onclick="kSet('${e.k}',2,true,'${e.fd}')">Done</button>`:`<span class="grow"></span><button class="g sm" onclick="kSet('${e.k}',2,0,'${e.fd}')">Mark done</button><button class="b" onclick="kSet('${e.k}',1,0,'${e.fd}')">Start</button>`}</div></div>`};
  const lane=L=>{const col=pcol(L.id),open=L.all?kOpen.has(L.key):!kShut.has(L.key),c=L.cur,stx=L.all?'✓ Finished':st(c)==1?`Doing: ${esc(c.n)}`:`Next: ${esc(c.n)} at ${hh(c.st)}`;
-  return`<section class="lane${L.busy?' on':''}${L.all?' fin':''}" style="--lc:${col}"><div class="ln-h" onclick="kTog('${L.key}',${L.all})"><div class="grow"><div class="ln-n">${esc(L.name)} <span class="ln-q">× ${L.q}</span></div>${L.fd!=d?`<div class="ln-for">For ${dlab(L.fd)}</div>`:''}<div class="ln-s">${stx} · ${L.done} of ${L.steps.length}</div></div>${L.all?'':`<button class="g sm" onclick="event.stopPropagation();goCook(${S.prods.findIndex(p=>p.id==L.id)})">Cook mode</button>`}<span class="ln-c">${open?'▴':'▾'}</span></div><div class="ln-bar"><i style="width:${L.done/L.steps.length*100}%"></i></div>${open?`<div class="ln-b">${laneIng(L)}${L.steps.map(e=>stepRow(L,e)).join('')}${L.all?noteBox(L.id,'kb'):`<details class="qa ln-note"><summary>Add a bake note</summary>${noteBox(L.id,'kb')}</details>`}</div>`:''}</section>`};
+  return`<section class="lane${L.busy?' on':''}${L.all?' fin':''}" style="--lc:${col}"><div class="ln-h" onclick="kTog('${L.key}',${L.all})"><div class="grow"><div class="ln-n">${esc(L.name)} <span class="ln-q">× ${L.q}</span></div>${L.fd!=d?`<div class="ln-for">For ${dlab(L.fd)}</div>`:''}<div class="ln-s">${stx} · ${L.done} of ${L.steps.length}</div></div>${L.all?'':`<button class="g sm" onclick="event.stopPropagation();goCook(${S.prods.findIndex(p=>p.id==L.id)})">Baker mode</button>`}<span class="ln-c">${open?'▴':'▾'}</span></div><div class="ln-bar"><i style="width:${L.done/L.steps.length*100}%"></i></div>${open?`<div class="ln-b">${laneIng(L)}${L.steps.map(e=>stepRow(L,e)).join('')}${L.all?noteBox(L.id,'kb'):`<details class="qa ln-note"><summary>Add a bake note</summary>${noteBox(L.id,'kb')}</details>`}</div>`:''}</section>`};
  return`<div class="row kh"><div class="grow"><div class="mut">${d==tdy()?'Today':dlabR(d)}</div><h2 class="dayh">${dlab(d)}</h2></div><div class="kclock">${hh(now)}</div></div>
  <div class="row kctl">${kbig?'<button class="g" onclick="kBig(false)">Exit big screen</button>':`<button class="g sm" onclick="shd(-1)" aria-label="Previous day">‹</button>${d==tdy()?'':'<button class="g sm" onclick="shd(0)">Today</button>'}<button class="g sm" onclick="shd(1)" aria-label="Next day">›</button><button class="g sm" onclick="kBig(true)">Big screen</button>`}<button class="g sm" onclick="setMute(${!muted})">${muted?'Sound off':'Sound on'}</button></div>
  <div class="row"><span class="mut grow">${dn} of ${total} steps done</span>${dn?'<button class="g sm" onclick="kreset()">Reset</button>':''}</div>
@@ -1796,6 +1798,10 @@ function impUpd(p,r,made){ensV(p);
  if(Array.isArray(r.secs)){if(r.secs.length>1)p.secs=[...r.secs];else delete p.secs}
  ['notes','store'].forEach(k=>{if(typeof r[k]=='string')p[k]=r[k]});['batch','unitG','temp','lab','shelf','tray'].forEach(k=>{if(+r[k]>0)p[k]=+r[k]});
  const n=nextV(p);p.vers.push({v:n,date:tdy(),note:r.vnote||'Changed by Claude',data:snapR(p)});p.cv=n}
+
+// Baker mode: recipe notes and earlier bake notes on every step, and a note can be added at any step
+function ckNotes(p,last,first){const E=pNotes(p.id).length;
+ return`<div class="cknotes">${p.notes?`<details${last||first?' open':''}><summary>Recipe notes</summary><p class="ckn">${esc(p.notes)}</p></details>`:''}${E?`<details${last?' open':''}><summary>Notes from earlier bakes · ${E}</summary>${notesList(p.id,3)}</details>`:''}${first?'':last?`<div style="margin-top:10px">${noteBox(p.id,'ck')}</div>`:`<details><summary>Add a note</summary>${noteBox(p.id,'ck')}</details>`}</div>`}
 // ===== Claude inbox: recipes and purchases Claude sends arrive here by themselves =====
 let inboxCode,inboxOK=null,inboxBusy=false,inboxSeen=0;
 function buyApply(r){
