@@ -1168,8 +1168,8 @@ function shopping(){
  const rows=Object.values(agg).map(x=>{const g=gi(x.n)||{},pb=(+g.size||1)*(FAC[g.unit]||1),packs=g.unit&&+g.price>0?Math.ceil(x.g/(wf(g)||1)/pb-1e-9):0;return{...x,sup:g.sup||'',packs,ps:g.unit?`${+g.size||1} ${g.unit}`:'',cost:packs*(+g.price||0),use:x.g*ppu(g)/(wf(g)||1)}});
  const sups=[...new Set(rows.map(r=>r.sup))].sort((a,b)=>(a?0:1)-(b?0:1)||a.localeCompare(b));
  const tot=rows.reduce((a,r)=>a+r.cost,0),use=rows.reduce((a,r)=>a+r.use,0);
- const range=days.length>1?`${dlab(days[0])} – ${dlab(days[days.length-1])}`:dlab(d0);shopLast={rows,sups,tot,range};
- return`<div class="noprint"><div class="row"><h2 class="grow" style="margin:0">Shopping list</h2></div><div class="row"><button class="b" onclick="shopShare()"${rows.length?'':' disabled'}>Share</button><button class="g" onclick="shopDl()"${rows.length?'':' disabled'}>Download</button><button class="g" onclick="print()">Print</button></div>
+ const range=days.length>1?`${dlab(days[0])} – ${dlab(days[days.length-1])}`:dlab(d0);
+ return`<div class="noprint"><div class="row"><h2 class="grow" style="margin:0">Shopping list</h2><button class="b" onclick="print()">Print shopping list</button></div>
  <div class="row"><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button><label>Days to cover<select onchange="shopDays=+this.value;draw()">${[1,2,3,5,7].map(n=>`<option value="${n}"${n==shopDays?' selected':''}>${n==1?'Just this day':n+' days'}</option>`).join('')}</select></label></div>
  <p class="mut">Everything needed for ${range}, from your orders and daily targets, grouped by supplier. Packs are rounded up to whole packs, including any waste % you set. Items with no price, like water, show only the amount.</p></div>
  <div class="shop"><div class="pw"><img class="wm-logo" src="${LOGO()}" alt="FOLk"><span class="wm2">Speciality Coffee</span></div><h2 class="shop-h">Shopping list · ${range}</h2>
@@ -1841,24 +1841,6 @@ function inboxUI(){
  if(inboxOK===false)return h+`<div class="card"><p class="mut">Lets Claude send recipes and receipts straight into your app. One-time setup in Supabase:</p><ol class="mut sm2"><li>Tap <b>Copy setup</b>.</li><li>In Supabase open <b>SQL Editor → New query</b>, paste, press <b>Run</b>.</li><li>Come back and tap <b>Check again</b>.</li></ol><div class="row"><button class="b" onclick="inboxSqlCopy()">Copy setup</button><button class="g" onclick="inboxOK=null;inboxCode=undefined;draw()">Check again</button><a class="lnk" href="supabase-inbox.sql" target="_blank">View it</a></div></div>`;
  if(!inboxCode)return h+`<div class="card"><p class="mut">Make a code and give it to Claude. With it Claude can only add items to your inbox. It can’t see your recipes, prices or orders.</p><button class="b" onclick="inboxMake()">Create inbox code</button></div>`;
  return h+`<div class="card"><p class="mut" style="margin-top:0">Give this code to Claude. What Claude sends appears here by itself when the app is open, with Undo.</p><div class="row"><code class="icode grow">${esc(inboxCode)}</code><button class="b sm" onclick="inboxCopy()">Copy</button></div><div class="row"><span class="mut sm2 grow">${inboxSeen?`${inboxSeen} item${inboxSeen==1?'':'s'} received on this device.`:'Checks every minute while the app is open.'}</span><button class="g sm" onclick="inboxCheck()">Check now</button><button class="lnk" onclick="if(confirm('Make a new code? The old one stops working.'))inboxMake()">New code</button></div></div>`}
-
-// ===== Shopping list: share and download =====
-let shopLast=null;
-function shopText(){
- const L=shopLast;if(!L||!L.rows.length)return'';
- const out=[`FOLk shopping list · ${L.range}`];
- L.sups.forEach(sp=>{out.push('',(sp||'No supplier set').toUpperCase());
-  L.rows.filter(r=>r.sup==sp).sort((a,b)=>a.n.localeCompare(b.n)).forEach(r=>out.push(`☐ ${r.n} – ${r.packs?`${r.packs} × ${r.ps} (${m(r.cost)})`:fq(r.g,r.u)}`))});
- if(L.tot>0)out.push('',`Total: ${m(L.tot)}`);return out.join('\n')}
-async function shopShare(){
- const t=shopText();if(!t)return;
- if(navigator.share){try{await navigator.share({title:'FOLk shopping list',text:t});return}catch(e){if(e&&e.name=='AbortError')return}}
- try{await navigator.clipboard.writeText(t);flash('Shopping list copied. Paste it into a message.')}catch(e){shopDl()}}
-function shopDl(){
- const t=shopText();if(!t)return;
- const a=document.createElement('a'),u=URL.createObjectURL(new Blob([t],{type:'text/plain;charset=utf-8'}));
- a.href=u;a.download=`FOLk-shopping-${(shopLast.range||'').replace(/[^\w]+/g,'-').replace(/^-|-$/g,'')}.txt`;
- document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);flash('Shopping list downloaded')}
 
 draw();
 </script></body></html>
