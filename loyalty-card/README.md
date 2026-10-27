@@ -5,8 +5,10 @@ Replaces the paper loyalty card. Customers keep their card on their phone; staff
 - **index.html**: the customer card (sign up, stamps, QR code to show at the till)
 - **staff.html**: the till page (scan QR, +1 stamp, redeem free coffee, find by email)
 **Live links (once Firebase is connected):**
-- Customers: [kubo23609.github.io/folk-coffee/loyalty-card/](https://kubo23609.github.io/folk-coffee/loyalty-card/)
-- Staff till: [kubo23609.github.io/folk-coffee/loyalty-card/staff.html](https://kubo23609.github.io/folk-coffee/loyalty-card/staff.html)
+- Customers: [folkcoffee.github.io/folk-coffee/loyalty-card/](https://folkcoffee.github.io/folk-coffee/loyalty-card/)
+- Staff till: [folkcoffee.github.io/folk-coffee/loyalty-card/staff.html](https://folkcoffee.github.io/folk-coffee/loyalty-card/staff.html)
+
+**Owner and contact:** FOLk Coffee, folkspecialitycoffee@gmail.com. The code lives in the [FolkCoffee/folk-coffee](https://github.com/FolkCoffee/folk-coffee) repository (moved from Kubo23609 in October 2026, which changed the web address from `kubo23609.github.io` to `folkcoffee.github.io`). The Firebase project is `folk-coffee`; add folkspecialitycoffee@gmail.com as an Owner under Project settings → Users and permissions.
 
 It uses the FOLk logo from `../brand` and the app icons from `../icons`.
 
@@ -23,7 +25,7 @@ Open the two links above in two tabs of the same browser. Sign up on the custome
    - **Google**
 3. **Create the database.** Build → Firestore Database → Create database → choose a European location (e.g. `europe-west1`) → start in production mode. Then open the **Rules** tab, paste the whole of `firestore.rules`, and click **Publish**.
 4. **Connect the app.** Project settings (gear icon) → Your apps → Web (`</>`) → register it. Copy `apiKey`, `authDomain`, `projectId` and `appId` into `config.js`.
-5. **Allow your website.** Authentication → Settings → Authorized domains → Add `kubo23609.github.io` (and your own domain later, if you get one).
+5. **Allow your website.** Authentication → Settings → Authorized domains → Add `folkcoffee.github.io` (and your own domain later, if you get one). After the repository moved, this replaced `kubo23609.github.io`.
 6. **Make a staff login.** Authentication → Users → Add user (e.g. `till@folkcoffee.ie` + a strong password). Copy its **User UID**. Then in Firestore → Start collection → name it `staff` → Document ID = that UID → add any field (e.g. `name` = `Till`) → Save.
    Tip: if you sign in on `staff.html` before doing this, the page shows the UID for you to copy.
 7. **Publish.** Commit the edited `config.js` to `main`. It goes live within a few minutes. Bookmark the staff link on the shop phone or tablet.

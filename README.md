@@ -1,6 +1,6 @@
 # FOLk Coffee app
 
-**Open the app: [kubo23609.github.io/folk-coffee](https://kubo23609.github.io/folk-coffee/)**
+**Open the app: [folkcoffee.github.io/folk-coffee](https://folkcoffee.github.io/folk-coffee/)**
 
 Bake, cost and production planner for FOLk Speciality Coffee. It is one self-contained web page, `index.html`, that runs in any modern browser.
 
@@ -15,13 +15,19 @@ Bake, cost and production planner for FOLk Speciality Coffee. It is one self-con
 
 ## Using it
 
-The app is live at [kubo23609.github.io/folk-coffee](https://kubo23609.github.io/folk-coffee/), published with GitHub Pages from the `main` branch. Every change pushed to `main` goes live within a few minutes.
+The app is live at [folkcoffee.github.io/folk-coffee](https://folkcoffee.github.io/folk-coffee/), published with GitHub Pages from the `main` branch. Every change pushed to `main` goes live within a few minutes.
 
 On a phone or tablet, open that address and choose **Add to Home Screen** (iPhone: Share menu; Android: ⋮ menu). It then opens full screen with the FOLk icon, like an app.
 
+## Owner and contact
+
+- GitHub: this repository belongs to the **FolkCoffee** account ([github.com/FolkCoffee/folk-coffee](https://github.com/FolkCoffee/folk-coffee)). It moved there from the earlier personal account Kubo23609 in October 2026.
+- Business email for all FOLk projects: **folkspecialitycoffee@gmail.com**
+- Because the repository moved, the website address changed from `kubo23609.github.io/folk-coffee` to **`folkcoffee.github.io/folk-coffee`**. Update any saved bookmarks, home-screen icons and printed QR codes.
+
 ## Loyalty card
 
-The digital stamp card that replaces paper loyalty cards is in [`loyalty-card/`](loyalty-card/): [customer card](https://kubo23609.github.io/folk-coffee/loyalty-card/) and [staff till](https://kubo23609.github.io/folk-coffee/loyalty-card/staff.html). Setup steps are in its README.
+The digital stamp card that replaces paper loyalty cards is in [`loyalty-card/`](loyalty-card/): [customer card](https://folkcoffee.github.io/folk-coffee/loyalty-card/) and [staff till](https://folkcoffee.github.io/folk-coffee/loyalty-card/staff.html). Setup steps are in its README.
 
 ## Your data
 
