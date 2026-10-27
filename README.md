@@ -19,6 +19,10 @@ The app is live at [kubo23609.github.io/folk-coffee-app](https://kubo23609.githu
 
 On a phone or tablet, open that address and choose **Add to Home Screen** (iPhone: Share menu; Android: ⋮ menu). It then opens full screen with the FOLk icon, like an app.
 
+## Loyalty card
+
+The digital stamp card that replaces paper loyalty cards is in [`loyalty-card/`](loyalty-card/): [customer card](https://kubo23609.github.io/folk-coffee-app/loyalty-card/) and [staff till](https://kubo23609.github.io/folk-coffee-app/loyalty-card/staff.html). Setup steps are in its README.
+
 ## Your data
 
 Everything you enter is saved in the browser on the device you use, and never in this repository. To share it between your phone, tablet and laptop, sign in to sync (see below). In **Settings → Backup**, press **Save backup** to download a backup file, and keep it somewhere safe such as Google Drive. **Load backup** restores it, on the same device or another one. The Today screen reminds you when your last backup is more than a week old.

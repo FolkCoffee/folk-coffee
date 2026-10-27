@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FOLk Coffee Card</title>
+<meta name="theme-color" content="#111110">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../icons/icon-32.png">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FOLk Card">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@300;400;500;600&family=Inter+Tight:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="demo" id="demo" hidden>Demo mode: nothing is saved online yet. <a href="staff.html" style="color:#fff">Open staff page</a></div>
+<main class="wrap">
+  <header class="brand"><div class="logo"><img src="../brand/folk-logo.png" alt="FOLk"><span>Coffee</span></div><div class="tag">Millstreet</div></header>
+
+  <section id="v-loading"><div class="spinner"></div></section>
+
+  <section id="v-signin" hidden>
+    <h1>Your coffee card, on your phone.</h1>
+    <p class="muted">Collect a stamp with every coffee. Your 10th one is on us. No more paper cards to lose.</p>
+    <button class="btn ghost" id="google">Continue with Google</button>
+    <div class="or">or use your email</div>
+    <form id="f-signin">
+      <label for="name">First name</label>
+      <input id="name" autocomplete="given-name" required maxlength="40">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" required>
+      <label>Birthday <span class="muted" style="font-weight:400">(optional, free coffee on the day 🎂)</span></label>
+      <div class="row"><select id="b-day" aria-label="Birthday day"></select><select id="b-mon" aria-label="Birthday month"></select></div>
+      <button class="btn" type="submit">Email me my card link</button>
+    </form>
+    <p class="muted" style="margin-top:14px">No password needed. We'll send a one-tap sign-in link.</p>
+  </section>
+
+  <section id="v-sent" hidden>
+    <h1>Check your inbox ☕</h1>
+    <p>We sent a sign-in link to <b id="sent-to"></b>. Open it on this phone to get your card.</p>
+    <p class="muted">Can't see it? Check your spam or promotions folder.</p>
+    <button class="link" id="back">Use a different email</button>
+  </section>
+
+  <section id="v-confirm" hidden>
+    <h1>Almost there</h1>
+    <p class="muted">You opened the link on a different device. Confirm your email to finish signing in.</p>
+    <form id="f-confirm">
+      <label for="email2">Email</label>
+      <input id="email2" type="email" autocomplete="email" required>
+      <button class="btn" type="submit">Continue</button>
+    </form>
+  </section>
+
+  <section id="v-card" hidden>
+    <div class="card">
+      <div class="card-top"><div class="logo"><img src="../brand/folk-logo.png" alt="FOLk"><span>Coffee</span></div><div class="card-name" id="c-name"></div></div>
+      <div class="count"><span id="c-count">0</span><small id="c-goal"></small></div>
+      <div class="stamps" id="c-stamps"></div>
+      <div class="ready-msg" id="c-ready" hidden>Your free coffee is ready! Show your code at the till.</div>
+    </div>
+    <div class="bday-banner" id="c-bday-today" hidden>🎂 Happy birthday! Your coffee is on us today. Show your code at the till.</div>
+    <div class="qr-box">
+      <div class="qr" id="qr"></div>
+      <p>Show this code at the till to collect your stamp.</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="c-total">0</b><span>coffees so far</span></div>
+      <div class="stat"><b id="c-free">0</b><span>free coffees enjoyed</span></div>
+    </div>
+    <div class="notice" id="c-bday-add" hidden style="margin-top:14px">
+      <b>🎂 Free coffee on your birthday</b>
+      <p class="muted" style="margin:4px 0 0">Add your birthday and your coffee is on us that day. You can only set it once, so double-check it.</p>
+      <div class="row" style="margin-top:10px"><select id="b-day2" aria-label="Birthday day"></select><select id="b-mon2" aria-label="Birthday month"></select></div>
+      <button class="btn" id="b-save">Save birthday</button>
+    </div>
+    <p class="muted" id="c-bday" hidden style="margin-top:14px"></p>
+    <p class="muted" style="margin-top:18px">Tip: add this page to your home screen (Share → Add to Home Screen) so your card is always one tap away.</p>
+    <button class="link" id="signout">Sign out</button>
+  </section>
+
+  <section id="v-error" hidden>
+    <h1>Something went wrong</h1>
+    <p id="err-msg"></p>
+    <button class="btn" onclick="location.reload()">Try again</button>
+  </section>
+</main>
+
+<script type="module">
+import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast, store,
+  fillBirthdayPickers, validBirthday, birthdayCoffeeAvailable, formatBirthday } from './loyalty.js';
+
+const $ = (s) => document.querySelector(s);
+const signupBday = fillBirthdayPickers($('#b-day'), $('#b-mon'));
+const laterBday = fillBirthdayPickers($('#b-day2'), $('#b-mon2'));
+let myUid = null;
+const VIEWS = ['loading', 'signin', 'sent', 'confirm', 'card', 'error'];
+const show = (v) => VIEWS.forEach((x) => ($('#v-' + x).hidden = x !== v));
+const fail = (msg) => { $('#err-msg').textContent = msg; show('error'); };
+
+let be, unsub = null, last = null, qrFor = null, busy = false;
+
+try { be = await getBackend('customer'); }
+catch { fail('We could not connect. Check your internet connection and try again.'); throw 0; }
+if (DEMO) $('#demo').hidden = false;
+
+// Returning from the email link
+if (be.isEmailLink()) {
+  busy = true;
+  const email = store.get('folk-email');
+  if (email) {
+    try { await be.completeLink(email); } catch { fail('That sign-in link has expired or was already used. Please request a new one.'); }
+  } else show('confirm');
+  busy = false;
+}
+
+be.onAuth(async (user) => {
+  if (unsub) { unsub(); unsub = null; }
+  last = null;
+  if (!user) { if (!busy && !be.isEmailLink()) show('signin'); return; }
+  show('loading');
+  try {
+    if (!(await be.getCard(user.uid))) {
+      const name = store.get('folk-name') || user.name.split(' ')[0] || 'Coffee lover';
+      const bday = store.get('folk-bday');
+      await be.createCard(user.uid, name, (user.email || '').toLowerCase(), validBirthday(bday || '') ? bday : undefined);
+      store.del('folk-name'); store.del('folk-bday');
+    }
+    myUid = user.uid;
+    unsub = be.watchCard(user.uid, (c) => c && draw(user.uid, c));
+  } catch (e) { fail('We could not load your card. ' + (e.message || '')); }
+});
+
+function draw(uid, c) {
+  $('#c-name').textContent = c.name;
+  $('#c-count').textContent = Math.min(c.stamps, GOAL);
+  $('#c-goal').textContent = `of ${GOAL} stamps`;
+  renderStamps($('#c-stamps'), c.stamps, last?.stamps);
+  $('#c-ready').hidden = c.stamps < GOAL;
+  $('#c-total').textContent = c.totalStamps || 0;
+  $('#c-free').textContent = c.rewardsRedeemed || 0;
+  $('#c-bday-today').hidden = !birthdayCoffeeAvailable(c);
+  $('#c-bday-add').hidden = !!c.birthday;
+  $('#c-bday').hidden = !c.birthday;
+  $('#c-bday').textContent = c.birthday ? `🎂 Birthday: ${formatBirthday(c.birthday)}. Free coffee on the day.` : '';
+  if (qrFor !== uid) {
+    $('#qr').innerHTML = '';
+    if (window.QRCode) {
+      new QRCode($('#qr'), { text: QR_PREFIX + uid, width: 420, height: 420, colorDark: '#111110', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+      qrFor = uid;
+    } else {
+      $('#qr').innerHTML = '<p>Code could not load. Pull down to refresh, or give staff your email.</p>';
+    }
+  }
+  if (last) {
+    if (c.stamps > last.stamps) { toast(c.stamps >= GOAL ? 'Free coffee unlocked! 🎉' : 'Stamp added, thank you! ☕', 'ok'); navigator.vibrate?.(80); }
+    else if ((c.rewardsRedeemed || 0) > (last.rewardsRedeemed || 0)) toast(c.birthdayYear !== last.birthdayYear ? 'Happy birthday, enjoy! 🎂' : 'Enjoy your free coffee! 🎉', 'ok');
+  }
+  last = { ...c };
+  show('card');
+}
+
+$('#f-signin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('#name').value.trim(), email = $('#email').value.trim().toLowerCase();
+  const btn = e.submitter; btn.disabled = true;
+  store.set('folk-name', name); store.set('folk-email', email);
+  const b = signupBday(); b ? store.set('folk-bday', b) : store.del('folk-bday');
+  try {
+    await be.sendLink(email);
+    if (!be.demo) { $('#sent-to').textContent = email; show('sent'); }
+  } catch (err) { toast('Could not send the link. Check the email address.', 'err'); }
+  btn.disabled = false;
+});
+
+$('#f-confirm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('#email2').value.trim().toLowerCase();
+  store.set('folk-email', email);
+  try { await be.completeLink(email); } catch { toast("That email doesn't match the link.", 'err'); }
+});
+
+$('#google').addEventListener('click', async () => {
+  try { await be.google(); } catch (e) { if (e?.code !== 'auth/popup-closed-by-user') toast('Google sign-in did not work. Try email instead.', 'err'); }
+});
+$('#b-save').addEventListener('click', async (e) => {
+  const b = laterBday();
+  if (!validBirthday(b)) return toast('Pick a valid day and month', 'err');
+  if (!confirm(`Save ${formatBirthday(b)} as your birthday? You can't change it later.`)) return;
+  e.currentTarget.disabled = true;
+  try { await be.setBirthday(myUid, b); toast('Birthday saved 🎂', 'ok'); }
+  catch { toast('Could not save your birthday', 'err'); }
+  e.currentTarget.disabled = false;
+});
+$('#back').addEventListener('click', () => show('signin'));
+$('#signout').addEventListener('click', () => { qrFor = null; be.signOut(); });
+</script>
+</body>
+</html>

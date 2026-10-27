@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FOLk Staff Till</title>
+<meta name="theme-color" content="#111110">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../icons/icon-32.png">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@300;400;500;600&family=Inter+Tight:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+<div class="demo" id="demo" hidden>Demo mode: nothing is saved online yet. <a href="index.html" style="color:#fff">Open customer page</a></div>
+<main class="wrap">
+  <header class="brand"><div class="logo"><img src="../brand/folk-logo.png" alt="FOLk"><span>Coffee</span></div><div class="tag">Staff till</div></header>
+
+  <section id="v-loading"><div class="spinner"></div></section>
+
+  <section id="v-signin" hidden>
+    <h1>Staff sign-in</h1>
+    <form id="f-signin">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+  </section>
+
+  <section id="v-notstaff" hidden>
+    <h1>Not on the staff list yet</h1>
+    <p>You're signed in, but this account hasn't been added as staff. Add this ID to the <b>staff</b> collection in Firebase (README, step 6):</p>
+    <div class="code" id="my-uid"></div>
+    <button class="btn ghost" id="recheck">I've added it, check again</button>
+    <button class="link" data-signout>Sign out</button>
+  </section>
+
+  <section id="v-home" hidden>
+    <button class="btn big" id="scan">Scan customer card</button>
+    <button class="btn ghost" id="demo-open" hidden>Open the demo customer's card</button>
+    <div class="or">phone dead? find by email</div>
+    <form id="f-find" class="row">
+      <input id="find-email" type="email" placeholder="customer@email.com" required aria-label="Customer email">
+      <button class="btn" type="submit" style="flex:0 0 90px;margin-top:0">Find</button>
+    </form>
+    <div class="results" id="results"></div>
+    <p style="margin-top:28px"><button class="link" data-signout>Sign out</button></p>
+  </section>
+
+  <section id="v-scan" hidden>
+    <div id="reader"></div>
+    <p class="muted" id="scan-msg" style="margin-top:12px;text-align:center">Point the camera at the customer's code.</p>
+    <button class="btn ghost" id="cancel-scan">Cancel</button>
+  </section>
+
+  <section id="v-customer" hidden>
+    <div class="card">
+      <div class="card-top"><div class="logo"><img src="../brand/folk-logo.png" alt="FOLk"><span>Coffee</span></div><div class="card-name" id="c-name"></div></div>
+      <div class="count"><span id="c-count">0</span><small id="c-goal"></small></div>
+      <div class="stamps" id="c-stamps"></div>
+      <div class="ready-msg" id="c-ready" hidden>Free coffee ready to redeem</div>
+    </div>
+    <div class="bday-banner" id="c-bday-today" hidden>🎂 It's their birthday today: coffee's on the house!</div>
+    <button class="btn big" id="bday" hidden>Give birthday coffee</button>
+    <button class="btn big" id="add">+1 stamp</button>
+    <button class="btn big" id="redeem" hidden>Redeem free coffee</button>
+    <div class="stats">
+      <div class="stat"><b id="c-total">0</b><span>coffees so far</span></div>
+      <div class="stat"><b id="c-free">0</b><span>free coffees</span></div>
+    </div>
+    <p class="muted" id="c-bday" style="margin-top:12px"></p>
+    <div class="row">
+      <button class="btn ghost" id="next">Scan next</button>
+      <button class="btn ghost" id="done">Done</button>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast,
+  birthdayCoffeeAvailable, isBirthdayToday, formatBirthday, todayIE } from './loyalty.js';
+
+const $ = (s) => document.querySelector(s);
+const VIEWS = ['loading', 'signin', 'notstaff', 'home', 'scan', 'customer'];
+const show = (v) => VIEWS.forEach((x) => ($('#v-' + x).hidden = x !== v));
+
+const be = await getBackend('staff');
+let me = null, scanner = null, unsub = null, current = null, last = null;
+if (DEMO) { $('#demo').hidden = false; $('#demo-open').hidden = false; }
+
+be.onAuth(async (u) => {
+  me = u;
+  if (!u) return show('signin');
+  show('loading');
+  if (await be.isStaff(u.uid).catch(() => false)) show('home');
+  else { $('#my-uid').textContent = u.uid; show('notstaff'); }
+});
+
+$('#f-signin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try { await be.staffSignIn($('#email').value.trim(), $('#pw').value); }
+  catch { toast('Wrong email or password', 'err'); }
+});
+document.querySelectorAll('[data-signout]').forEach((b) => b.addEventListener('click', () => be.signOut()));
+$('#recheck').addEventListener('click', async () => {
+  if (await be.isStaff(me.uid).catch(() => false)) show('home'); else toast('Still not on the staff list', 'err');
+});
+
+/* scanning */
+async function startScan() {
+  show('scan');
+  $('#scan-msg').textContent = "Point the camera at the customer's code.";
+  try {
+    scanner = new Html5Qrcode('reader');
+    await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, onScan, () => {});
+  } catch {
+    $('#scan-msg').textContent = 'Camera unavailable. Allow camera access in your browser settings, or find the customer by email.';
+  }
+}
+async function stopScan() {
+  if (scanner) { try { await scanner.stop(); } catch {} try { scanner.clear(); } catch {} scanner = null; }
+}
+async function onScan(text) {
+  if (!text.startsWith(QR_PREFIX)) { $('#scan-msg').textContent = "That isn't a FOLk card code."; return; }
+  await stopScan();
+  navigator.vibrate?.(60);
+  openCard(text.slice(QR_PREFIX.length));
+}
+$('#scan').addEventListener('click', startScan);
+$('#cancel-scan').addEventListener('click', async () => { await stopScan(); show('home'); });
+
+/* customer card */
+function openCard(uid) {
+  if (unsub) unsub();
+  current = uid; last = null;
+  show('loading');
+  unsub = be.watchCard(uid, (c) => {
+    if (!c) { toast('No card found for that code', 'err'); closeCard(); return; }
+    draw(c);
+  });
+}
+function closeCard() { if (unsub) unsub(); unsub = null; current = null; show('home'); }
+function draw(c) {
+  $('#c-name').textContent = c.name;
+  $('#c-count').textContent = Math.min(c.stamps, GOAL);
+  $('#c-goal').textContent = `of ${GOAL} stamps`;
+  renderStamps($('#c-stamps'), c.stamps, last?.stamps);
+  const full = c.stamps >= GOAL;
+  $('#c-ready').hidden = !full;
+  $('#add').hidden = full;
+  $('#redeem').hidden = !full;
+  $('#c-total').textContent = c.totalStamps || 0;
+  $('#c-free').textContent = c.rewardsRedeemed || 0;
+  const bdayFree = birthdayCoffeeAvailable(c);
+  $('#c-bday-today').hidden = !bdayFree;
+  $('#bday').hidden = !bdayFree;
+  $('#c-bday').textContent = !c.birthday ? 'No birthday saved'
+    : isBirthdayToday(c.birthday) && c.birthdayYear === todayIE().year ? `🎂 Birthday today, already had their birthday coffee`
+    : `🎂 Birthday: ${formatBirthday(c.birthday)}`;
+  last = { ...c };
+  show('customer');
+}
+async function act(btn, fn, okMsg) {
+  btn.disabled = true;
+  try { await fn(current, me.uid); toast(okMsg, 'ok'); }
+  catch (e) { toast(e.message || 'Something went wrong', 'err'); }
+  btn.disabled = false;
+}
+$('#add').addEventListener('click', (e) => act(e.currentTarget, be.addStamp, 'Stamp added'));
+$('#redeem').addEventListener('click', (e) => {
+  if (confirm('Give the free coffee now? The card will reset to 0 stamps.')) act(e.currentTarget, be.redeem, 'Free coffee redeemed 🎉');
+});
+$('#bday').addEventListener('click', (e) => act(e.currentTarget, be.redeemBirthday, 'Birthday coffee given 🎂'));
+$('#next').addEventListener('click', () => { closeCard(); startScan(); });
+$('#done').addEventListener('click', closeCard);
+$('#demo-open').addEventListener('click', async () => {
+  if (await be.getCard('demo-customer')) openCard('demo-customer');
+  else toast('Open the customer page and sign up first', 'err');
+});
+
+/* find by email */
+$('#f-find').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const list = $('#results'); list.innerHTML = '';
+  try {
+    const found = await be.findByEmail($('#find-email').value);
+    if (!found.length) { list.innerHTML = '<p class="muted">No card with that email.</p>'; return; }
+    for (const c of found) {
+      const b = document.createElement('button');
+      b.className = 'result';
+      b.innerHTML = '<span></span><span class="muted"></span>';
+      b.children[0].textContent = c.name;
+      b.children[1].textContent = `${c.stamps}/${GOAL}`;
+      b.addEventListener('click', () => openCard(c.uid));
+      list.appendChild(b);
+    }
+  } catch { toast('Search failed', 'err'); }
+});
+</script>
+</body>
+</html>
