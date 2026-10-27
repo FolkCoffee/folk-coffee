@@ -6,10 +6,10 @@
 // ─────────────────────────────────────────────────────────────
 
 export const firebaseConfig = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project",
-  appId: "PASTE_YOUR_APP_ID",
+  apiKey: "AIzaSyDWjJ85PQWdEC3-UXel3nQSv5QNRJK7H9U",
+  authDomain: "folk-coffee.firebaseapp.com",
+  projectId: "folk-coffee",
+  appId: "1:713201566967:web:2037390bb3f342d3cbbff2",
 };
 
 // Stamps needed for a free coffee (the free one is the next one).
