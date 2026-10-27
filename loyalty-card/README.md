@@ -32,6 +32,9 @@ Open the two links above in two tabs of the same browser. Sign up on the custome
 
 ## Print files
 In [`print/`](print/):
+- `folk-counter-sign-a4.pdf`: the designed counter sign, ready to print (A4, also fine scaled to A5)
+- `folk-counter-sign-a4.png`: the same sign as a high-resolution image
+- `folk-instagram-post.png`: square Instagram post announcing the digital card (1080×1080)
 - `folk-loyalty-qr-sign.png`: simple printable sign (logo, QR code, "Scan for your digital coffee card")
 - `folk-loyalty-qr.png` / `folk-loyalty-qr.svg`: the QR code on its own (SVG scales to any size for print shops or Canva)
 
