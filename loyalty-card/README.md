@@ -5,8 +5,8 @@ Replaces the paper loyalty card. Customers keep their card on their phone; staff
 - **index.html**: the customer card (sign up, stamps, QR code to show at the till)
 - **staff.html**: the till page (scan QR, +1 stamp, redeem free coffee, find by email)
 **Live links (once Firebase is connected):**
-- Customers: [kubo23609.github.io/folk-coffee-app/loyalty-card/](https://kubo23609.github.io/folk-coffee-app/loyalty-card/)
-- Staff till: [kubo23609.github.io/folk-coffee-app/loyalty-card/staff.html](https://kubo23609.github.io/folk-coffee-app/loyalty-card/staff.html)
+- Customers: [kubo23609.github.io/folk-coffee/loyalty-card/](https://kubo23609.github.io/folk-coffee/loyalty-card/)
+- Staff till: [kubo23609.github.io/folk-coffee/loyalty-card/staff.html](https://kubo23609.github.io/folk-coffee/loyalty-card/staff.html)
 
 It uses the FOLk logo from `../brand` and the app icons from `../icons`.
 
