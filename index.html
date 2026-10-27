@@ -565,7 +565,7 @@ nav button.nv.on{background:var(--now);color:var(--now-fg)}
 .impbox{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;padding:16px}
 .impin{background:var(--bg);color:var(--fg);border-radius:18px;padding:18px 18px 14px;max-width:480px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);margin-bottom:calc(env(safe-area-inset-bottom,0px) + 70px)}
 @media(min-width:861px){.impbox{align-items:center}.impin{margin-bottom:0}}
-</style></head><body>
+.sl-list{border-top:1px solid var(--line)}.sl-row{padding:12px 0;border-bottom:1px solid var(--line)}.sl-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}.sl-h b{font-size:16px;font-weight:500}.sl-s{color:var(--mut);font-size:14px;white-space:nowrap}.sl-f{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}.sl-f label{flex:none;min-width:0}.sl-f input[type=number]{width:100%;text-align:right;font-size:17px}.sl-o{flex-direction:row!important;align-items:center;gap:8px!important;font-size:14px!important;color:var(--fg)!important;padding-bottom:10px;white-space:nowrap}.sl-save{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));z-index:5;padding:12px 0;background:var(--bg)}.sl-save .b{width:100%}.sl-day{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}@media(min-width:900px){.sl-row{display:grid;grid-template-columns:1fr 360px;align-items:center;gap:16px}.sl-h{margin:0}.sl-save{bottom:0}.sl-save .b{width:auto}}</style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><img class="wm-logo hdr" src="brand/folk-logo.png" alt="FOLk"><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
 <main id="v"></main>
@@ -872,7 +872,7 @@ function fview(){
 
 // sales log
 function salesFor(d){sdate=d;ov='sales';go('Orders')}
-function saveDay(){const d=$('#sd').value||sdate||pday(),old=S.sales[d]||{},r={};S.prods.forEach((p,i)=>{const mv=$('#sm'+i).value,lv=$('#sl'+i).value,o=!!$('#so'+i).checked;if(mv===''&&old[p.id]&&old[p.id].made==null){r[p.id]=old[p.id];return}if(mv===''&&lv===''&&!o)return;const made=+mv||0;r[p.id]={made,left:Math.min(+lv||0,made),out:o}});if(Object.keys(r).length)S.sales[d]=r;else delete S.sales[d];sdate=d;save();draw();flash('Sales saved')}
+function saveDay(){const d=$('#sd').value||sdate||pday(),old=S.sales[d]||{},r={};S.prods.forEach((p,i)=>{if(!$('#sm'+i)){if(old[p.id])r[p.id]=old[p.id];return}const mv=$('#sm'+i).value,lv=$('#sl'+i).value,o=!!$('#so'+i).checked;if(mv===''&&old[p.id]&&old[p.id].made==null){r[p.id]=old[p.id];return}if(mv===''&&lv===''&&!o)return;const made=+mv||0;r[p.id]={made,left:Math.min(+lv||0,made),out:o}});if(Object.keys(r).length)S.sales[d]=r;else delete S.sales[d];sdate=d;save();draw();flash('Sales saved')}
 function delDay(x){snap('Day deleted');delete S.sales[x];save();draw()}
 function impS(){const bad=[];let ok=0;$('#imp').value.split(/\n/).forEach(line=>{const c=line.split(/[,;\t]/).map(x=>x.trim());if(c.length<3)return;let d=c[0];const a=d.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/);if(a)d=`${a[3]}-${a[2].padStart(2,'0')}-${a[1].padStart(2,'0')}`;if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return;const p=S.prods.find(x=>key(x.name)==key(c[1]));if(!p){bad.push(c[1]);return}const sold=+c[2]||0,made=c[3]!=null&&c[3]!==''?+c[3]:null;(S.sales[d]=S.sales[d]||{})[p.id]=made==null?{sold,made:null,left:0,out:false}:{made,left:Math.max(made-sold,0),out:made<=sold};ok++});save();draw();flash(`Imported ${ok} row${ok==1?'':'s'}`+(bad.length?`. Not found: ${[...new Set(bad)].slice(0,4).join(', ')}`:''))}
 function slog(){
@@ -1851,6 +1851,21 @@ function delV(i,v){const p=S.prods[i];if(v==p.cv||p.vers.length<2)return;snap(`V
 function notesList(pid,max){const L=pNotes(pid).slice(0,max||50);return L.length?`<div class="nl">${L.map(n=>`<div class="ni"><div class="grow"><span class="mut">${dlab(n.date)} · ${n.v?'version '+n.v:'deleted version'}</span><div>${esc(n.t)}</div></div><button class="g sm" onclick="delNote('${n.id}')">Delete</button></div>`).join('')}</div>`:''}
 (function(){let ch=false;S.prods.forEach(p=>{if(renV(p))ch=true});if(ch)save()})();
 const _adoptRV=adopt;adopt=function(r,f){_adoptRV(r,f);let ch=false;S.prods.forEach(p=>{if(renV(p))ch=true});if(ch)save()};
+
+// ===== Sales: one card per item, readable on a phone =====
+function slSold(i){const m=$('#sm'+i),l=$('#sl'+i),o=$('#ss'+i);if(!m||!o)return;const mv=m.value,lv=+l.value||0;o.textContent=mv===''?'':`${Math.max((+mv||0)-lv,0)} sold`}
+function slog(){
+ const d=sdate||pday(),rec=S.sales[d]||{},cnt={};dOf(d).filter(o=>o.par).forEach(o=>cnt[o.pid]=(cnt[o.pid]||0)+o.qty);
+ const days=Object.keys(S.sales).sort().reverse().slice(0,21);
+ const rows=S.prods.map((p,i)=>{if(p.sub&&!rec[p.id])return'';const r=rec[p.id],mv=r?(r.made==null?'':r.made):(cnt[p.id]?bakeN(p.id,cnt[p.id]):''),lv=r&&r.made!=null?(+r.left||0):'';
+  return`<div class="sl-row"><div class="sl-h"><b>${esc(p.name)}</b><span id="ss${i}" class="sl-s">${mv!==''?`${Math.max((+mv||0)-(+lv||0),0)} sold`:r?`${rs(r)} sold`:''}</span></div>
+  <div class="sl-f"><label>Made<input id="sm${i}" type="number" min="0" inputmode="numeric" value="${mv}" oninput="slSold(${i})"></label><label>Left over<input id="sl${i}" type="number" min="0" inputmode="numeric" value="${lv}" oninput="slSold(${i})"></label><label class="sl-o"><input id="so${i}" class="ck" type="checkbox"${r&&r.out?' checked':''}>Sold out</label></div></div>`}).join('');
+ return`<div class="row"><label>Day<input id="sd" type="date" value="${d}" onchange="sdate=this.value;draw()"></label></div>
+ <p class="mut">Count only what you made for the counter, not customer orders. Leave an item empty if you didn’t make it. Tick “Sold out” if it ran out before closing, so the forecast knows demand was higher.</p>
+ <div class="sl-list">${rows}</div>
+ <div class="sl-save"><button class="b" onclick="saveDay()">Save ${dlab(d)}</button></div>
+ ${days.length?`<h2>Recorded days</h2><div class="sl-days">${days.map(x=>{const v=Object.values(S.sales[x]);return`<div class="sl-day"><div class="grow"><b>${dlab(x)}</b><div class="mut">${v.reduce((a,r)=>a+rs(r),0)} sold · ${v.reduce((a,r)=>a+(+r.left||0),0)} left over</div></div><button class="g sm" onclick="sdate='${x}';draw();window.scrollTo(0,0)">Edit</button><button class="g sm" onclick="delDay('${x}')">Delete</button></div>`}).join('')}</div>`:''}
+ <details class="qa"><summary>Import past sales</summary><p class="mut">Paste one line per item: date, product name, sold, and optionally made. For example: 17/10/2026, Cardamom bun, 43, 48</p><textarea id="imp" rows="5"></textarea><p><button class="b" onclick="impS()">Import</button></p></details>`}
 
 draw();
 </script></body></html>
