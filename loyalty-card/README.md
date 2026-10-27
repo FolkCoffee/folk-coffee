@@ -30,6 +30,13 @@ Open the two links above in two tabs of the same browser. Sign up on the custome
    Tip: if you sign in on `staff.html` before doing this, the page shows the UID for you to copy.
 7. **Publish.** Commit the edited `config.js` to `main`. It goes live within a few minutes. Bookmark the staff link on the shop phone or tablet.
 
+## Print files
+In [`print/`](print/):
+- `folk-loyalty-qr-sign.png`: simple printable sign (logo, QR code, "Scan for your digital coffee card")
+- `folk-loyalty-qr.png` / `folk-loyalty-qr.svg`: the QR code on its own (SVG scales to any size for print shops or Canva)
+
+The QR code opens https://folkcoffee.github.io/folk-coffee/loyalty-card/
+
 ## In the shop
 - Print a small sign with a QR code linking to the customer page: "Ditch the paper card: scan to get your FOLk card".
 - Customers can add the page to their home screen so it opens like an app.
