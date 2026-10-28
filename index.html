@@ -1383,7 +1383,24 @@ function menu(){
  const n={ok:0,warn:0,bad:0};rows.forEach(r=>n[mst(r.g)]++);
  return alerts()+`<h2>Margins</h2><p class="mut">Lowest first. Your target is ${T0}%, set in Settings. ${n.bad?`<b class="st-bad">${n.bad} well below</b> · `:''}${n.warn?`<b class="st-warn">${n.warn} close</b> · `:''}${n.ok} on target.</p>
  <div class="mlist">${rows.map(r=>{const s=mst(r.g),i=S.prods.indexOf(r.p);return`<button class="mrw" onclick="vw=${i};ed=null;go('Products')"><span class="grow"><b>${esc(r.p.name)}</b><span class="mut">${esc(r.p.cat||'Bakery')}${por(r.p)>1?' · '+esc(pinfo(r.p)):''}</span></span><span class="prm"><span>${priceTxt(r.p)}</span><span class="mut">cost ${m(sellOf(r.p)=='slice'?r.c.cost/por(r.p):r.c.cost)}</span></span><span class="prg st-${s}"><span>${mdot(r.g)}${r.g.toFixed(0)}%</span>${s!='ok'?`<span class="mut sug">→ ${m(sellOf(r.p)=='slice'?sug(r.p)/por(r.p):sug(r.p))}</span>`:''}</span></button>`}).join('')}</div>
- <p class="mut sm2">The arrow shows the price that would hit your target.</p>`}
+ <p class="mut sm2">The arrow shows the price that would hit your target.</p>${beCard()}`}
+// ===== Running costs and break-even =====
+function runL(){const s=S.set;if(!Array.isArray(s.run))s.run=[{n:'Rent',v:1200},{n:'Electricity',v:200},{n:'Staff',v:1000},{n:'Other',v:300},{n:'My salary',v:2000}];if(!(+s.days))s.days=7;return s.run}
+function runSet(k,f,v){const r=runL();if(f=='del')r.splice(k,1);else if(f=='add')r.push({n:'',v:0});else r[k][f]=f=='v'?(+v||0):v;save();draw()}
+function beCard(){const R=runL(),tot=R.reduce((a,r)=>a+(+r.v||0),0),dpm=(+S.set.days||7)*52/12,perDay=tot/dpm;
+ const dz=(S.dr&&S.dr.items||[]).flatMap(it=>it.sizes).filter(z=>+z.price>0).map(z=>+z.price-dCost(z,0).tot);
+ const bk=S.prods.filter(p=>!p.sub&&+p.price>0&&(p.cat||'Bakery')!='Drinks').map(p=>{const c=calc(p);return(+p.price||0)-c.ing});
+ const av=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0,cP=av(dz),bP=av(bk);
+ const n=v=>v>0?Math.ceil(perDay/v):'–';
+ return`<h2 style="margin-top:28px">Running costs and break-even</h2><p class="mut">What the shop has to pay every month, including your own salary, and what you need to sell each day to cover it.</p>
+ <div class="card">${R.map((r,k)=>`<div class="row"><input class="grow" value="${esc(r.n)}" placeholder="Cost, e.g. Insurance" onchange="runSet(${k},'n',this.value)"><label>€ / month<input type="number" step="any" value="${+r.v||0}" onchange="runSet(${k},'v',this.value)"></label><button class="g sm" aria-label="Remove" onclick="runSet(${k},'del')">×</button></div>`).join('')}
+ <div class="row"><button class="lnk" onclick="runSet(0,'add')">+ Add a cost</button><span class="grow"></span><label>Open days a week<input type="number" min="1" max="7" value="${+S.set.days||7}" onchange="S.set.days=Math.min(Math.max(+this.value||7,1),7);save();draw()"></label></div>
+ <div class="stats"><div><div class="big">${m(tot)}</div>a month</div><div><div class="big">${m(perDay)}</div>per open day</div></div>
+ <p>To cover that, each open day you need about:</p><ul>
+ <li><b>${n(cP)} coffees</b> <span class="mut">(average ${m(cP)} left after coffee, milk and cup)</span></li>
+ <li><b>or ${n(bP)} bakes</b> <span class="mut">(average ${m(bP)} left after ingredients)</span></li>
+ <li><b>or ${n(cP+bP)} customers</b> who each buy one coffee and one bake</li></ul>
+ <p class="mut sm2">Bakes here count ingredients only, because your baking time is paid by your salary above. Prices include VAT, so the real numbers are higher: ask your accountant for your VAT rates. Packaging, card fees and waste are not in these figures.</p></div>`}
 // orders week: starts today, quiet empty days
 let oPast=false;
 
