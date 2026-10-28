@@ -411,6 +411,7 @@ select.secsel{width:auto;max-width:130px;font-size:13px}
 .prn b,.mrw b{font-weight:500;font-size:16px}
 .prn .mut,.mrw .mut{font-size:13px}
 .pth{width:44px;height:44px;border-radius:12px;flex:none;object-fit:cover;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--lc,#ccc) 35%,var(--bg));font-weight:500;font-size:18px}
+.bpick{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.bpn{min-width:1.5em;text-align:center;font-size:18px}
 .prm{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
 .prm .mut{font-size:13px}
 .prg{min-width:64px;text-align:right;white-space:nowrap;font-weight:500;display:flex;flex-direction:column;align-items:flex-end}
@@ -714,7 +715,7 @@ function recipe(i){
  const total=p.steps.reduce((a,s)=>a+(+s.mins||0),0);
  return`<div class="recipe"><div class="noprint row"><button class="g" onclick="vw=null;draw()">← All products</button><span class="grow"></span><button class="g" onclick="vw=null;ed=${i};draw()">Edit</button><button class="b" onclick="cook(${i})">Baker mode</button><button class="g" onclick="print()">Print recipe</button></div>
  <div class="pw"><img class="wm-logo" src="${LOGO()}" alt="FOLk"><span class="wm2">Speciality Coffee</span></div><p class="mut">${esc(p.cat||'Bakery')} · version ${p.cv||1}</p><h2 class="rt">${esc(p.name)}</h2>${p.img?`<img class="rph" src="${p.img}" alt="">`:''}
- <div class="noprint row"><label>Making (units)<input type="number" min="1" value="${want}" onchange="vq['${p.id}']=+this.value||1;draw()"></label></div>
+ <div class="noprint row"><label>Making (units)<input type="number" min="1" value="${want}" onchange="vq['${p.id}']=+this.value||1;draw()"></label>${batchPick(p,n)}</div>
  <p>Makes <b>${n}</b> × ${p.unitG} g${por(p)>1?` (cut into ${por(p)} portions)`:''}${bt?` (${n/b} batch${n/b>1?'es':''})`:''}${total?` · total time ${hm(total)}`:''}</p>
  <h3>Ingredients</h3>${recTbl(p,c,n)}
  <h3>Method</h3><ol class="steps">${p.steps.map((s,j)=>`<li><span class="bx" onclick="this.classList.toggle('done')"></span><div><b>${esc(s.n)}</b> <span class="mut">${hm(+s.mins||0)} · start ${fm(st[j])}</span>${s.d?`<div>${esc(s.d)}</div>`:''}</div></li>`).join('')}</ol>
@@ -748,12 +749,15 @@ function setPar(id,k,v){S.par=S.par||{};(S.par[id]=S.par[id]||{})[k]=+v||0;save(
 let tgD=null;
 function tgCopy(to){const d=tgD;S.prods.filter(p=>!p.sub).forEach(p=>{const v=((S.par||{})[p.id]||{})[d]||0;to.forEach(k=>{if(k!=d)setParQ(p.id,k,v)})});save();draw();flash(`Copied ${DN[d]} to ${to.length==7?'every day':to.map(k=>DN[k]).join(', ')}`)}
 function setParQ(id,k,v){S.par=S.par||{};S.par[id]=S.par[id]||{};if(+v>0)S.par[id][k]=+v;else delete S.par[id][k]}
+function tgStep(id,d,delta){const v=+(((S.par||{})[id]||{})[d]||0),b=Math.abs(delta),k=Math.ceil(v/b)+(delta>0?1:-1);setParQ(id,d,Math.max(0,k)*b);save();draw()}
+function batchPick(p,n){const b=Math.max(+p.batch||1,1);if(p.yt!='batch'||b<2)return'';const k=Math.round(n/b),c=calc(p).cost*n,r=(+p.price||0)*n;
+ return`<div class="bpick"><span class="mut">Batches</span><button class="g sm" aria-label="One batch less" onclick="vq['${p.id}']=${Math.max(k-1,1)*b};draw()"${k>1?'':' disabled'}>−</button><b class="bpn">${k}</b><button class="g sm" aria-label="One batch more" onclick="vq['${p.id}']=${(k+1)*b};draw()">+</button><span class="mut">= ${n} pieces · cost ${m(c)}${r?` · sells for ${m(r)}`:''}</span></div>`}
 function targets(){
  if(tgD==null)tgD=dow(tdy());const d=tgD,L=S.prods.filter(p=>!p.sub),P=id=>(S.par||{})[id]||{};
  const wk=p=>DN.reduce((a,_,k)=>a+(+P(p.id)[k]||0),0),tot=L.reduce((a,p)=>a+(+P(p.id)[d]||0),0);
  return`<p class="mut">How many of each item you want ready on each weekday, in pieces. They are added to that day’s plan as “Counter”, on top of customer orders, and rounded up to whole batches.</p>
  <div class="row sub tgd">${DN.map((n,k)=>`<button class="g${k==d?' on':''}" onclick="tgD=${k};draw()">${n}</button>`).join('')}</div>
- <div class="tgl">${L.map(p=>{const v=P(p.id)[d]||'',b=p.yt=='batch'?Math.max(+p.batch||1,1):1;return`<div class="tgr"><span class="grow"><b>${esc(p.name)}</b><span class="mut sm2">${b>1?`batch of ${b} · `:''}week ${wk(p)}${v&&b>1&&v%b?` · <b>bakes ${Math.ceil(v/b)*b}</b>`:''}</span></span><input class="tq" type="number" min="0" inputmode="numeric" value="${v}" aria-label="${esc(p.name)} on ${DN[d]}" onchange="setPar('${p.id}',${d},this.value);draw()"></div>`}).join('')||'<p class="mut">Add products first.</p>'}</div>
+ <div class="tgl">${L.map(p=>{const v=P(p.id)[d]||'',b=p.yt=='batch'?Math.max(+p.batch||1,1):1;return`<div class="tgr"><span class="grow"><b>${esc(p.name)}</b><span class="mut sm2">${b>1?`batch of ${b} · `:''}week ${wk(p)}${v&&b>1&&v%b?` · <b>bakes ${Math.ceil(v/b)*b}</b>`:''}</span></span>${b>1?`<button class="g sm" aria-label="One batch less" onclick="tgStep('${p.id}',${d},-${b})">−</button>`:''}<input class="tq" type="number" min="0" inputmode="numeric" value="${v}" aria-label="${esc(p.name)} on ${DN[d]}" onchange="setPar('${p.id}',${d},this.value);draw()">${b>1?`<button class="g sm" aria-label="One batch more" onclick="tgStep('${p.id}',${d},${b})">+</button>`:''}</div>`}).join('')||'<p class="mut">Add products first.</p>'}</div>
  <div class="row" style="margin-top:12px"><span class="mut grow">${DN[d]}: ${tot} pieces in total</span><button class="g sm" onclick="tgCopy([0,1,2,3,4])">Copy to Mon–Fri</button><button class="g sm" onclick="tgCopy([0,1,2,3,4,5,6])">Copy to every day</button></div>`}
 
 
@@ -791,7 +795,7 @@ function cmGo(k){if(cm==null||!S.prods[cm])return;const N=S.prods[cm].steps.leng
 function cookv(i){
  const p=S.prods[i],c=calc(p),N=p.steps.length,b=Math.max(+p.batch||1,1),bt=p.yt=='batch';
  const oq=dO().filter(o=>o.pid==p.id).reduce((a,o)=>a+o.qty,0),want=vq[p.id]||oq||(bt?b:1),n=bt?Math.ceil(want/b)*b:want,s=cs?p.steps[cs-1]:null;
- const body=cs==0?wList(p,c,n)+ckNotes(p,false,true)
+ const body=cs==0?`<div class="row">${batchPick(p,n)}</div>`+wList(p,c,n)+ckNotes(p,false,true)
  :`<div class="mut">Step ${cs} of ${N}</div><h2 class="ck1">${esc(s.n)}</h2>${s.d?`<p class="ck2">${esc(s.d)}</p>`:''}${+s.mins?`<div class="timer"><div id="tm" class="tmv">${fmt(tL)}</div><button class="b big" id="tb" onclick="ctTog()">Start timer</button><button class="g" onclick="ctReset();tmUI()">Reset</button></div>`:''}${ckNotes(p,cs==N)}`;
  return`<div class="cook"><div class="row"><button class="g" onclick="cookX()">Exit</button><span class="grow"></span><span class="mut">${esc(p.name)}</span></div><div class="dots">${[...Array(N+1)].map((_,k)=>`<i class="${k==cs?'on':k<cs?'dn':''}"></i>`).join('')}</div>${body}<div class="row cnav"><button class="g big" onclick="cmGo(-1)"${cs?'':' disabled'}>Back</button><button class="b big grow" onclick="cmGo(1)">${cs==N?'Finish':'Next'}</button></div></div>`}
 
