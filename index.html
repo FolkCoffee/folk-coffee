@@ -1826,6 +1826,7 @@ setTimeout(()=>{if(/^#buy=/.test(location.hash))buyShow()},700);
 
 // update an existing recipe by name (from Claude), keeping the old one as a version
 function impUpd(p,r,made){ensV(p);
+ if(typeof r.rename=='string'&&r.rename.trim()&&r.rename.trim()!=p.name){const nn=r.rename.trim(),old=p.name;if(S.prods.some(x=>x!==p&&key(x.name)==key(nn)))throw new Error('name taken');if(p.sub)S.prods.forEach(x=>(x.ings||[]).forEach(i=>{if(key(i.n)==key(old))i.n=nn}));p.name=nn}
  if(vchg(p)){const n=nextV(p);p.vers.push({v:n,date:tdy(),note:'Before Claude’s change',data:snapR(p)});p.cv=n}
  if(Array.isArray(r.steps)&&r.steps.length)p.steps=r.steps.map(([n,mins,d])=>({n,mins,...(d?{d}:{})}));
  if(Array.isArray(r.ings)&&r.ings.length)p.ings=r.ings.map(l=>{if(subOf(l.n))return{n:subOf(l.n).name,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})};let g=null;for(const n of [l.n,...(l.m||[])]){g=S.ings.find(x=>key(x.n)==key(n));if(g)break}if(!g){g={n:l.n,price:0,size:1,unit:l.u=='each'?'each':l.u=='ml'?'l':'kg',al:l.al||[],waste:0};S.ings.push(g);made.push(l.n)}return{n:g.n,amt:+l.a||0,pct:0,...(l.sec?{sec:l.sec}:{})}});
@@ -1854,7 +1855,7 @@ async function inboxCheck(){
    if(c.error||!c.data||!c.data.length)continue;
    const pre=JSON.stringify(S),pv=row.payload||{};let msg='';
    try{
-    if(row.kind=='add'){const R=Array.isArray(pv.recipes)?pv.recipes:[pv];if(!R.every(x=>x&&x.name&&(Array.isArray(x.ings)||x.update)))throw 0;const {made}=impApply(R);msg=`From Claude: ${R.length>1?R.length+' recipes added':R[0].name+(R[0].update&&S.prods.some(p=>key(p.name)==key(R[0].name))?' updated (old one kept as a version)':' added')}${made.length?`. New: ${made.join(', ')}`:''}`}
+    if(row.kind=='add'){const R=Array.isArray(pv.recipes)?pv.recipes:[pv];if(!R.every(x=>x&&x.name&&(Array.isArray(x.ings)||x.update)))throw 0;const {made}=impApply(R);msg=`From Claude: ${R.length>1?R.length+' recipes added':R[0].update&&R[0].rename&&S.prods.some(p=>p.name==R[0].rename.trim())?R[0].name+' renamed to '+R[0].rename.trim():R[0].name+(R[0].update&&S.prods.some(p=>key(p.name)==key(R[0].name))?' updated (old one kept as a version)':' added')}${made.length?`. New: ${made.join(', ')}`:''}`}
     else if(row.kind=='buy'){buyApply(pv);msg=`From Claude: purchase from ${pv.sup||'shop'} recorded, ${pv.lines.length} item${pv.lines.length==1?'':'s'}`}
     else continue;
    }catch(e){S=JSON.parse(pre);continue}
