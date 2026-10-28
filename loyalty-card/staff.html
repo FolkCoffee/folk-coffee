@@ -54,6 +54,18 @@
   <section id="v-scan" hidden>
     <div id="reader"></div>
     <p class="muted" id="scan-msg" style="margin-top:12px;text-align:center">Point the camera at the customer's code.</p>
+    <div class="cam-controls" id="cam-controls" hidden>
+      <label for="cam">Lens</label>
+      <div class="row">
+        <select id="cam"></select>
+        <button class="btn ghost" id="cam-next" type="button" style="flex:0 0 auto;width:auto;margin-top:0;padding:13px 16px">Switch</button>
+      </div>
+      <div id="zoom-row" hidden>
+        <label for="zoom">Zoom <span class="muted" id="zoom-val"></span></label>
+        <input type="range" id="zoom">
+      </div>
+      <p class="muted" style="margin:10px 0 0;font-size:13px">If you have to hold the phone far away, switch lens until the code is sharp up close. Your choice is remembered on this phone.</p>
+    </div>
     <button class="btn ghost" id="cancel-scan">Cancel</button>
   </section>
 
@@ -81,7 +93,7 @@
 </main>
 
 <script type="module">
-import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast,
+import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast, store,
   birthdayCoffeeAvailable, isBirthdayToday, formatBirthday, todayIE } from './loyalty.js';
 
 const $ = (s) => document.querySelector(s);
@@ -111,16 +123,100 @@ $('#recheck').addEventListener('click', async () => {
 });
 
 /* scanning */
-async function startScan() {
+const CAM_KEY = 'folk-staff-camera', ZOOM_KEY = 'folk-staff-zoom';
+const SCAN_CFG = {
+  fps: 15,
+  // Scan box = 75% of the camera view, so codes held close still fit.
+  qrbox: (w, h) => { const s = Math.max(160, Math.floor(Math.min(w, h) * 0.75)); return { width: s, height: s }; },
+};
+let cams = [];
+
+// Phones list several lenses; keep the back-facing ones.
+function backCameras(list) {
+  const back = list.filter((c) => /back|rear|environment|traseira|trasera|arrière|hinten/i.test(c.label));
+  return back.length ? back : list;
+}
+
+async function startScan(camId) {
+  await stopScan();
   show('scan');
   $('#scan-msg').textContent = "Point the camera at the customer's code.";
+  const wanted = camId || store.get(CAM_KEY);
+  // Read the lens list BEFORE opening the camera: on Android, asking while a
+  // camera is running can briefly open a second one and freeze the picture.
+  try { if (!cams.length) cams = backCameras(await Html5Qrcode.getCameras()); } catch { cams = []; }
+  scanner = new Html5Qrcode('reader');
   try {
-    scanner = new Html5Qrcode('reader');
-    await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, onScan, () => {});
+    try {
+      await scanner.start(wanted ? { deviceId: { exact: wanted } } : { facingMode: 'environment' }, SCAN_CFG, onScan, () => {});
+    } catch (e) {
+      if (!wanted) throw e;
+      store.del(CAM_KEY); // saved lens no longer exists: fall back to the default back camera
+      await scanner.start({ facingMode: 'environment' }, SCAN_CFG, onScan, () => {});
+    }
   } catch {
     $('#scan-msg').textContent = 'Camera unavailable. Allow camera access in your browser settings, or find the customer by email.';
+    return;
   }
+  await setupCameraControls();
 }
+
+async function setupCameraControls() {
+  if (!scanner) return;
+  let settings = {};
+  try { settings = scanner.getRunningTrackSettings() || {}; } catch {}
+  const sel = $('#cam');
+  sel.innerHTML = '';
+  cams.forEach((c, i) => {
+    const o = document.createElement('option');
+    o.value = c.id;
+    o.textContent = `Lens ${i + 1}` + (c.label ? ` (${c.label})` : '');
+    sel.appendChild(o);
+  });
+  if (settings.deviceId && cams.some((c) => c.id === settings.deviceId)) sel.value = settings.deviceId;
+  const multi = cams.length > 1;
+  sel.parentElement.hidden = !multi;
+  $('label[for=cam]').hidden = !multi;
+
+  // Zoom (only on phones/browsers that support it)
+  let caps = {};
+  try { caps = scanner.getRunningTrackCapabilities() || {}; } catch {}
+  const z = caps.zoom, row = $('#zoom-row');
+  if (z && z.max > z.min) {
+    const slider = $('#zoom');
+    slider.min = z.min; slider.max = z.max; slider.step = z.step || 0.1;
+    const saved = parseFloat(store.get(ZOOM_KEY));
+    const start = !isNaN(saved) && saved >= z.min && saved <= z.max ? saved : (settings.zoom || z.min);
+    slider.value = start;
+    if (start !== settings.zoom) applyZoom(start);
+    $('#zoom-val').textContent = `${(+start).toFixed(1)}×`;
+    row.hidden = false;
+  } else row.hidden = true;
+
+  // Ask for continuous autofocus where the camera offers it
+  if (caps.focusMode?.includes?.('continuous')) {
+    try { await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch {}
+  }
+  $('#cam-controls').hidden = !multi && row.hidden;
+}
+
+async function applyZoom(v) {
+  try { await scanner?.applyVideoConstraints({ advanced: [{ zoom: +v }] }); } catch {}
+}
+
+$('#cam').addEventListener('change', (e) => { store.set(CAM_KEY, e.target.value); startScan(e.target.value); });
+$('#cam-next').addEventListener('click', () => {
+  if (cams.length < 2) return;
+  const i = cams.findIndex((c) => c.id === $('#cam').value);
+  const next = cams[(i + 1) % cams.length].id;
+  store.set(CAM_KEY, next); store.del(ZOOM_KEY);
+  startScan(next);
+});
+$('#zoom').addEventListener('input', (e) => {
+  $('#zoom-val').textContent = `${(+e.target.value).toFixed(1)}×`;
+  store.set(ZOOM_KEY, e.target.value);
+  applyZoom(e.target.value);
+});
 async function stopScan() {
   if (scanner) { try { await scanner.stop(); } catch {} try { scanner.clear(); } catch {} scanner = null; }
 }
@@ -130,7 +226,7 @@ async function onScan(text) {
   navigator.vibrate?.(60);
   openCard(text.slice(QR_PREFIX.length));
 }
-$('#scan').addEventListener('click', startScan);
+$('#scan').addEventListener('click', () => startScan());
 $('#cancel-scan').addEventListener('click', async () => { await stopScan(); show('home'); });
 
 /* customer card */
