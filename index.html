@@ -1500,7 +1500,7 @@ function editor(i){
  return`<section class="ed">${bar}
  <div class="row">${inp(P+'.name',p.name,'grow big2')}</div>
  <div class="row"><label>Category${sel(P+'.cat',[['Bakery','Bakery'],['Drinks','Drinks'],['Other','Other']],p.cat||'Bakery')}</label><label class="chip"><input type="checkbox"${p.sub?' checked':''} onchange="setSub(${i},this.checked)"> Use in other recipes (levain, frosting…)</label></div>
- ${sell}<h4>Yield</h4>${yieldR}${p.sub?'':preUI(i)}
+ ${sell}<h4>Yield</h4>${yieldR}${p.sub?'':batchSum(p,c)}${p.sub?'':preUI(i)}
  <h4>Ingredients <span class="mut">${pc?'flour = 100%':p.sub||bt?'for one batch':'for one unit'}</span></h4>${ingEd(i)}
  <h4>Steps <span class="mut">in order, with minutes</span></h4>${steps}<div class="row qrow"><input id="rs-n" class="grow" placeholder="Add step, e.g. Proof" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#rs-m').focus()}"><input id="rs-m" class="smin" type="number" step="any" placeholder="min" onkeydown="if(event.key=='Enter'){event.preventDefault();rsAdd(${i})}"><span class="mut">min</span><button class="b sm" onclick="rsAdd(${i})">Add</button></div>
  <h4>Notes for the person making it</h4><textarea rows="2" onchange="up('${P}.notes',this.value)">${esc(p.notes||'')}</textarea>
@@ -1521,7 +1521,7 @@ function prods(){
  if(ed!=null&&S.prods[ed])return editor(ed);
  const cats=['All',...new Set(S.prods.filter(p=>!p.sub).map(p=>p.cat||'Bakery'))];
  const ok=p=>p.name.toLowerCase().includes(pq.toLowerCase());
- const row=([p,i])=>{const c=calc(p),g=mg(p);return`<button class="prw" data-n="${esc(p.name.toLowerCase())}" onclick="vw=${i};draw();fx();window.scrollTo(0,0)">${p.img?`<img class="pth" src="${p.img}" alt="">`:`<span class="pcl" style="--lc:${pcol(p.id)}"></span>`}<span class="grow prn"><b>${esc(p.name)}</b><span class="mut">${p.sub?`Used in ${usedIn(p).length} recipe${usedIn(p).length==1?'':'s'}`:`${esc(p.cat||'Bakery')} · ${p.unitG} g${sellOf(p)=='slice'?` · ${por(p)} slices`:''}`}</span></span>${p.sub?`<span class="prm"><span>${m(c.cost/(+p.unitG||1)*1000)}</span><span class="mut">per kg</span></span>`:`<span class="prm"><span>${priceTxt(p)}</span><span class="mut">cost ${m(sellOf(p)=='slice'?c.cost/por(p):c.cost)}</span></span><span class="prg st-${mst(g)}"><span>${mdot(g)}${g.toFixed(0)}%</span></span>`}</button>`};
+ const row=([p,i])=>{const c=calc(p),g=mg(p);return`<button class="prw" data-n="${esc(p.name.toLowerCase())}" onclick="vw=${i};draw();fx();window.scrollTo(0,0)">${p.img?`<img class="pth" src="${p.img}" alt="">`:`<span class="pcl" style="--lc:${pcol(p.id)}"></span>`}<span class="grow prn"><b>${esc(p.name)}</b><span class="mut">${p.sub?`Used in ${usedIn(p).length} recipe${usedIn(p).length==1?'':'s'}`:`${esc(p.cat||'Bakery')} · ${p.unitG} g${sellOf(p)=='slice'?` · ${por(p)} slices`:''}`}</span></span>${p.sub?`<span class="prm"><span>${m(c.cost/(+p.unitG||1)*1000)}</span><span class="mut">per kg</span></span>`:`<span class="prm"><span>${priceTxt(p)}</span><span class="mut">cost ${m(sellOf(p)=='slice'?c.cost/por(p):c.cost)}</span>${bN(p)>1?`<span class="mut">batch of ${bN(p)}: ${m(c.cost*bN(p))} → ${m((+p.price||0)*bN(p))}</span>`:''}</span><span class="prg st-${mst(g)}"><span>${mdot(g)}${g.toFixed(0)}%</span></span>`}</button>`};
  const L=S.prods.map((p,i)=>[p,i]),main=L.filter(([p])=>!p.sub&&(pcat=='All'||(p.cat||'Bakery')==pcat)&&ok(p)),sb=L.filter(([p])=>p.sub&&ok(p));
  return`<div class="row"><h2 class="grow" style="margin:0">Recipes</h2><button class="b" onclick="newP()">+ New product</button></div><div class="row"><input class="grow" placeholder="Search" value="${esc(pq)}" oninput="pq=this.value;flt('.prw[data-n]',pq)">${cats.length>2?cats.map(c=>`<button class="g sm${c==pcat?' on':''}" onclick="pcat='${c}';draw()">${c}</button>`).join(''):''}</div>
  <div class="plist">${main.map(row).join('')||'<p class="mut">No products yet.</p>'}</div>${sb.length?`<h3 style="margin-top:26px">Sub-recipes <span class="mut">used inside other recipes</span></h3><div class="plist">${sb.map(row).join('')}</div>`:''}
@@ -1539,6 +1539,8 @@ function bSet(k,v){bF[k]=v}
 function bLine(j,k,v){const L=bF.lines[j];L[k]=v;if(k=='n'){const g=S.ings.find(x=>key(x.n)==key(v));if(g){L.size=g.size;L.unit=g.unit;L.price=g.price;if(!bF.sup&&g.sup)bF.sup=g.sup}draw();setTimeout(()=>{const x=document.querySelectorAll('.bln')[j];x&&x.querySelector('.bpk').focus()},30);return}if(k!='n')draw()}
 function bAdd(){bF.lines.push({n:'',packs:1,size:'',unit:'kg',price:''});draw();setTimeout(()=>{const a=document.querySelectorAll('.bln .bn');a.length&&a[a.length-1].focus()},30)}
 function bDel(j){bF.lines.splice(j,1);if(!bF.lines.length)bF.lines.push({n:'',packs:1,size:'',unit:'kg',price:''});draw()}
+function bN(p){return p.yt=='batch'?Math.max(+p.batch||1,1):1}
+function batchSum(p,c){const n=bN(p);if(n<2)return'';const cost=c.cost*n,rev=(+p.price||0)*n;return`<p class="mut">Whole batch of ${n}: cost <b>${m(cost)}</b>${rev?` · sells for <b>${m(rev)}</b> · profit <b>${m(rev-cost)}</b>`:' · no sell price yet'}</p>`}
 const costs=()=>Object.fromEntries(S.prods.map(p=>[p.id,calc(p).cost]));
 function bSave(){
  const f=bF,L=f.lines.filter(l=>(l.n||'').trim()&&+l.price>0);if(!L.length){flash('Add at least one item with a price');return}
