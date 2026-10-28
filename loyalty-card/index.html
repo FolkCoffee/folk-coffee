@@ -79,6 +79,14 @@
       <button class="btn" id="b-save">Save birthday</button>
     </div>
     <p class="muted" id="c-bday" hidden style="margin-top:14px"></p>
+
+    <h2 class="sub">Gift vouchers</h2>
+    <div class="results" id="my-vouchers"></div>
+    <p class="muted" id="my-vouchers-empty" style="margin:0 0 6px;font-size:14px">Got a FOLk gift voucher? Add it here and it's always with you. Your code above works for your vouchers too.</p>
+    <form id="f-claim" class="row">
+      <input id="claim-code" placeholder="FOLK-XXXX-XXXX" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Voucher code" required>
+      <button class="btn" type="submit" style="flex:0 0 auto;width:auto;margin-top:0;padding:13px 16px">Add</button>
+    </form>
     <p class="muted" style="margin-top:18px">Tip: add this page to your home screen (Share → Add to Home Screen) so your card is always one tap away.</p>
     <button class="link" id="signout">Sign out</button>
   </section>
@@ -93,11 +101,12 @@
 <script type="module">
 import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast, store,
   fillBirthdayPickers, validBirthday, birthdayCoffeeAvailable, formatBirthday } from './loyalty.js';
+import { normalizeCode, euro, formatDate, isExpired } from './vouchers.js';
 
 const $ = (s) => document.querySelector(s);
 const signupBday = fillBirthdayPickers($('#b-day'), $('#b-mon'));
 const laterBday = fillBirthdayPickers($('#b-day2'), $('#b-mon2'));
-let myUid = null;
+let myUid = null, myEmail = '', vUnsub = null;
 const VIEWS = ['loading', 'signin', 'sent', 'confirm', 'card', 'error'];
 const show = (v) => VIEWS.forEach((x) => ($('#v-' + x).hidden = x !== v));
 const fail = (msg) => { $('#err-msg').textContent = msg; show('error'); };
@@ -120,6 +129,7 @@ if (be.isEmailLink()) {
 
 be.onAuth(async (user) => {
   if (unsub) { unsub(); unsub = null; }
+  if (vUnsub) { vUnsub(); vUnsub = null; }
   last = null;
   if (!user) { if (!busy && !be.isEmailLink()) show('signin'); return; }
   show('loading');
@@ -130,8 +140,9 @@ be.onAuth(async (user) => {
       await be.createCard(user.uid, name, (user.email || '').toLowerCase(), validBirthday(bday || '') ? bday : undefined);
       store.del('folk-name'); store.del('folk-bday');
     }
-    myUid = user.uid;
+    myUid = user.uid; myEmail = (user.email || '').toLowerCase();
     unsub = be.watchCard(user.uid, (c) => c && draw(user.uid, c));
+    vUnsub = be.watchMyVouchers(myEmail, drawVouchers);
   } catch (e) { fail('We could not load your card. ' + (e.message || '')); }
 });
 
@@ -197,6 +208,32 @@ $('#b-save').addEventListener('click', async (e) => {
   e.currentTarget.disabled = false;
 });
 $('#back').addEventListener('click', () => show('signin'));
+function drawVouchers(list) {
+  const box = $('#my-vouchers'); box.innerHTML = '';
+  list.sort((a, b) => (b.balance > 0) - (a.balance > 0) || (b.issued || '').localeCompare(a.issued || ''));
+  for (const v of list) {
+    const row = document.createElement('div');
+    row.className = 'result static' + (v.balance <= 0 || isExpired(v) ? ' dim' : '');
+    const state = isExpired(v) ? `Expired ${formatDate(v.expires)}` : v.balance <= 0 ? 'Fully used' : `Valid until ${formatDate(v.expires)}`;
+    row.innerHTML = '<span><b class="mono"></b><br><span class="muted"></span></span><span><b></b><span class="muted"></span></span>';
+    row.querySelector('.mono').textContent = v.code;
+    row.querySelector('span .muted').textContent = (v.fromName ? `From ${v.fromName} · ` : '') + state;
+    row.lastElementChild.querySelector('b').textContent = euro(v.balance);
+    row.lastElementChild.querySelector('.muted').textContent = ` / ${euro(v.amount)}`;
+    box.appendChild(row);
+  }
+  $('#my-vouchers-empty').hidden = list.length > 0;
+}
+$('#f-claim').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const code = normalizeCode($('#claim-code').value);
+  if (!code) return toast('A voucher code looks like FOLK-ABCD-2345', 'err');
+  if (!myEmail) return toast('Sign in with your email to add vouchers', 'err');
+  const btn = e.submitter; btn.disabled = true;
+  try { await be.claimVoucher(code, myEmail); $('#claim-code').value = ''; toast('Voucher added to your card 🎁', 'ok'); }
+  catch (err) { toast(err.message || 'Could not add that voucher', 'err'); }
+  btn.disabled = false;
+});
 $('#signout').addEventListener('click', () => { qrFor = null; be.signOut(); });
 </script>
 </body>

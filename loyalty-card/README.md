@@ -41,6 +41,14 @@ On the staff till, tap **Gift vouchers**:
 
 Voucher designs (printed DL card front/back and the email version) are on the FOLk Gift Vouchers design canvas.
 
+## On the customer's card
+- Vouchers emailed to a customer's address appear on their loyalty card (code, balance, expiry). Customers can also **add a paper voucher** by typing its code.
+- When you scan a loyalty card at the till, that customer's vouchers show underneath: tap one to use it.
+
+## Reports (staff only)
+Till → **Reports**: stamps, free and birthday coffees, new customers, vouchers sold and spent for any period, plus the unspent voucher total (what you still owe in coffee). **Download voucher list** gives a spreadsheet for your accountant.
+The first time, Firebase may ask for a one-time search index: the Reports page shows a button to open it. Click **Save** in Firebase and wait a few minutes.
+
 ## Voucher emails: one-time setup (EmailJS, free: 200 emails/month)
 Until this is done, the till opens a ready-made email in the phone's mail app instead.
 1. Sign up at [emailjs.com](https://www.emailjs.com) with folkspecialitycoffee@gmail.com.

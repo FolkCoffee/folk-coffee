@@ -110,11 +110,12 @@ async function firebaseBackend() {
     },
 
     /* gift vouchers (staff only: enforced by the database rules) */
-    async createVoucher({ amount, toName, fromName, message }, by) {
+    async createVoucher({ amount, toName, fromName, message, toEmail }, by) {
       for (let tries = 0; tries < 5; tries++) {
         const code = newCode(), ref = F.doc(db, 'vouchers', code);
         const issued = todayISO();
-        const v = { code, amount, balance: amount, toName, fromName, message, issued, expires: addYears(issued, VOUCHER_YEARS), createdBy: by };
+        const v = { code, amount, balance: amount, toName, fromName, message, issued, expires: addYears(issued, VOUCHER_YEARS), createdBy: by,
+          ...(toEmail ? { toEmail: toEmail.trim().toLowerCase() } : {}) };
         const ok = await F.runTransaction(db, async (t) => {
           if ((await t.get(ref)).exists()) return false;
           t.set(ref, { ...v, createdAt: F.serverTimestamp(), updatedAt: F.serverTimestamp() });
@@ -139,6 +140,46 @@ async function firebaseBackend() {
     async voucherLog(code) {
       const q = F.query(F.collection(db, 'vouchers', code, 'log'), F.orderBy('at', 'desc'), F.limit(30));
       return (await F.getDocs(q)).docs.map((d) => { const x = d.data(); return { ...x, at: x.at?.toDate?.() || null }; });
+    },
+    setVoucherEmail: (code, email) => F.updateDoc(F.doc(db, 'vouchers', code), { toEmail: email.trim().toLowerCase(), updatedAt: F.serverTimestamp() }),
+    async vouchersForEmail(email) {
+      if (!email) return [];
+      const q = F.query(F.collection(db, 'vouchers'), F.where('toEmail', '==', email.trim().toLowerCase()));
+      return (await F.getDocs(q)).docs.map((d) => d.data());
+    },
+    // Customer: their own vouchers, live
+    watchMyVouchers(email, cb) {
+      if (!email) { cb([]); return () => {}; }
+      const q = F.query(F.collection(db, 'vouchers'), F.where('toEmail', '==', email.toLowerCase()));
+      return F.onSnapshot(q, (snap) => cb(snap.docs.map((d) => d.data())), () => cb([]));
+    },
+    // Customer: add a (paper) voucher to their card by its code. No read needed:
+    // the database rules only allow it if the voucher exists and isn't on anyone's card yet.
+    async claimVoucher(code, email) {
+      try {
+        await F.updateDoc(F.doc(db, 'vouchers', code), { toEmail: email.toLowerCase(), updatedAt: F.serverTimestamp() });
+      } catch (e) {
+        if (e.code === 'not-found') throw new Error('No voucher with that code. Check it and try again.');
+        throw new Error("We couldn't add that voucher. It may already be on a card: ask us at the till.");
+      }
+    },
+    async report(start, end) {
+      const T = (d) => F.Timestamp.fromDate(d);
+      const vouchers = (await F.getDocs(F.collection(db, 'vouchers'))).docs.map((d) => d.data());
+      const [total, fresh] = await Promise.all([
+        F.getCountFromServer(F.collection(db, 'cards')),
+        F.getCountFromServer(F.query(F.collection(db, 'cards'), F.where('createdAt', '>=', T(start)), F.where('createdAt', '<', T(end)))),
+      ]);
+      let events = [], indexLink = null;
+      try {
+        const q = F.query(F.collectionGroup(db, 'log'), F.where('at', '>=', T(start)), F.where('at', '<', T(end)));
+        events = (await F.getDocs(q)).docs.map((d) => ({ ...d.data(), kind: d.ref.parent.parent?.parent?.id }));
+      } catch (e) {
+        const m = String(e.message || '').match(/https:\/\/console\.firebase\.google\.com\S+/);
+        if (!m) throw e;
+        indexLink = m[0];
+      }
+      return { vouchers, events, customers: total.data().count, newCustomers: fresh.data().count, indexLink };
     },
     logVoucherEmail: (code, to, by) => F.addDoc(F.collection(db, 'vouchers', code, 'log'), { type: 'email', to, by, at: F.serverTimestamp() }),
     async recentVouchers() {
@@ -190,11 +231,12 @@ function demoBackend(role) {
     },
 
     /* gift vouchers */
-    async createVoucher({ amount, toName, fromName, message }, by) {
+    async createVoucher({ amount, toName, fromName, message, toEmail }, by) {
       if (role !== 'staff') throw new Error('Staff only');
       const all = readV(); let code; do { code = newCode(); } while (all[code]);
       const issued = todayISO();
-      const v = { code, amount, balance: amount, toName, fromName, message, issued, expires: addYears(issued, VOUCHER_YEARS), createdBy: by, createdAt: Date.now() };
+      const v = { code, amount, balance: amount, toName, fromName, message, issued, expires: addYears(issued, VOUCHER_YEARS), createdBy: by, createdAt: Date.now(),
+        ...(toEmail ? { toEmail: toEmail.trim().toLowerCase() } : {}) };
       all[code] = { ...v, log: [{ type: 'issue', amount, by, at: Date.now() }] }; writeV(all);
       return v;
     },
@@ -208,6 +250,25 @@ function demoBackend(role) {
       d.balance -= amount; d.log.push({ type: 'redeem', amount, by, at: Date.now() }); writeV(all);
     },
     async voucherLog(code) { return (readV()[code]?.log || []).slice().reverse().map((x) => ({ ...x, at: new Date(x.at) })); },
+    async setVoucherEmail(code, email) { const all = readV(); if (all[code]) { all[code].toEmail = email.trim().toLowerCase(); writeV(all); } },
+    async vouchersForEmail(email) { const e = (email || '').toLowerCase(); return e ? Object.values(readV()).filter((v) => v.toEmail === e) : []; },
+    watchMyVouchers(email, cb) {
+      const e = (email || '').toLowerCase();
+      const f = () => cb(e ? Object.values(readV()).filter((v) => v.toEmail === e) : []);
+      watchers.add(f); f(); return () => watchers.delete(f);
+    },
+    async claimVoucher(code, email) {
+      const all = readV(), v = all[code];
+      if (!v) throw new Error('No voucher with that code. Check it and try again.');
+      if (v.toEmail) throw new Error("We couldn't add that voucher. It may already be on a card: ask us at the till.");
+      v.toEmail = email.toLowerCase(); writeV(all);
+    },
+    async report(start, end) {
+      const vouchers = Object.values(readV());
+      const events = vouchers.flatMap((v) => v.log.map((l) => ({ ...l, kind: 'vouchers' })))
+        .filter((l) => l.at >= +start && l.at < +end);
+      return { vouchers, events, customers: Object.keys(read()).length, newCustomers: 0, indexLink: null };
+    },
     async logVoucherEmail(code, to, by) { const all = readV(); all[code]?.log.push({ type: 'email', to, by, at: Date.now() }); writeV(all); },
     async recentVouchers() { return Object.values(readV()).sort((a, b) => b.createdAt - a.createdAt).slice(0, 20); },
   };

@@ -50,7 +50,11 @@
       <button class="btn" type="submit" style="flex:0 0 90px;margin-top:0">Find</button>
     </form>
     <div class="results" id="results"></div>
-    <p style="margin-top:28px"><button class="link" data-signout>Sign out</button></p>
+    <div class="row" style="margin-top:22px">
+      <button class="btn ghost" id="go-reports">Reports</button>
+      <a class="btn ghost" href="../" style="text-decoration:none">Planner</a>
+    </div>
+    <p style="margin-top:20px"><button class="link" data-signout>Sign out</button></p>
   </section>
 
   <section id="v-scan" hidden>
@@ -83,10 +87,46 @@
       <div class="stat"><b id="c-free">0</b><span>free coffees</span></div>
     </div>
     <p class="muted" id="c-bday" style="margin-top:12px"></p>
+    <div id="c-vouchers-wrap" hidden>
+      <h2 class="sub">Gift vouchers</h2>
+      <div class="results" id="c-vouchers"></div>
+    </div>
     <div class="row">
       <button class="btn ghost" id="next">Scan next</button>
       <button class="btn ghost" id="done">Done</button>
     </div>
+  </section>
+
+  <section id="v-reports" hidden>
+    <h1>Reports</h1>
+    <div class="amounts" id="r-periods"></div>
+    <p class="muted" id="r-range" style="margin:4px 0 0;font-size:14px"></p>
+    <div class="notice" id="r-index" hidden style="margin-top:14px">
+      <b>One-time setup needed for stamp counts</b>
+      <p class="muted" style="margin:6px 0 10px">Firebase needs to switch on one search index. Open the link while signed in to Firebase, click <b>Save</b>, wait about 5 minutes, then reload this page.</p>
+      <a class="btn ghost" id="r-index-link" target="_blank" rel="noopener" style="text-decoration:none">Open Firebase</a>
+    </div>
+    <h2 class="sub">Loyalty card</h2>
+    <div class="stats rstats">
+      <div class="stat"><b id="r-stamps">–</b><span>stamps given</span></div>
+      <div class="stat"><b id="r-free">–</b><span>free coffees (10th)</span></div>
+      <div class="stat"><b id="r-bday">–</b><span>birthday coffees</span></div>
+      <div class="stat"><b id="r-new">–</b><span>new customers</span></div>
+    </div>
+    <p class="muted" id="r-cust" style="margin:10px 0 0;font-size:14px"></p>
+    <h2 class="sub">Gift vouchers in this period</h2>
+    <div class="stats rstats">
+      <div class="stat"><b id="r-sold">–</b><span id="r-sold-n">vouchers sold</span></div>
+      <div class="stat"><b id="r-spent">–</b><span>spent with vouchers</span></div>
+    </div>
+    <h2 class="sub">Gift vouchers right now</h2>
+    <div class="stats rstats">
+      <div class="stat"><b id="r-owed">–</b><span id="r-owed-n">unspent, still valid</span></div>
+      <div class="stat"><b id="r-expired">–</b><span>expired, never spent</span></div>
+    </div>
+    <p class="muted" style="margin:10px 0 0;font-size:14px">Unspent vouchers are money customers have paid for coffee they haven't had yet: your accountant may ask for this figure.</p>
+    <button class="btn ghost" id="r-csv">Download voucher list (spreadsheet)</button>
+    <button class="btn ghost" data-home>Back</button>
   </section>
 
   <section id="v-vouchers" hidden>
@@ -166,7 +206,7 @@ import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast, store,
   birthdayCoffeeAvailable, isBirthdayToday, formatBirthday, todayIE } from './loyalty.js';
 
 const $ = (s) => document.querySelector(s);
-const VIEWS = ['loading', 'signin', 'notstaff', 'home', 'scan', 'customer', 'vouchers', 'newvoucher', 'voucher'];
+const VIEWS = ['loading', 'signin', 'notstaff', 'home', 'scan', 'customer', 'vouchers', 'newvoucher', 'voucher', 'reports'];
 const show = (v) => VIEWS.forEach((x) => ($('#v-' + x).hidden = x !== v));
 
 const be = await getBackend('staff');
@@ -286,10 +326,31 @@ function openCard(uid) {
   if (unsub) unsub();
   current = uid; last = null;
   show('loading');
+  $('#c-vouchers-wrap').hidden = true;
+  let first = true;
   unsub = be.watchCard(uid, (c) => {
     if (!c) { toast('No card found for that code', 'err'); closeCard(); return; }
     draw(c);
+    if (first) { first = false; loadCardVouchers(uid, c.email); }
   });
+}
+async function loadCardVouchers(uid, email) {
+  let list = [];
+  try { list = await be.vouchersForEmail(email); } catch {}
+  if (current !== uid) return;
+  list = list.filter((v) => v.balance > 0 && !isExpired(v));
+  const box = $('#c-vouchers'); box.innerHTML = '';
+  for (const v of list) {
+    const b = document.createElement('button');
+    b.className = 'result';
+    b.innerHTML = '<span><b class="mono"></b><br><span class="muted"></span></span><span></span>';
+    b.querySelector('.mono').textContent = v.code;
+    b.querySelector('.muted').textContent = `Valid until ${formatDate(v.expires)} · tap to use`;
+    b.lastElementChild.textContent = euro(v.balance);
+    b.addEventListener('click', () => { closeCard(); openVoucher(v.code); });
+    box.appendChild(b);
+  }
+  $('#c-vouchers-wrap').hidden = !list.length;
 }
 function closeCard() { if (unsub) unsub(); unsub = null; current = null; show('home'); }
 function draw(c) {
@@ -421,6 +482,7 @@ $('#f-newv').addEventListener('submit', async (e) => {
       toName: $('#nv-to').value.trim().slice(0, 60),
       fromName: $('#nv-from').value.trim().slice(0, 60),
       message: $('#nv-msg').value.trim().slice(0, 300),
+      toEmail: email || undefined,
     }, me.uid);
     toast(`Voucher ${v.code} created`, 'ok');
     openVoucher(v.code);
@@ -494,6 +556,8 @@ async function emailVoucher(v, to) {
     be.logVoucherEmail(v.code, to, me.uid).then(() => vCur === v.code && loadLog(v.code)).catch(() => {});
     return;
   }
+  // Link the voucher to this email, so it shows on their loyalty card (only if not linked yet)
+  if (!v.toEmail) be.setVoucherEmail(v.code, to).catch(() => {});
   const btn = $('#vc-send'); btn.disabled = true; btn.textContent = 'Sending…';
   try {
     await sendVoucherEmail(v, to, emailjsConfig);
@@ -527,6 +591,79 @@ $('#vc-share').addEventListener('click', async (e) => {
     }
   } catch { toast('Could not make the voucher image', 'err'); }
   btn.disabled = false;
+});
+/* ───────── reports (staff only) ───────── */
+const PERIODS = [['week', 'This week'], ['month', 'This month'], ['lastmonth', 'Last month'], ['year', 'This year'], ['lastyear', 'Last year'], ['all', 'All time']];
+let rPeriod = 'month', rVouchers = [];
+function periodRange(p, now = new Date()) {
+  const d0 = (y, m, d) => new Date(y, m, d);
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const tomorrow = d0(y, m, d + 1);
+  switch (p) {
+    case 'week': { const dow = (now.getDay() + 6) % 7; return [d0(y, m, d - dow), tomorrow]; }
+    case 'month': return [d0(y, m, 1), tomorrow];
+    case 'lastmonth': return [d0(y, m - 1, 1), d0(y, m, 1)];
+    case 'year': return [d0(y, 0, 1), tomorrow];
+    case 'lastyear': return [d0(y - 1, 0, 1), d0(y, 0, 1)];
+    default: return [d0(2020, 0, 1), tomorrow];
+  }
+}
+const dmy = (dt) => dt.toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' });
+const isoLocal = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+function drawPeriods() {
+  const box = $('#r-periods'); box.innerHTML = '';
+  for (const [k, label] of PERIODS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'pill' + (k === rPeriod ? ' on' : ''); b.textContent = label;
+    b.setAttribute('aria-pressed', k === rPeriod);
+    b.addEventListener('click', () => { rPeriod = k; loadReport(); });
+    box.appendChild(b);
+  }
+}
+async function loadReport() {
+  drawPeriods();
+  const [start, end] = periodRange(rPeriod);
+  const last = new Date(end - 1);
+  $('#r-range').textContent = rPeriod === 'all' ? 'Everything so far' : `${dmy(start)} – ${dmy(last)}`;
+  ['r-stamps', 'r-free', 'r-bday', 'r-new', 'r-sold', 'r-spent', 'r-owed', 'r-expired'].forEach((id) => ($('#' + id).textContent = '…'));
+  let r;
+  try { r = await be.report(start, end); }
+  catch (e) { toast('Could not load the report', 'err'); return; }
+  const card = r.events.filter((e) => e.kind === 'cards'), vlog = r.events.filter((e) => e.kind === 'vouchers');
+  const noIndex = !!r.indexLink;
+  $('#r-index').hidden = !noIndex;
+  if (noIndex) $('#r-index-link').href = r.indexLink;
+  const n = (x) => (noIndex ? '–' : String(x));
+  $('#r-stamps').textContent = n(card.filter((e) => e.type === 'stamp').length);
+  $('#r-free').textContent = n(card.filter((e) => e.type === 'redeem').length);
+  $('#r-bday').textContent = n(card.filter((e) => e.type === 'birthday').length);
+  $('#r-new').textContent = String(r.newCustomers);
+  $('#r-cust').textContent = r.customers === 1 ? '1 customer has a loyalty card in total.' : `${r.customers} customers have a loyalty card in total.`;
+  // vouchers sold in the period: by issue date
+  const sIso = isoLocal(start), eIso = isoLocal(end);
+  const sold = r.vouchers.filter((v) => v.issued >= sIso && v.issued < eIso);
+  $('#r-sold').textContent = euro(sold.reduce((a, v) => a + v.amount, 0));
+  $('#r-sold-n').textContent = `${sold.length} voucher${sold.length === 1 ? '' : 's'} sold`;
+  $('#r-spent').textContent = noIndex ? '–' : euro(vlog.filter((e) => e.type === 'redeem').reduce((a, e) => a + (e.amount || 0), 0));
+  const live = r.vouchers.filter((v) => v.balance > 0 && !isExpired(v));
+  $('#r-owed').textContent = euro(live.reduce((a, v) => a + v.balance, 0));
+  $('#r-owed-n').textContent = `unspent on ${live.length} valid voucher${live.length === 1 ? '' : 's'}`;
+  $('#r-expired').textContent = euro(r.vouchers.filter((v) => v.balance > 0 && isExpired(v)).reduce((a, v) => a + v.balance, 0));
+  rVouchers = r.vouchers;
+}
+$('#go-reports').addEventListener('click', () => { show('reports'); loadReport(); });
+$('#r-csv').addEventListener('click', () => {
+  const cols = [['Code', 'code'], ['Issued', 'issued'], ['Valid until', 'expires'], ['Amount (€)', 'amount'], ['Balance (€)', 'balance'], ['Status', 'status'], ['To', 'toName'], ['From', 'fromName'], ['Email', 'toEmail']];
+  const q = (x) => `"${String(x ?? '').replace(/"/g, '""')}"`;
+  const rows = rVouchers.slice().sort((a, b) => (a.issued || '').localeCompare(b.issued || '')).map((v) => cols.map(([, k]) =>
+    k === 'amount' || k === 'balance' ? (v[k] / 100).toFixed(2)
+    : k === 'status' ? (isExpired(v) ? 'Expired' : v.balance <= 0 ? 'Used' : 'Active')
+    : k === 'issued' || k === 'expires' ? formatDate(v[k]) : v[k]).map(q).join(','));
+  const csv = '﻿' + [cols.map(([h]) => q(h)).join(','), ...rows].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `FOLk-vouchers-${isoLocal(new Date())}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 });
 </script>
 </body>

@@ -18,10 +18,17 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Gift vouchers: ONLY staff can see, create or use them.
-    // Balances can only go down, and vouchers can never be deleted.
+    // Gift vouchers: ONLY staff can create or use them.
+    // Customers can see vouchers linked to their own verified email, and link an
+    // unlinked voucher to themselves with its code. Balances only go down; no deletes.
+    function myEmail() { return request.auth.token.email.lower(); }
+    function verifiedCustomer() { return signedIn() && request.auth.token.email_verified == true; }
+    function onlyChanges(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+    function validEmail(e) { return e is string && e.size() <= 120 && e.matches('^[^@ ]+@[^@ ]+$'); }
+
     function validVoucher(d, code) {
-      return d.keys().hasOnly(['code', 'amount', 'balance', 'toName', 'fromName', 'message', 'issued', 'expires', 'createdBy', 'createdAt', 'updatedAt'])
+      return d.keys().hasOnly(['code', 'amount', 'balance', 'toName', 'fromName', 'message', 'issued', 'expires', 'createdBy', 'createdAt', 'updatedAt', 'toEmail'])
+        && (!('toEmail' in d) || validEmail(d.toEmail))
         && d.code == code
         && d.amount is int && d.amount > 0 && d.amount <= 50000
         && d.balance == d.amount
@@ -32,14 +39,18 @@ service cloud.firestore {
         && d.issued is string && d.expires is string && d.expires > d.issued;
     }
     match /vouchers/{code} {
-      allow read: if isStaff();
+      allow get: if isStaff() || (verifiedCustomer() && resource.data.get('toEmail', '') == myEmail());
+      allow list: if isStaff() || (verifiedCustomer() && resource.data.toEmail == myEmail());
       allow create: if isStaff() && code.matches('^FOLK-[A-Z0-9]{4}-[A-Z0-9]{4}$')
         && validVoucher(request.resource.data, code);
-      allow update: if isStaff()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance', 'updatedAt'])
-        && request.resource.data.balance is int
-        && request.resource.data.balance >= 0
-        && request.resource.data.balance < resource.data.balance;
+      allow update: if (isStaff()
+          && onlyChanges(['balance', 'updatedAt'])
+          && request.resource.data.balance is int
+          && request.resource.data.balance >= 0
+          && request.resource.data.balance < resource.data.balance)
+        || (isStaff() && onlyChanges(['toEmail', 'updatedAt']) && validEmail(request.resource.data.toEmail))
+        || (verifiedCustomer() && !('toEmail' in resource.data)
+          && onlyChanges(['toEmail', 'updatedAt']) && request.resource.data.toEmail == myEmail());
       allow delete: if false;
 
       match /log/{entry} {
@@ -47,6 +58,11 @@ service cloud.firestore {
         allow create: if isStaff() && request.resource.data.by == request.auth.uid;
         allow update, delete: if false;
       }
+    }
+
+    // Reports: staff can read every history log (stamps and voucher use) at once.
+    match /{path=**}/log/{entry} {
+      allow read: if isStaff();
     }
 
     match /cards/{uid} {

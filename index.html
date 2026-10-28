@@ -167,14 +167,15 @@ h1.wm{display:flex;flex-direction:column;gap:7px;margin:0}
 @media print{:root{--soft:#fff;--line:#aaa}.pw{display:flex}}
 nav{display:flex;flex-direction:column;gap:2px;margin-top:28px;border:0;overflow:visible}
 nav button.nv{display:flex;align-items:center;gap:12px;padding:11px 14px;margin:0;background:none;border:0;border-radius:12px;color:var(--fg);font-size:15px;font-weight:400;text-align:left;width:100%}
-nav button.nv:hover{background:var(--soft)}
+nav button.nv:hover,nav a.nv:hover{background:var(--soft)}
+nav a.nv{display:flex;align-items:center;gap:12px;padding:11px 14px;margin:0;border-radius:12px;color:var(--fg);font-size:15px;font-weight:400;text-decoration:none;width:100%;box-sizing:border-box}
 nav button.nv.on{background:#ecd7c6;color:#000;font-weight:500}
 nav .nv svg{width:22px;height:22px;flex:none;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .sub{margin:0 0 22px}
 .sub .g.on{background:#ecd7c6;color:#000;border-color:#ecd7c6}
 @media(max-width:899px){
  nav{position:fixed;left:0;right:0;bottom:0;flex-direction:row;justify-content:space-around;margin:0;gap:0;background:var(--bg);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:15}
- nav button.nv{flex-direction:column;gap:3px;padding:6px 2px;font-size:11px;text-align:center;justify-content:center;width:auto;flex:1}
+ nav button.nv,nav a.nv{flex-direction:column;gap:3px;padding:6px 2px;font-size:11px;text-align:center;justify-content:center;width:auto;flex:1}
  nav .nv svg{width:24px;height:24px}
  main{padding:20px 16px 110px}
  header{padding:18px 16px 0}.wm1{font-size:40px}#sub{display:none}
@@ -771,7 +772,8 @@ const IC={Today:svg('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 1
  Recipes:svg('<path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v13c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v13"/>'),
  Costs:svg('<path d="M4 12l8-8h7v7l-8 8z"/><circle cx="15" cy="9" r="1"/>'),
  Print:svg('<path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2"/><rect x="7" y="14" width="10" height="6"/>'),
- Settings:svg('<path d="M5 8h9M18 8h1M5 16h1M10 16h9"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/>')};
+ Settings:svg('<path d="M5 8h9M18 8h1M5 16h1M10 16h9"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/>'),
+ Till:svg('<path d="M4 9h13v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v2.5M12 3v2.5"/>')};
 const G=[['Today',['Today']],['Orders',['Orders']],['Recipes',['Products']],['Costs',['Ingredients','Menu']],['Print',['Plan','Labels','Allergens','Board']],['Settings',['Settings','Tools']]];
 const TL={Today:'Today',Orders:'Orders',Products:'Recipes',Ingredients:'Ingredients',Menu:'Margins',Plan:'Bake plan',Labels:'Labels',Allergens:'Allergens',Board:'Menu board',Settings:'Settings',Tools:'Tools'};
 const last={};
@@ -918,7 +920,7 @@ function draw(){
  S.orders.forEach(o=>{if(!o.date)o.date=pday()});
  if(tab=='Tools'&&!S.set.tools)tab='Settings';
  const g=gof(tab)||G[0];last[g[0]]=tab;
- $('#nav').innerHTML=G.map(x=>`<button class="nv${x==g?' on':''}" onclick="wD=null;go('${last[x[0]]||x[1][0]}')" aria-label="${x[0]}">${IC[x[0]]}<span>${x[0]}</span></button>`).join('');
+ $('#nav').innerHTML=G.map(x=>`<button class="nv${x==g?' on':''}" onclick="wD=null;go('${last[x[0]]||x[1][0]}')" aria-label="${x[0]}">${IC[x[0]]}<span>${x[0]}</span></button>`).join('')+`<a class="nv" href="loyalty-card/staff.html" aria-label="Till: loyalty cards and vouchers">${IC.Till}<span>Till</span></a>`;
  const sb=g[1].filter(t=>t!='Tools'||S.set.tools);
  vSet((sb.length>1?`<div class="row sub noprint">${sb.map(t=>`<button class="g${t==tab?' on':''}" onclick="go('${t}')">${TL[t]}</button>`).join('')}</div>`:'')+T[tab]());
  document.title=S.set.biz+' Bake & Cost Planner';
