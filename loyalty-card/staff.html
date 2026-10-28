@@ -60,10 +60,6 @@
         <select id="cam"></select>
         <button class="btn ghost" id="cam-next" type="button" style="flex:0 0 auto;width:auto;margin-top:0;padding:13px 16px">Switch</button>
       </div>
-      <div id="zoom-row" hidden>
-        <label for="zoom">Zoom <span class="muted" id="zoom-val"></span></label>
-        <input type="range" id="zoom">
-      </div>
       <p class="muted" style="margin:10px 0 0;font-size:13px">If you have to hold the phone far away, switch lens until the code is sharp up close. Your choice is remembered on this phone.</p>
     </div>
     <button class="btn ghost" id="cancel-scan">Cancel</button>
@@ -123,7 +119,7 @@ $('#recheck').addEventListener('click', async () => {
 });
 
 /* scanning */
-const CAM_KEY = 'folk-staff-camera', ZOOM_KEY = 'folk-staff-zoom';
+const CAM_KEY = 'folk-staff-camera';
 const SCAN_CFG = {
   fps: 15,
   // Scan box = 75% of the camera view, so codes held close still fit.
@@ -178,30 +174,13 @@ async function setupCameraControls() {
   sel.parentElement.hidden = !multi;
   $('label[for=cam]').hidden = !multi;
 
-  // Zoom (only on phones/browsers that support it)
+  // Ask for continuous autofocus where the camera offers it
   let caps = {};
   try { caps = scanner.getRunningTrackCapabilities() || {}; } catch {}
-  const z = caps.zoom, row = $('#zoom-row');
-  if (z && z.max > z.min) {
-    const slider = $('#zoom');
-    slider.min = z.min; slider.max = z.max; slider.step = z.step || 0.1;
-    const saved = parseFloat(store.get(ZOOM_KEY));
-    const start = !isNaN(saved) && saved >= z.min && saved <= z.max ? saved : (settings.zoom || z.min);
-    slider.value = start;
-    if (start !== settings.zoom) applyZoom(start);
-    $('#zoom-val').textContent = `${(+start).toFixed(1)}×`;
-    row.hidden = false;
-  } else row.hidden = true;
-
-  // Ask for continuous autofocus where the camera offers it
   if (caps.focusMode?.includes?.('continuous')) {
     try { await scanner.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch {}
   }
-  $('#cam-controls').hidden = !multi && row.hidden;
-}
-
-async function applyZoom(v) {
-  try { await scanner?.applyVideoConstraints({ advanced: [{ zoom: +v }] }); } catch {}
+  $('#cam-controls').hidden = !multi;
 }
 
 $('#cam').addEventListener('change', (e) => { store.set(CAM_KEY, e.target.value); startScan(e.target.value); });
@@ -209,13 +188,8 @@ $('#cam-next').addEventListener('click', () => {
   if (cams.length < 2) return;
   const i = cams.findIndex((c) => c.id === $('#cam').value);
   const next = cams[(i + 1) % cams.length].id;
-  store.set(CAM_KEY, next); store.del(ZOOM_KEY);
+  store.set(CAM_KEY, next);
   startScan(next);
-});
-$('#zoom').addEventListener('input', (e) => {
-  $('#zoom-val').textContent = `${(+e.target.value).toFixed(1)}×`;
-  store.set(ZOOM_KEY, e.target.value);
-  applyZoom(e.target.value);
 });
 async function stopScan() {
   if (scanner) { try { await scanner.stop(); } catch {} try { scanner.clear(); } catch {} scanner = null; }

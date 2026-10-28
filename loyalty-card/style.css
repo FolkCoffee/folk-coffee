@@ -101,7 +101,6 @@ input:focus, select:focus { outline: none; border-color: var(--ink); }
 .result { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; cursor: pointer; font: 15px inherit; font-family: inherit; text-align: left; color: var(--ink); }
 .cam-controls { margin-top: 14px; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 4px 14px 14px; }
 .cam-controls select { min-width: 0; }
-input[type=range] { padding: 0; border: 0; background: transparent; height: 44px; accent-color: var(--ink); }
 .row { display: flex; gap: 10px; }
 .row .btn { flex: 1; }
 
