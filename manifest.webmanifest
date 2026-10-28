@@ -1,8 +1,8 @@
 {
-  "name": "FOLk Coffee planner",
+  "name": "FOLk Coffee",
   "short_name": "FOLk",
-  "description": "Bake, cost and production planner for FOLk Speciality Coffee",
-  "start_url": "./",
+  "description": "FOLk Coffee: till (loyalty cards, gift vouchers) and bake, cost and production planner",
+  "start_url": "./start.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",

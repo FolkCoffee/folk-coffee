@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FOLk Coffee</title>
+<meta name="description" content="FOLk Coffee: till and planner">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FOLk">
+<meta name="theme-color" content="#f5f3ee">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@400;600&family=Inter+Tight:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #111110; --paper: #f5f3ee; --line: #d8d4ca; --muted: #5f5b54; color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--paper); }
+  body {
+    min-height: 100dvh; color: var(--ink);
+    font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
+    display: flex; flex-direction: column;
+    padding: calc(28px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+  .wrap { width: 100%; max-width: 760px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; gap: 22px; }
+  header { display: flex; align-items: center; gap: 10px; }
+  header img { height: 30px; width: auto; display: block; }
+  header span { font-family: 'Saira Condensed', 'Arial Narrow', sans-serif; font-size: 31px; line-height: 1; }
+  .tiles { flex: 1; display: grid; grid-template-rows: 1fr 1fr; gap: 14px; min-height: 420px; }
+  @media (min-width: 700px) { .tiles { grid-template-rows: none; grid-template-columns: 1fr 1fr; min-height: 380px; max-height: 520px; } }
+  a.tile {
+    display: flex; flex-direction: column; justify-content: space-between;
+    border-radius: 26px; padding: 26px 24px 24px; text-decoration: none;
+    border: 2px solid var(--ink); transition: transform .08s; -webkit-tap-highlight-color: transparent;
+  }
+  a.tile:active { transform: scale(.98); }
+  a.tile:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .till { background: var(--ink); color: #fff; }
+  .planner { background: #fff; color: var(--ink); }
+  .tile svg { width: 56px; height: 56px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .tile b { display: block; font-family: 'Saira Condensed', 'Arial Narrow', sans-serif; font-weight: 600; font-size: 64px; line-height: .9; text-transform: uppercase; letter-spacing: .01em; }
+  .tile small { display: block; font-size: 16px; margin-top: 10px; opacity: .78; line-height: 1.35; }
+  .till small { opacity: .85; }
+  footer { text-align: center; font-size: 13px; color: var(--muted); }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><img src="brand/folk-logo.png" alt="FOLk"><span>Coffee</span></header>
+  <main class="tiles">
+    <a class="tile till" href="loyalty-card/staff.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h13v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v2.5M12 3v2.5"/></svg>
+      <span><b>Till</b><small>Loyalty cards, gift vouchers, reports</small></span>
+    </a>
+    <a class="tile planner" href="index.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v13c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v13"/></svg>
+      <span><b>Planner</b><small>Today's bakes, orders, recipes, costs</small></span>
+    </a>
+  </main>
+  <footer>Customers' card: <a href="loyalty-card/">folkcoffee.github.io/folk-coffee/loyalty-card</a></footer>
+</div>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>

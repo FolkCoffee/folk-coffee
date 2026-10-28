@@ -17,7 +17,9 @@ Bake, cost and production planner for FOLk Speciality Coffee. It is one self-con
 
 The app is live at [folkcoffee.github.io/folk-coffee](https://folkcoffee.github.io/folk-coffee/), published with GitHub Pages from the `main` branch. Every change pushed to `main` goes live within a few minutes.
 
-On a phone or tablet, open that address and choose **Add to Home Screen** (iPhone: Share menu; Android: ⋮ menu). It then opens full screen with the FOLk icon, like an app.
+The home-screen icon opens a start screen with two big buttons, **Till** and **Planner** ([start.html](https://folkcoffee.github.io/folk-coffee/start.html)).
+
+On a phone or tablet, open https://folkcoffee.github.io/folk-coffee/start.html and choose **Add to Home Screen** (iPhone: Share menu; Android: ⋮ menu). It then opens full screen with the FOLk icon, like an app.
 
 ## Owner and contact
 
