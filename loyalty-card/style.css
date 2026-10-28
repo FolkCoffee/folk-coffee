@@ -130,3 +130,4 @@ h2.sub { font-family: 'Saira Condensed', 'Arial Narrow', sans-serif; font-weight
 .vdates { font-size: 14px; margin-top: 14px; }
 .result.static { cursor: default; }
 .result > span:last-child { text-align: right; white-space: nowrap; }
+.vimg { width: 100%; height: auto; display: block; border-radius: 18px; box-shadow: 0 14px 34px -16px rgba(0,0,0,.4); }

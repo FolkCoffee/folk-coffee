@@ -36,9 +36,23 @@ On the staff till, tap **Gift vouchers**:
 - **Giving it out:** paper voucher → write the code and dates on the back of the printed card. Digital → **Share digital voucher** makes an image (with a QR code) to send by email or WhatsApp.
 - **Using it:** scan the QR on the digital voucher, or type the code, then enter the amount and tap **Take off**. It can be used over several visits; the balance and history are shown.
 - Only accounts in the `staff` collection can see, create or use vouchers (enforced by `firestore.rules`). Balances can only go down and vouchers can't be deleted.
+- **Emailing it:** type the customer's email when creating the voucher (or later, in the voucher's *Email* box). They get a FOLk-branded email with the code and a **View & save your voucher** link (`voucher.html`), which shows the voucher with its QR code. That page reads nothing from the database: the details travel in the link, and the till always checks the real balance.
 - After updating, paste the new `firestore.rules` into Firebase → Firestore → Rules → Publish.
 
 Voucher designs (printed DL card front/back and the email version) are on the FOLk Gift Vouchers design canvas.
+
+## Voucher emails: one-time setup (EmailJS, free: 200 emails/month)
+Until this is done, the till opens a ready-made email in the phone's mail app instead.
+1. Sign up at [emailjs.com](https://www.emailjs.com) with folkspecialitycoffee@gmail.com.
+2. **Email Services → Add New Service → Gmail → Connect Account**, choose folkspecialitycoffee@gmail.com and allow sending. Click **Create Service** and note the **Service ID**.
+3. **Email Templates → Create New Template.**
+   - Subject: `{{from_name}} sent you a FOLk Coffee gift voucher ☕`
+   - Content: open the code view (`<>`) and paste everything from [`email-template.html`](email-template.html) (below its first comment).
+   - To Email: `{{to_email}}` · From Name: `FOLk Coffee` · Reply To: `folkspecialitycoffee@gmail.com`
+   - Save and note the **Template ID**.
+4. **Account → General**: note the **Public Key**.
+5. **Account → Security**: limit requests to `https://folkcoffee.github.io` so nobody else can use your account.
+6. Put the three IDs into `emailjsConfig` in `config.js` (they're safe to be public).
 
 ## Print files
 In [`print/`](print/):

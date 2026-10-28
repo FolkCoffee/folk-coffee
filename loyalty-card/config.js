@@ -14,3 +14,12 @@ export const firebaseConfig = {
 
 // Stamps needed for a free coffee (the free one is the next one).
 export const STAMPS_FOR_REWARD = 9;
+
+// Voucher emails (EmailJS, free plan). Paste the three IDs from emailjs.com
+// (see README → "Voucher emails"). While they say PASTE_..., the till offers
+// a ready-made email in the phone's mail app instead.
+export const emailjsConfig = {
+  serviceId: "PASTE_SERVICE_ID",
+  templateId: "PASTE_TEMPLATE_ID",
+  publicKey: "PASTE_PUBLIC_KEY",
+};

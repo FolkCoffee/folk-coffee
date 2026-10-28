@@ -144,3 +144,56 @@ export async function voucherImage(v, logoSrc) {
 
   return new Promise((ok) => c.toBlob(ok, 'image/png'));
 }
+
+/* ───────── Voucher link (the voucher's details travel in the link itself:
+   the page never reads the database, so customers can't look up other vouchers) ───────── */
+export function voucherLink(v) {
+  const data = { c: v.code, a: v.amount, t: v.toName || '', f: v.fromName || '', m: v.message || '', i: v.issued, e: v.expires };
+  const bytes = new TextEncoder().encode(JSON.stringify(data));
+  const b64 = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return new URL('voucher.html?d=' + b64, location.href).href;
+}
+export function readVoucherLink(param) {
+  try {
+    const b64 = param.replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(b64 + '==='.slice((b64.length + 3) % 4));
+    const d = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (ch) => ch.charCodeAt(0))));
+    const code = normalizeCode(d.c);
+    if (!code || !(d.a > 0)) return null;
+    return { code, amount: d.a, toName: d.t, fromName: d.f, message: d.m, issued: d.i, expires: d.e };
+  } catch { return null; }
+}
+
+/* ───────── Voucher email (EmailJS) ───────── */
+export const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s).trim());
+export function emailReady(cfg) {
+  return !!(cfg && cfg.serviceId && cfg.templateId && cfg.publicKey && !/PASTE/.test(cfg.serviceId + cfg.templateId + cfg.publicKey));
+}
+function emailParams(v, to) {
+  return {
+    to_email: to.trim(),
+    to_name: v.toName || 'there',
+    from_name: v.fromName || 'Someone',
+    amount: euro(v.amount),
+    code: v.code,
+    message: v.message || '',
+    issued: formatDate(v.issued),
+    expires: formatDate(v.expires),
+    voucher_link: voucherLink(v),
+  };
+}
+let sdk = null;
+export async function sendVoucherEmail(v, to, cfg) {
+  if (!emailReady(cfg)) throw new Error('Voucher emails are not set up yet');
+  sdk ||= (await import('https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/+esm')).default;
+  await sdk.send(cfg.serviceId, cfg.templateId, emailParams(v, to), { publicKey: cfg.publicKey });
+}
+// Fallback: a ready-made email in the phone's mail app
+export function mailtoLink(v, to) {
+  const p = emailParams(v, to);
+  const subject = `${p.from_name} sent you a FOLk Coffee gift voucher`;
+  const body = `Hi ${p.to_name},\n\n${p.from_name} sent you a ${p.amount} gift voucher for FOLk Coffee, West End, Millstreet.`
+    + (p.message ? `\n\n"${p.message}"` : '')
+    + `\n\nYour voucher code: ${p.code}\nValid until: ${p.expires}\n\nView and save your voucher: ${p.voucher_link}\n\nJust show the code at the till. You can spend it all at once or over several visits.\n\nSee you soon,\nFOLk Coffee`;
+  return `mailto:${encodeURIComponent(p.to_email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}

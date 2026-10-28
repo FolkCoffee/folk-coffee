@@ -113,6 +113,8 @@
       <input id="nv-to" maxlength="60" autocomplete="off" placeholder="Who is it for?">
       <label for="nv-from">From</label>
       <input id="nv-from" maxlength="60" autocomplete="off" placeholder="Who is it from?">
+      <label for="nv-email">Customer's email <span class="muted" style="font-weight:400">(optional, we email them the voucher)</span></label>
+      <input id="nv-email" type="email" autocomplete="off" placeholder="name@example.com">
       <label for="nv-msg">Message <span class="muted" style="font-weight:400">(optional, shows on the digital voucher)</span></label>
       <textarea id="nv-msg" maxlength="300" rows="3"></textarea>
       <p class="muted" style="margin:12px 0 0;font-size:13px">Take payment on the card machine or in cash first. The voucher is valid for 5 years from today.</p>
@@ -139,8 +141,12 @@
     </form>
     <div class="notice" style="margin-top:14px">
       <b>Giving it to the customer</b>
-      <p class="muted" style="margin:6px 0 0">Paper voucher: write the code and dates on the back of the card. Digital: share the image by email or WhatsApp.</p>
-      <button class="btn ghost" id="vc-share">Share digital voucher</button>
+      <p class="muted" style="margin:6px 0 0">Paper voucher: write the code and dates on the back of the card. Digital: email it, or share the image by WhatsApp.</p>
+      <form id="f-vemail" class="row" style="margin-top:12px">
+        <input id="vc-email" type="email" placeholder="customer@email.com" autocomplete="off" aria-label="Customer email" required>
+        <button class="btn" type="submit" id="vc-send" style="flex:0 0 90px;margin-top:0">Email</button>
+      </form>
+      <button class="btn ghost" id="vc-share">Share image</button>
     </div>
     <div class="vdates muted" id="vc-dates"></div>
     <h2 class="sub">History</h2>
@@ -153,7 +159,9 @@
 </main>
 
 <script type="module">
-import { VOUCHER_QR_PREFIX, AMOUNTS, normalizeCode, euro, toCents, formatDate, isExpired, voucherImage } from './vouchers.js';
+import { VOUCHER_QR_PREFIX, AMOUNTS, normalizeCode, euro, toCents, formatDate, isExpired, voucherImage,
+  isEmail, emailReady, sendVoucherEmail, mailtoLink } from './vouchers.js';
+import { emailjsConfig } from './config.js';
 import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast, store,
   birthdayCoffeeAvailable, isBirthdayToday, formatBirthday, todayIE } from './loyalty.js';
 
@@ -404,6 +412,8 @@ $('#f-newv').addEventListener('submit', async (e) => {
   e.preventDefault();
   const amount = nvAmount ?? toCents($('#nv-other').value);
   if (!(amount >= 100 && amount <= 50000)) return toast('Amount must be between €1 and €500', 'err');
+  const email = $('#nv-email').value.trim();
+  if (email && !isEmail(email)) return toast('Check the email address', 'err');
   const btn = e.submitter; btn.disabled = true;
   try {
     const v = await be.createVoucher({
@@ -414,6 +424,7 @@ $('#f-newv').addEventListener('submit', async (e) => {
     }, me.uid);
     toast(`Voucher ${v.code} created`, 'ok');
     openVoucher(v.code);
+    if (email) emailVoucher(v, email);
   } catch (err) { toast(err.message || 'Could not create the voucher', 'err'); }
   btn.disabled = false;
 });
@@ -456,7 +467,9 @@ async function loadLog(code) {
       const row = document.createElement('div');
       row.className = 'result static';
       const when = l.at ? l.at.toLocaleString('en-IE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-      row.innerHTML = `<span>${l.type === 'issue' ? 'Created' : 'Used'}<br><span class="muted">${esc(when)}</span></span><span>${l.type === 'issue' ? '' : '−'}${euro(l.amount)}</span>`;
+      const what = l.type === 'issue' ? 'Created' : l.type === 'email' ? `Emailed to ${esc(l.to)}` : 'Used';
+      const amt = l.type === 'email' ? '' : (l.type === 'issue' ? '' : '−') + euro(l.amount);
+      row.innerHTML = `<span>${what}<br><span class="muted">${esc(when)}</span></span><span>${amt}</span>`;
       box.appendChild(row);
     }
   } catch { box.innerHTML = '<p class="muted">Could not load history.</p>'; }
@@ -473,6 +486,31 @@ $('#f-redeem').addEventListener('submit', async (e) => {
   try { await be.redeemVoucher(vCur, amt, me.uid); toast(`${euro(amt)} taken off`, 'ok'); }
   catch (err) { toast(err.message || 'Something went wrong', 'err'); }
   btn.disabled = false;
+});
+async function emailVoucher(v, to) {
+  if (!emailReady(emailjsConfig)) {
+    // Not set up yet: open a ready-made email in the phone's mail app
+    location.href = mailtoLink(v, to);
+    be.logVoucherEmail(v.code, to, me.uid).then(() => vCur === v.code && loadLog(v.code)).catch(() => {});
+    return;
+  }
+  const btn = $('#vc-send'); btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await sendVoucherEmail(v, to, emailjsConfig);
+    toast(`Voucher emailed to ${to}`, 'ok');
+    $('#vc-email').value = '';
+    await be.logVoucherEmail(v.code, to, me.uid).catch(() => {});
+    if (vCur === v.code) loadLog(v.code);
+  } catch (err) {
+    toast('Email could not be sent. Check the address and try again.', 'err');
+  }
+  btn.disabled = false; btn.textContent = 'Email';
+}
+$('#f-vemail').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const to = $('#vc-email').value.trim();
+  if (!isEmail(to)) return toast('Check the email address', 'err');
+  if (vData) emailVoucher(vData, to);
 });
 $('#vc-share').addEventListener('click', async (e) => {
   const btn = e.currentTarget; btn.disabled = true;

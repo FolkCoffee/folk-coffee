@@ -140,6 +140,7 @@ async function firebaseBackend() {
       const q = F.query(F.collection(db, 'vouchers', code, 'log'), F.orderBy('at', 'desc'), F.limit(30));
       return (await F.getDocs(q)).docs.map((d) => { const x = d.data(); return { ...x, at: x.at?.toDate?.() || null }; });
     },
+    logVoucherEmail: (code, to, by) => F.addDoc(F.collection(db, 'vouchers', code, 'log'), { type: 'email', to, by, at: F.serverTimestamp() }),
     async recentVouchers() {
       const q = F.query(F.collection(db, 'vouchers'), F.orderBy('createdAt', 'desc'), F.limit(20));
       return (await F.getDocs(q)).docs.map((d) => d.data());
@@ -207,6 +208,7 @@ function demoBackend(role) {
       d.balance -= amount; d.log.push({ type: 'redeem', amount, by, at: Date.now() }); writeV(all);
     },
     async voucherLog(code) { return (readV()[code]?.log || []).slice().reverse().map((x) => ({ ...x, at: new Date(x.at) })); },
+    async logVoucherEmail(code, to, by) { const all = readV(); all[code]?.log.push({ type: 'email', to, by, at: Date.now() }); writeV(all); },
     async recentVouchers() { return Object.values(readV()).sort((a, b) => b.createdAt - a.createdAt).slice(0, 20); },
   };
 }

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FOLk Gift Voucher</title>
+<meta name="theme-color" content="#111110">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../icons/icon-32.png">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@300;400;500;600&family=Inter+Tight:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <header class="brand"><div class="logo"><img src="../brand/folk-logo.png" alt="FOLk"><span>Coffee</span></div><div class="tag">Gift voucher</div></header>
+  <section id="ok" hidden>
+    <img id="vimg" class="vimg" alt="Your FOLk Coffee gift voucher">
+    <button class="btn big" id="save">Save voucher</button>
+    <p class="muted" style="margin-top:14px">Show this voucher (or just the code) at the till in FOLk Coffee, West End, Millstreet. You can spend it all at once or over several visits.</p>
+  </section>
+  <section id="bad" hidden>
+    <h1>Voucher not found</h1>
+    <p>This link looks incomplete. Please open it again from your email, or ask us in the shop.</p>
+  </section>
+  <section id="loading"><div class="spinner"></div></section>
+</main>
+<script type="module">
+import { readVoucherLink, voucherImage } from './vouchers.js';
+const $ = (s) => document.querySelector(s);
+const v = readVoucherLink(new URLSearchParams(location.search).get('d') || '');
+let blob = null;
+if (!v) { $('#loading').hidden = true; $('#bad').hidden = false; }
+else {
+  try {
+    blob = await voucherImage(v, '../brand/folk-logo.png');
+    $('#vimg').src = URL.createObjectURL(blob);
+    $('#ok').hidden = false;
+  } catch { $('#bad').hidden = false; }
+  $('#loading').hidden = true;
+}
+$('#save').addEventListener('click', async () => {
+  if (!blob) return;
+  const file = new File([blob], `FOLk-voucher-${v.code}.png`, { type: 'image/png' });
+  if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], title: 'My FOLk Coffee voucher' }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+});
+</script>
+</body>
+</html>
