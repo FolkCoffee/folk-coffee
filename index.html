@@ -631,7 +631,7 @@ function calc(p){
  const f=pc?(p.yt=='batch'?(+p.flourG||0)/b:p.unitG*100/sum):1;
  const lines=p.ings.map(i=>({n:i.n,g:pc?f*(+i.pct||0)/100:(+i.amt||0)/(p.yt=='batch'?b:1)}));
  const ing=lines.reduce((a,l)=>{const g=gi(l.n);return a+l.g*ppu(g)/wf(g)},0);
- const cost=ing+(+p.lab||0)/60*S.set.labor;
+ const cost=ing+(+p.lab||0)/(p.yt=='batch'?b:1)/60*S.set.labor;
  const w=lines.filter(l=>/water/i.test(l.n)).reduce((a,l)=>a+l.g,0),fl=lines.filter(l=>/flour/i.test(l.n)).reduce((a,l)=>a+l.g,0);
  return{lines,cost,ing,sum,hyd:fl?w/fl*100:0}}
 
@@ -809,7 +809,7 @@ const gof=t=>G.find(g=>g[1].includes(t));
 
 // ===== V2: sales, forecast, kitchen board, versions, oven, money =====
 let fdate=null,sdate=null,kbig=false,hvOpen=false;
-const ens=()=>{S.sales=S.sales||{};S.kb=S.kb||{};S.have=S.have||{};S.adj=S.adj||{};S.par=S.par||{};S.done=S.done||{};const s=S.set;if(s.buf==null)s.buf=10;if(s.trays==null)s.trays=4;if(s.chg==null)s.chg=5;S.prods.forEach(ensV)};
+const ens=()=>{labMig();S.sales=S.sales||{};S.kb=S.kb||{};S.have=S.have||{};S.adj=S.adj||{};S.par=S.par||{};S.done=S.done||{};const s=S.set;if(s.buf==null)s.buf=10;if(s.trays==null)s.trays=4;if(s.chg==null)s.chg=5;S.prods.forEach(ensV)};
 const addD=(d,k)=>{const x=new Date(d+'T12:00');x.setDate(x.getDate()+k);return x.toISOString().slice(0,10)};
 const DNL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const hh=t=>new Date(t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
@@ -919,6 +919,9 @@ function dupP(i){const c=JSON.parse(JSON.stringify(S.prods[i]));c.id=nid();c.nam
 G[0][1].push('Kitchen');TL.Kitchen='Kitchen board';T.Today=today;
 const planX=T.Plan;
 T.Plan=()=>{const d=pday();let h=planX();if(sched(d).length){const mo=money(d);h+=`<h2>Expected result</h2><div class="stats card"><div><div class="big">${m(mo.rev)}</div>Expected sales</div><div><div class="big">${mo.profit<0?'−':''}${m(Math.abs(mo.profit))}</div>Expected ${mo.profit<0?'loss':'profit'}</div><div><div class="big">${m(mo.waste)}</div>Expected leftovers</div></div><p class="mut">Customer orders count as sold. Counter items use your sales history when you have 3 weeks or more${mo.guess?'; items without history are assumed to sell out':''}.</p>`+ovenHTML(d)}return h};
+// Labour is minutes per BATCH (per unit when yield is by weight). Old data stored minutes per piece: convert once.
+function labMig(){if(!S||!S.set||S.set.labB)return;const bb=x=>x&&x.yt=='batch'?Math.max(+x.batch||1,1):1;
+ (S.prods||[]).forEach(p=>{if(+p.lab)p.lab=Math.round(+p.lab*bb(p)*10)/10;(p.vers||[]).forEach(v=>{const d=v.data;if(d&&+d.lab)d.lab=Math.round(+d.lab*bb({yt:d.yt||p.yt,batch:d.batch||p.batch})*10)/10})});S.set.labB=1}
 function draw(){
  ens();if(typeof matRep=='function')matRep();if(typeof subSync=='function')subSync();if(tab!='Products')tpl=false;
  S.orders.forEach(o=>{if(!o.date)o.date=pday()});
@@ -975,8 +978,8 @@ function newForm(){
 let tpl=false,tplName='';
 const TPL=[
  {k:'bread',t:'Bread',d:'Baker’s %, weight per loaf, long ferment',p:{cat:'Bakery',mode:'pct',yt:'weight',unitG:800,lab:10,shelf:3,tray:4,temp:230},ings:[['flour',100],['water',70],['salt',2],['levain',20]],steps:[['Build levain',480],['Mix',20],['Bulk ferment',240],['Shape',20],['Cold proof',720],['Bake',45]]},
- {k:'buns',t:'Buns and pastries',d:'Units per batch, e.g. 12 cardamom buns',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:12,unitG:90,lab:4,shelf:2,tray:12,temp:200},ings:[['flour',1000],['milk',450],['butter',150],['sugar',120],['yeast',20],['egg',2,'each']],steps:[['Mix dough',20],['First rise',60],['Shape',30],['Proof',60],['Bake',18],['Cool and glaze',20]]},
- {k:'cookies',t:'Cookies',d:'Units per batch, e.g. 24 cookies',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:24,unitG:60,lab:2,shelf:5,tray:12,temp:180},ings:[['butter',250],['sugar',250],['egg',2,'each'],['flour',400],['chocolate',200]],steps:[['Mix dough',15],['Chill',60],['Portion',15],['Bake',12],['Cool',20]]},
+ {k:'buns',t:'Buns and pastries',d:'Units per batch, e.g. 12 cardamom buns',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:12,unitG:90,lab:45,shelf:2,tray:12,temp:200},ings:[['flour',1000],['milk',450],['butter',150],['sugar',120],['yeast',20],['egg',2,'each']],steps:[['Mix dough',20],['First rise',60],['Shape',30],['Proof',60],['Bake',18],['Cool and glaze',20]]},
+ {k:'cookies',t:'Cookies',d:'Units per batch, e.g. 24 cookies',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:24,unitG:60,lab:40,shelf:5,tray:12,temp:180},ings:[['butter',250],['sugar',250],['egg',2,'each'],['flour',400],['chocolate',200]],steps:[['Mix dough',15],['Chill',60],['Portion',15],['Bake',12],['Cool',20]]},
  {k:'cake',t:'Cake',d:'One cake cut into slices',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:1,unitG:1400,por:10,lab:30,shelf:3,tray:1,temp:170},ings:[['flour',300],['sugar',250],['butter',250],['egg',5,'each']],steps:[['Mix batter',20],['Bake',45],['Cool',60],['Fill and decorate',30]]},
  {k:'drink',t:'Drink',d:'Per cup, e.g. flat white',p:{cat:'Drinks',mode:'amt',yt:'batch',batch:1,unitG:250,lab:2,shelf:0,store:''},ings:[['coffee',18],['milk',180]],steps:[['Make',3]]},
  {k:'blank',t:'Blank',d:'Start from nothing',p:{cat:'Bakery',mode:'amt',yt:'batch',batch:1,unitG:100,lab:0},ings:[],steps:[]}];
@@ -1514,7 +1517,7 @@ function editor(i){
  <h4>Steps <span class="mut">in order, with minutes</span></h4>${steps}<div class="row qrow"><input id="rs-n" class="grow" placeholder="Add step, e.g. Proof" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#rs-m').focus()}"><input id="rs-m" class="smin" type="number" step="any" placeholder="min" onkeydown="if(event.key=='Enter'){event.preventDefault();rsAdd(${i})}"><span class="mut">min</span><button class="b sm" onclick="rsAdd(${i})">Add</button></div>
  <h4>Notes for the person making it</h4><textarea rows="2" onchange="up('${P}.notes',this.value)">${esc(p.notes||'')}</textarea>
  <details class="edmore"><summary>More: labour, oven, label, photo, versions</summary>
-  <div class="row"><label>Labour min / unit${num('lab',p.lab)}</label><label>Units per oven tray${num('tray',p.tray||0)}</label><label>Oven °C${num('temp',p.temp||0)}</label>${sv=='whole'&&!p.sub?`<label>Portions (info only)${num('por',p.por||1)}</label>`:''}</div>
+  <div class="row"><label>${p.yt=='batch'&&!p.sub?'Labour min / batch':'Labour min / unit'}${num('lab',p.lab)}</label><label>Units per oven tray${num('tray',p.tray||0)}</label><label>Oven °C${num('temp',p.temp||0)}</label>${sv=='whole'&&!p.sub?`<label>Portions (info only)${num('por',p.por||1)}</label>`:''}</div>
   <div class="row"><label>Shelf life (days)${num('shelf',p.shelf)}</label><label class="grow">Storage advice${inp(P+'.store',p.store)}</label></div>
   <div class="row">${p.img?`<img class="ph" src="${p.img}" alt="">`:''}<label class="chip">Photo<input type="file" accept="image/*" onchange="photo(${i},this)"></label>${p.img?`<button class="g sm" onclick="up('prods.${i}.img','')">Remove photo</button>`:''}</div>
   ${verUI(i)}${pNotes(p.id).length?`<details class="ver"><summary>Bake notes · ${pNotes(p.id).length}</summary>${notesList(p.id,5)}</details>`:''}
