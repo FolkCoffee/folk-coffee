@@ -1162,6 +1162,11 @@ function wList(p,c,n){
 const kIng=new Map();
 function kIngT(pid,v){kIng.set(pid,v)}
 
+// ===== Prices to check: every ingredient still at €0 =====
+function priceCheck(){
+ const L=S.ings.filter(g=>!(+g.price)&&!g.sr&&!subOf(g.n)&&!/^water$/i.test(g.n)).map(g=>({n:g.n,u:S.prods.filter(p=>p.ings.some(i=>key(i.n)==key(g.n))).map(p=>p.name)})).sort((a,b)=>a.n.localeCompare(b.n));
+ if(!L.length)return'';
+ return`<h2 class="shop-h">Prices to check</h2><p class="mut">These ingredients have no price yet, so the recipes that use them look cheaper than they are. Write down the price and the pack size, then enter them on the Ingredients tab.</p><table class="shop-t"><tr><th></th><th>Item</th><th>Used in</th><th class="n">Price</th><th class="n">Pack size</th></tr>${L.map(x=>`<tr><td class="cb">☐</td><td>${esc(x.n)}</td><td class="mut">${esc(x.u.join(', ')||'not in a recipe yet')}</td><td class="n">€______</td><td class="n">______</td></tr>`).join('')}</table>`}
 // ===== Shopping list (printable on its own) =====
 let shopDays=1;
 function shopping(){
@@ -1174,7 +1179,7 @@ function shopping(){
  return`<div class="noprint"><div class="row"><h2 class="grow" style="margin:0">Shopping list</h2><button class="b" onclick="print()">Print shopping list</button></div>
  <div class="row"><button class="g sm" onclick="shd(-1)">← Previous</button><button class="g sm" onclick="shd(0)">Today</button><button class="g sm" onclick="shd(1)">Next →</button><label>Days to cover<select onchange="shopDays=+this.value;draw()">${[1,2,3,5,7].map(n=>`<option value="${n}"${n==shopDays?' selected':''}>${n==1?'Just this day':n+' days'}</option>`).join('')}</select></label></div>
  <p class="mut">Everything needed for ${range}, from your orders and daily targets, grouped by supplier. Packs are rounded up to whole packs, including any waste % you set. Items with no price, like water, show only the amount.</p></div>
- <div class="shop"><div class="pw"><img class="wm-logo" src="${LOGO()}" alt="FOLk"><span class="wm2">Speciality Coffee</span></div><h2 class="shop-h">Shopping list · ${range}</h2>
+ <div class="shop"><div class="pw"><img class="wm-logo" src="${LOGO()}" alt="FOLk"><span class="wm2">Speciality Coffee</span></div>${priceCheck()}<h2 class="shop-h">Shopping list · ${range}</h2>
  ${rows.length?sups.map(sp=>`<h3>${esc(sp||'No supplier set')}</h3><table class="shop-t"><tr><th></th><th>Item</th><th class="n">Needed</th><th class="n">Buy</th><th class="n">Cost</th></tr>${rows.filter(r=>r.sup==sp).sort((a,b)=>a.n.localeCompare(b.n)).map(r=>`<tr><td class="cb">☐</td><td>${esc(r.n)}</td><td class="n">${fq(r.g,r.u)}</td><td class="n">${r.packs?`${r.packs} × ${esc(r.ps)}`:'—'}</td><td class="n">${r.packs?m(r.cost):''}</td></tr>`).join('')}</table>`).join('')+`<p class="shop-tot">Total for whole packs: <b>${m(tot)}</b> <span class="mut">· used in the bake: ${m(use)}</span></p>`
  :'<p class="chalk">Nothing to buy</p><p class="mut">Add orders or daily targets for these days.</p>'}</div>`}
 G.find(g=>g[0]=='Print')[1].splice(1,0,'Shop');TL.Shop='Shopping list';T.Shop=shopping;
