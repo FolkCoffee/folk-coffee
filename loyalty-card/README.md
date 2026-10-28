@@ -51,7 +51,7 @@ Until this is done, the till opens a ready-made email in the phone's mail app in
    - To Email: `{{to_email}}` · From Name: `FOLk Coffee` · Reply To: `folkspecialitycoffee@gmail.com`
    - Save and note the **Template ID**.
 4. **Account → General**: note the **Public Key**.
-5. **Account → Security**: limit requests to `https://folkcoffee.github.io` so nobody else can use your account.
+5. **Account → Security → API Settings**: make sure **Use Private Key** is *unticked* (with it ticked, emails sent from the website are blocked). Domain restriction is a paid feature; it isn't needed.
 6. Put the three IDs into `emailjsConfig` in `config.js` (they're safe to be public).
 
 ## Print files

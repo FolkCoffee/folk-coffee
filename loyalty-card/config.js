@@ -19,7 +19,7 @@ export const STAMPS_FOR_REWARD = 9;
 // (see README → "Voucher emails"). While they say PASTE_..., the till offers
 // a ready-made email in the phone's mail app instead.
 export const emailjsConfig = {
-  serviceId: "PASTE_SERVICE_ID",
-  templateId: "PASTE_TEMPLATE_ID",
-  publicKey: "PASTE_PUBLIC_KEY",
+  serviceId: "service_rjq3igb",
+  templateId: "template_652igf7",
+  publicKey: "Trj-HyT7EvoyFOhf1",
 };
