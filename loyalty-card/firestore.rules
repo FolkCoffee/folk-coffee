@@ -18,6 +18,37 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Gift vouchers: ONLY staff can see, create or use them.
+    // Balances can only go down, and vouchers can never be deleted.
+    function validVoucher(d, code) {
+      return d.keys().hasOnly(['code', 'amount', 'balance', 'toName', 'fromName', 'message', 'issued', 'expires', 'createdBy', 'createdAt', 'updatedAt'])
+        && d.code == code
+        && d.amount is int && d.amount > 0 && d.amount <= 50000
+        && d.balance == d.amount
+        && d.createdBy == request.auth.uid
+        && d.toName is string && d.toName.size() <= 60
+        && d.fromName is string && d.fromName.size() <= 60
+        && d.message is string && d.message.size() <= 300
+        && d.issued is string && d.expires is string && d.expires > d.issued;
+    }
+    match /vouchers/{code} {
+      allow read: if isStaff();
+      allow create: if isStaff() && code.matches('^FOLK-[A-Z0-9]{4}-[A-Z0-9]{4}$')
+        && validVoucher(request.resource.data, code);
+      allow update: if isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance', 'updatedAt'])
+        && request.resource.data.balance is int
+        && request.resource.data.balance >= 0
+        && request.resource.data.balance < resource.data.balance;
+      allow delete: if false;
+
+      match /log/{entry} {
+        allow read: if isStaff();
+        allow create: if isStaff() && request.resource.data.by == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
     match /cards/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isStaff());
 

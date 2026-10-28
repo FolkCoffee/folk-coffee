@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@300;400;500;600&family=Inter+Tight:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <div class="demo" id="demo" hidden>Demo mode: nothing is saved online yet. <a href="index.html" style="color:#fff">Open customer page</a></div>
@@ -42,6 +43,7 @@
   <section id="v-home" hidden>
     <button class="btn big" id="scan">Scan customer card</button>
     <button class="btn ghost" id="demo-open" hidden>Open the demo customer's card</button>
+    <button class="btn ghost big" id="go-vouchers">Gift vouchers</button>
     <div class="or">phone dead? find by email</div>
     <form id="f-find" class="row">
       <input id="find-email" type="email" placeholder="customer@email.com" required aria-label="Customer email">
@@ -53,7 +55,7 @@
 
   <section id="v-scan" hidden>
     <div id="reader"></div>
-    <p class="muted" id="scan-msg" style="margin-top:12px;text-align:center">Point the camera at the customer's code.</p>
+    <p class="muted" id="scan-msg" style="margin-top:12px;text-align:center">Point the camera at the code.</p>
     <div class="cam-controls" id="cam-controls" hidden>
       <label for="cam">Lens</label>
       <div class="row">
@@ -86,14 +88,77 @@
       <button class="btn ghost" id="done">Done</button>
     </div>
   </section>
+
+  <section id="v-vouchers" hidden>
+    <h1>Gift vouchers</h1>
+    <button class="btn big" id="v-new">New voucher</button>
+    <button class="btn ghost" id="v-scan">Scan voucher code</button>
+    <div class="or">or type the code</div>
+    <form id="f-vfind" class="row">
+      <input id="vfind-code" placeholder="FOLK-XXXX-XXXX" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Voucher code" required>
+      <button class="btn" type="submit" style="flex:0 0 90px;margin-top:0">Find</button>
+    </form>
+    <h2 class="sub">Recent vouchers</h2>
+    <div class="results" id="v-recent"><p class="muted">Loading…</p></div>
+    <button class="btn ghost" data-home>Back</button>
+  </section>
+
+  <section id="v-newvoucher" hidden>
+    <h1>New voucher</h1>
+    <form id="f-newv">
+      <label>Amount</label>
+      <div class="amounts" id="nv-amounts"></div>
+      <div id="nv-other-wrap" hidden><input id="nv-other" inputmode="decimal" placeholder="Other amount, e.g. 30" aria-label="Other amount in euro"></div>
+      <label for="nv-to">To</label>
+      <input id="nv-to" maxlength="60" autocomplete="off" placeholder="Who is it for?">
+      <label for="nv-from">From</label>
+      <input id="nv-from" maxlength="60" autocomplete="off" placeholder="Who is it from?">
+      <label for="nv-msg">Message <span class="muted" style="font-weight:400">(optional, shows on the digital voucher)</span></label>
+      <textarea id="nv-msg" maxlength="300" rows="3"></textarea>
+      <p class="muted" style="margin:12px 0 0;font-size:13px">Take payment on the card machine or in cash first. The voucher is valid for 5 years from today.</p>
+      <button class="btn big" type="submit">Create voucher</button>
+    </form>
+    <button class="btn ghost" data-vhome>Cancel</button>
+  </section>
+
+  <section id="v-voucher" hidden>
+    <div class="card voucher">
+      <div class="card-top"><div class="logo"><img src="../brand/folk-logo.png" alt="FOLk"><span>Coffee</span></div><div class="card-name">Gift voucher</div></div>
+      <div class="vcode" id="vc-code"></div>
+      <div class="count"><span id="vc-balance"></span><small id="vc-of"></small></div>
+      <div class="vmeta"><span id="vc-to"></span><span id="vc-from"></span></div>
+    </div>
+    <div class="bday-banner" id="vc-status" hidden></div>
+    <form id="f-redeem" class="notice" style="margin-top:14px">
+      <label for="vc-amt" style="margin-top:0">Amount to take off</label>
+      <div class="row">
+        <input id="vc-amt" inputmode="decimal" placeholder="e.g. 4.50" autocomplete="off">
+        <button class="btn ghost" type="button" id="vc-all" style="flex:0 0 auto;width:auto;margin-top:0;padding:13px 14px">Whole balance</button>
+      </div>
+      <button class="btn big" type="submit" id="vc-redeem">Take off</button>
+    </form>
+    <div class="notice" style="margin-top:14px">
+      <b>Giving it to the customer</b>
+      <p class="muted" style="margin:6px 0 0">Paper voucher: write the code and dates on the back of the card. Digital: share the image by email or WhatsApp.</p>
+      <button class="btn ghost" id="vc-share">Share digital voucher</button>
+    </div>
+    <div class="vdates muted" id="vc-dates"></div>
+    <h2 class="sub">History</h2>
+    <div class="results" id="vc-log"></div>
+    <div class="row">
+      <button class="btn ghost" data-vhome>All vouchers</button>
+      <button class="btn ghost" data-home>Done</button>
+    </div>
+  </section>
 </main>
 
 <script type="module">
+import { VOUCHER_QR_PREFIX, AMOUNTS, normalizeCode, euro, toCents, formatDate, isExpired, voucherImage } from './vouchers.js';
 import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast, store,
   birthdayCoffeeAvailable, isBirthdayToday, formatBirthday, todayIE } from './loyalty.js';
 
 const $ = (s) => document.querySelector(s);
-const VIEWS = ['loading', 'signin', 'notstaff', 'home', 'scan', 'customer'];
+const VIEWS = ['loading', 'signin', 'notstaff', 'home', 'scan', 'customer', 'vouchers', 'newvoucher', 'voucher'];
 const show = (v) => VIEWS.forEach((x) => ($('#v-' + x).hidden = x !== v));
 
 const be = await getBackend('staff');
@@ -195,13 +260,18 @@ async function stopScan() {
   if (scanner) { try { await scanner.stop(); } catch {} try { scanner.clear(); } catch {} scanner = null; }
 }
 async function onScan(text) {
-  if (!text.startsWith(QR_PREFIX)) { $('#scan-msg').textContent = "That isn't a FOLk card code."; return; }
+  if (text.startsWith(VOUCHER_QR_PREFIX)) {
+    const code = normalizeCode(text.slice(VOUCHER_QR_PREFIX.length));
+    if (!code) return;
+    await stopScan(); navigator.vibrate?.(60); openVoucher(code); return;
+  }
+  if (!text.startsWith(QR_PREFIX)) { $('#scan-msg').textContent = "That isn't a FOLk code."; return; }
   await stopScan();
   navigator.vibrate?.(60);
   openCard(text.slice(QR_PREFIX.length));
 }
 $('#scan').addEventListener('click', () => startScan());
-$('#cancel-scan').addEventListener('click', async () => { await stopScan(); show('home'); });
+$('#cancel-scan').addEventListener('click', async () => { await stopScan(); if (scanReturn === 'vouchers') openVoucherHome(); else show('home'); });
 
 /* customer card */
 function openCard(uid) {
@@ -269,6 +339,156 @@ $('#f-find').addEventListener('submit', async (e) => {
       list.appendChild(b);
     }
   } catch { toast('Search failed', 'err'); }
+});
+/* ───────── gift vouchers (staff only) ───────── */
+let vUnsub = null, vCur = null, vData = null, nvAmount = 2000, scanReturn = 'home';
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function closeVoucher() { if (vUnsub) vUnsub(); vUnsub = null; vCur = null; vData = null; }
+document.querySelectorAll('[data-home]').forEach((b) => b.addEventListener('click', () => { closeVoucher(); show('home'); }));
+document.querySelectorAll('[data-vhome]').forEach((b) => b.addEventListener('click', openVoucherHome));
+$('#go-vouchers').addEventListener('click', openVoucherHome);
+
+async function openVoucherHome() {
+  closeVoucher();
+  show('vouchers');
+  const list = $('#v-recent');
+  list.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const vs = await be.recentVouchers();
+    list.innerHTML = vs.length ? '' : '<p class="muted">No vouchers yet.</p>';
+    for (const v of vs) {
+      const b = document.createElement('button');
+      b.className = 'result';
+      b.innerHTML = `<span><b class="mono">${esc(v.code)}</b><br><span class="muted">${esc(v.toName || 'No name')} · ${formatDate(v.issued)}</span></span><span>${euro(v.balance)}<span class="muted"> / ${euro(v.amount)}</span></span>`;
+      b.addEventListener('click', () => openVoucher(v.code));
+      list.appendChild(b);
+    }
+  } catch { list.innerHTML = '<p class="muted">Could not load vouchers.</p>'; }
+}
+
+$('#v-scan').addEventListener('click', () => { scanReturn = 'vouchers'; startScan(); });
+$('#scan').addEventListener('click', () => { scanReturn = 'home'; });
+
+$('#f-vfind').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const code = normalizeCode($('#vfind-code').value);
+  if (!code) return toast('A code looks like FOLK-ABCD-2345', 'err');
+  $('#vfind-code').value = '';
+  openVoucher(code);
+});
+
+/* new voucher */
+function drawAmounts() {
+  const box = $('#nv-amounts'); box.innerHTML = '';
+  for (const a of [...AMOUNTS, 'other']) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    const sel = a === 'other' ? nvAmount === null : nvAmount === a * 100;
+    b.className = 'pill' + (sel ? ' on' : '');
+    b.textContent = a === 'other' ? 'Other' : '€' + a;
+    b.setAttribute('aria-pressed', sel);
+    b.addEventListener('click', () => {
+      nvAmount = a === 'other' ? null : a * 100;
+      $('#nv-other-wrap').hidden = a !== 'other';
+      if (a === 'other') $('#nv-other').focus();
+      drawAmounts();
+    });
+    box.appendChild(b);
+  }
+}
+$('#v-new').addEventListener('click', () => {
+  $('#f-newv').reset(); nvAmount = 2000; $('#nv-other-wrap').hidden = true; drawAmounts(); show('newvoucher');
+});
+$('#f-newv').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const amount = nvAmount ?? toCents($('#nv-other').value);
+  if (!(amount >= 100 && amount <= 50000)) return toast('Amount must be between €1 and €500', 'err');
+  const btn = e.submitter; btn.disabled = true;
+  try {
+    const v = await be.createVoucher({
+      amount,
+      toName: $('#nv-to').value.trim().slice(0, 60),
+      fromName: $('#nv-from').value.trim().slice(0, 60),
+      message: $('#nv-msg').value.trim().slice(0, 300),
+    }, me.uid);
+    toast(`Voucher ${v.code} created`, 'ok');
+    openVoucher(v.code);
+  } catch (err) { toast(err.message || 'Could not create the voucher', 'err'); }
+  btn.disabled = false;
+});
+
+/* one voucher */
+function openVoucher(code) {
+  closeVoucher();
+  vCur = code;
+  show('loading');
+  let first = true;
+  vUnsub = be.watchVoucher(code, (v) => {
+    if (!v) { toast(`No voucher ${code}`, 'err'); openVoucherHome(); return; }
+    drawVoucher(v);
+    if (first) { first = false; show('voucher'); }
+    loadLog(code);
+  });
+}
+function drawVoucher(v) {
+  vData = v;
+  $('#vc-code').textContent = v.code;
+  $('#vc-balance').textContent = euro(v.balance);
+  $('#vc-of').textContent = `left of ${euro(v.amount)}`;
+  $('#vc-to').textContent = v.toName ? `To ${v.toName}` : '';
+  $('#vc-from').textContent = v.fromName ? `From ${v.fromName}` : '';
+  $('#vc-dates').textContent = `Issued ${formatDate(v.issued)} · valid until ${formatDate(v.expires)}`;
+  const expired = isExpired(v), empty = v.balance <= 0;
+  const st = $('#vc-status');
+  st.hidden = !(expired || empty);
+  st.textContent = expired ? `Expired on ${formatDate(v.expires)}` : 'Fully used: nothing left on this voucher';
+  $('#f-redeem').hidden = expired || empty;
+  $('#vc-amt').value = '';
+}
+async function loadLog(code) {
+  const box = $('#vc-log');
+  try {
+    const log = await be.voucherLog(code);
+    if (vCur !== code) return;
+    box.innerHTML = '';
+    for (const l of log) {
+      const row = document.createElement('div');
+      row.className = 'result static';
+      const when = l.at ? l.at.toLocaleString('en-IE', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      row.innerHTML = `<span>${l.type === 'issue' ? 'Created' : 'Used'}<br><span class="muted">${esc(when)}</span></span><span>${l.type === 'issue' ? '' : '−'}${euro(l.amount)}</span>`;
+      box.appendChild(row);
+    }
+  } catch { box.innerHTML = '<p class="muted">Could not load history.</p>'; }
+}
+$('#vc-all').addEventListener('click', () => {
+  if (vData) $('#vc-amt').value = (vData.balance / 100).toFixed(2);
+});
+$('#f-redeem').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const amt = toCents($('#vc-amt').value);
+  if (!(amt > 0)) return toast('Enter the amount to take off', 'err');
+  if (!confirm(`Take ${euro(amt)} off voucher ${vCur}?`)) return;
+  const btn = $('#vc-redeem'); btn.disabled = true;
+  try { await be.redeemVoucher(vCur, amt, me.uid); toast(`${euro(amt)} taken off`, 'ok'); }
+  catch (err) { toast(err.message || 'Something went wrong', 'err'); }
+  btn.disabled = false;
+});
+$('#vc-share').addEventListener('click', async (e) => {
+  const btn = e.currentTarget; btn.disabled = true;
+  try {
+    const v = vData;
+    const blob = await voucherImage(v, '../brand/folk-logo.png');
+    const file = new File([blob], `FOLk-voucher-${v.code}.png`, { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'FOLk Coffee gift voucher' }); } catch {}
+    } else {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }
+  } catch { toast('Could not make the voucher image', 'err'); }
+  btn.disabled = false;
 });
 </script>
 </body>

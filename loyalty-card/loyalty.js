@@ -1,4 +1,5 @@
 import { firebaseConfig, STAMPS_FOR_REWARD } from './config.js';
+import { newCode, todayISO, addYears, isExpired, VOUCHER_YEARS } from './vouchers.js';
 
 export const GOAL = STAMPS_FOR_REWARD;
 export const DEMO = !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('PASTE');
@@ -107,6 +108,42 @@ async function firebaseBackend() {
       const q = F.query(F.collection(db, 'cards'), F.where('email', '==', email.trim().toLowerCase()));
       return (await F.getDocs(q)).docs.map((d) => ({ uid: d.id, ...d.data() }));
     },
+
+    /* gift vouchers (staff only: enforced by the database rules) */
+    async createVoucher({ amount, toName, fromName, message }, by) {
+      for (let tries = 0; tries < 5; tries++) {
+        const code = newCode(), ref = F.doc(db, 'vouchers', code);
+        const issued = todayISO();
+        const v = { code, amount, balance: amount, toName, fromName, message, issued, expires: addYears(issued, VOUCHER_YEARS), createdBy: by };
+        const ok = await F.runTransaction(db, async (t) => {
+          if ((await t.get(ref)).exists()) return false;
+          t.set(ref, { ...v, createdAt: F.serverTimestamp(), updatedAt: F.serverTimestamp() });
+          t.set(F.doc(F.collection(ref, 'log')), { type: 'issue', amount, by, at: F.serverTimestamp() });
+          return true;
+        });
+        if (ok) return v;
+      }
+      throw new Error('Could not create a voucher code, try again');
+    },
+    watchVoucher: (code, cb) => F.onSnapshot(F.doc(db, 'vouchers', code), (s) => cb(s.exists() ? s.data() : null), () => cb(null)),
+    redeemVoucher: (code, amount, by) => F.runTransaction(db, async (t) => {
+      const ref = F.doc(db, 'vouchers', code), s = await t.get(ref);
+      if (!s.exists()) throw new Error('No voucher with that code');
+      const d = s.data();
+      if (isExpired(d)) throw new Error('This voucher has expired');
+      if (!(amount > 0)) throw new Error('Enter an amount');
+      if (amount > d.balance) throw new Error('That is more than the voucher balance');
+      t.update(ref, { balance: d.balance - amount, updatedAt: F.serverTimestamp() });
+      t.set(F.doc(F.collection(ref, 'log')), { type: 'redeem', amount, by, at: F.serverTimestamp() });
+    }),
+    async voucherLog(code) {
+      const q = F.query(F.collection(db, 'vouchers', code, 'log'), F.orderBy('at', 'desc'), F.limit(30));
+      return (await F.getDocs(q)).docs.map((d) => { const x = d.data(); return { ...x, at: x.at?.toDate?.() || null }; });
+    },
+    async recentVouchers() {
+      const q = F.query(F.collection(db, 'vouchers'), F.orderBy('createdAt', 'desc'), F.limit(20));
+      return (await F.getDocs(q)).docs.map((d) => d.data());
+    },
   };
 }
 
@@ -123,6 +160,10 @@ function demoBackend(role) {
   const authCbs = new Set();
   let user = null; try { user = JSON.parse(store.get(UK)); } catch {}
   const setUser = (u) => { user = u; u ? store.set(UK, JSON.stringify(u)) : store.del(UK); authCbs.forEach((f) => f(u)); };
+  const VK = 'folk-demo-vouchers';
+  const readV = () => { try { return JSON.parse(localStorage.getItem(VK)) || {}; } catch { return {}; } };
+  const writeV = (v) => { store.set(VK, JSON.stringify(v)); emit(); };
+  addEventListener('storage', (e) => { if (e.key === VK) emit(); });
   const mutate = (uid, fn) => { const c = read(); const d = c[uid]; if (!d) throw new Error('No card found'); fn(d); write(c); };
 
   return {
@@ -146,6 +187,27 @@ function demoBackend(role) {
       const e = email.trim().toLowerCase();
       return Object.entries(read()).filter(([, d]) => d.email === e).map(([uid, d]) => ({ uid, ...d }));
     },
+
+    /* gift vouchers */
+    async createVoucher({ amount, toName, fromName, message }, by) {
+      if (role !== 'staff') throw new Error('Staff only');
+      const all = readV(); let code; do { code = newCode(); } while (all[code]);
+      const issued = todayISO();
+      const v = { code, amount, balance: amount, toName, fromName, message, issued, expires: addYears(issued, VOUCHER_YEARS), createdBy: by, createdAt: Date.now() };
+      all[code] = { ...v, log: [{ type: 'issue', amount, by, at: Date.now() }] }; writeV(all);
+      return v;
+    },
+    watchVoucher(code, cb) { const f = () => cb(readV()[code] || null); watchers.add(f); f(); return () => watchers.delete(f); },
+    async redeemVoucher(code, amount, by) {
+      const all = readV(), d = all[code];
+      if (!d) throw new Error('No voucher with that code');
+      if (isExpired(d)) throw new Error('This voucher has expired');
+      if (!(amount > 0)) throw new Error('Enter an amount');
+      if (amount > d.balance) throw new Error('That is more than the voucher balance');
+      d.balance -= amount; d.log.push({ type: 'redeem', amount, by, at: Date.now() }); writeV(all);
+    },
+    async voucherLog(code) { return (readV()[code]?.log || []).slice().reverse().map((x) => ({ ...x, at: new Date(x.at) })); },
+    async recentVouchers() { return Object.values(readV()).sort((a, b) => b.createdAt - a.createdAt).slice(0, 20); },
   };
 }
 

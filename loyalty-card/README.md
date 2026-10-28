@@ -30,6 +30,16 @@ Open the two links above in two tabs of the same browser. Sign up on the custome
    Tip: if you sign in on `staff.html` before doing this, the page shows the UID for you to copy.
 7. **Publish.** Commit the edited `config.js` to `main`. It goes live within a few minutes. Bookmark the staff link on the shop phone or tablet.
 
+## Gift vouchers (staff only)
+On the staff till, tap **Gift vouchers**:
+- **New voucher:** choose the amount (€10–€50 or other), add To / From / message, tap Create. You get a unique code like `FOLK-ABCD-2345`, valid for 5 years (Irish law requires at least 5).
+- **Giving it out:** paper voucher → write the code and dates on the back of the printed card. Digital → **Share digital voucher** makes an image (with a QR code) to send by email or WhatsApp.
+- **Using it:** scan the QR on the digital voucher, or type the code, then enter the amount and tap **Take off**. It can be used over several visits; the balance and history are shown.
+- Only accounts in the `staff` collection can see, create or use vouchers (enforced by `firestore.rules`). Balances can only go down and vouchers can't be deleted.
+- After updating, paste the new `firestore.rules` into Firebase → Firestore → Rules → Publish.
+
+Voucher designs (printed DL card front/back and the email version) are on the FOLk Gift Vouchers design canvas.
+
 ## Print files
 In [`print/`](print/):
 - `folk-counter-sign-a4.pdf`: the designed counter sign, ready to print (A4, also fine scaled to A5)
