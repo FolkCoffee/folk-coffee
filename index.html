@@ -911,7 +911,7 @@ function verUI(i){
  const p=S.prods[i];ensV(p);const cur=curV(p),c=vchg(p),cost=d=>calc({...p,...d}).cost;
  return`<details class="ver"${c?' open':''}><summary>Version ${p.cv}${c?' · <b>changed, not saved yet</b>':''} <span class="mut">· saved ${esc(cur.date)}${cur.note?' · '+esc(cur.note):''}</span></summary>
  ${c?`<div class="row"><input id="vn" class="grow" placeholder="What changed? e.g. less sugar, longer proof"><button class="b sm" onclick="saveV(${i})">Save as version ${nextV(p)}</button><button class="g sm" onclick="restV(${i},${p.cv})">Undo changes</button></div>`:'<p class="mut">Change the recipe, then save it as a new version. You can go back to any earlier version.</p>'}
- <div class="vlist">${[...p.vers].reverse().map(v=>{const d=v.data||{},I=d.ings||[],St=d.steps||[];return`<div class="vcard${v.v==p.cv?' cur':''}"><div class="vtop"><b>Version ${v.v}</b>${v.v==p.cv?'<span class="vtag">current</span>':''}<span class="grow"></span><span>${m(cost(v.data))} <span class="mut">/ unit</span></span></div><div class="mut sm2">${esc(v.date||'')}</div>${v.note?`<div class="vnote">${esc(v.note)}</div>`:''}${I.length||St.length?`<details class="vin"><summary>What's in it</summary>${I.length?`<ul>${I.map(x=>`<li>${esc(x.n)}${+x.amt?` · ${+x.amt}`:''}</li>`).join('')}</ul>`:''}${St.length?`<ol>${St.map(x=>`<li>${esc(x.n)}${+x.mins?` · ${+x.mins} min`:''}${x.d?`<div class="mut sm2">${esc(x.d)}</div>`:''}</li>`).join('')}</ol>`:''}</details>`:''}${v.v==p.cv?'':`<div class="row" style="margin-top:8px"><button class="g sm" onclick="restV(${i},${v.v})">Use this version</button><button class="lnk" onclick="if(confirm('Delete version ${v.v}?'))delV(${i},${v.v})">Delete</button></div>`}</div>`}).join('')}</div></details>`}
+ <div class="vlist">${[...p.vers].reverse().map(v=>{const d=v.data||{},I=d.ings||[],St=d.steps||[];return`<div class="vcard${v.v==p.cv?' cur':''}"><div class="vtop"><b>Version ${v.v}</b>${v.v==p.cv?'<span class="vtag">current</span>':''}<span class="grow"></span><span>${m(cost(v.data))} <span class="mut">/ unit</span></span></div><div class="mut sm2">${esc(v.date||'')}</div>${v.note?`<div class="vnote">${esc(v.note)}</div>`:''}${I.length||St.length?`<details class="vin"><summary>What's in it</summary>${I.length?`<ul>${I.map(x=>`<li>${esc(x.n)}${+x.amt?` · ${+x.amt}`:''}</li>`).join('')}</ul>`:''}${St.length?`<ol>${St.map(x=>`<li>${esc(x.n)}${+x.mins?` · ${+x.mins} min`:''}${x.d?`<div class="mut sm2">${esc(x.d)}</div>`:''}</li>`).join('')}</ol>`:''}</details>`:''}${v.v==p.cv?'':`<div class="row" style="margin-top:8px"><button class="g sm" onclick="restV(${i},${v.v})">Use this version</button><button class="lnk" onclick="delV(${i},${v.v})">Delete</button></div>`}</div>`}).join('')}</div></details>`}
 function dupP(i){const c=JSON.parse(JSON.stringify(S.prods[i]));c.id=nid();c.name+=' (copy)';delete c.vers;delete c.cv;S.prods.splice(i+1,0,c);ed=i+1;save();draw()}
 
 // today
@@ -1376,7 +1376,7 @@ const sug=p=>{const t=Math.min(+S.set.margin||65,95);return Math.ceil(calc(p).co
 // recipe page: duplicate and delete live here now
 function recipeX(i){const h=recipe(i),p=S.prods[i],c=calc(p),g=mg(p);
  const k=h.indexOf('<div class="pw">');
- const bar=`<div class="noprint rcost"><span>Cost <b>${m(c.cost)}</b></span><span>Price <b>${m(p.price)}</b></span><span class="st-${mst(g)}">${mdot(g)}Margin <b>${g.toFixed(0)}%</b></span>${mst(g)!='ok'?`<span class="mut">price for ${+S.set.margin||65}%: ${m(sug(p))}</span>`:''}<span class="grow"></span><button class="g sm" onclick="dupP(${i})">Duplicate</button><button class="g sm" onclick="delP(${i});vw=null;draw()">Delete</button></div>`;
+ const bar=`<div class="noprint rcost"><span>Cost <b>${m(c.cost)}</b></span><span>Price <b>${m(p.price)}</b></span><span class="st-${mst(g)}">${mdot(g)}Margin <b>${g.toFixed(0)}%</b></span>${mst(g)!='ok'?`<span class="mut">price for ${+S.set.margin||65}%: ${m(sug(p))}</span>`:''}<span class="grow"></span><button class="g sm" onclick="dupP(${i})">Duplicate</button><button class="g sm" onclick="if(delP(${i})!==false){vw=null;draw()}">Delete</button></div>`;
  return k<0?h:h.slice(0,k)+bar+h.slice(k)}
 // margins: status dot instead of "below target" on every line
 function menu(){
@@ -1904,4 +1904,24 @@ function slog(){
  <details class="qa"><summary>Import past sales</summary><p class="mut">Paste one line per item: date, product name, sold, and optionally made. For example: 17/10/2026, Cardamom bun, 43, 48</p><textarea id="imp" rows="5"></textarea><p><button class="b" onclick="impS()">Import</button></p></details>`}
 
 draw();
+
+// ===== Ask before deleting anything =====
+// Every delete asks first. A delete that triggers another one (last drink size -> drink) asks once.
+(function(){let asking=false;const q=t=>`“${String(t||'').trim()||'this'}”`;
+ const ask=(fn,msg)=>{const f=window[fn];if(typeof f!='function')return;window[fn]=function(...a){if(asking)return f.apply(this,a);let t=null;try{t=msg(...a)}catch(e){t='Delete this?'}if(t===false)return f.apply(this,a);if(!confirm(t))return false;asking=true;try{return f.apply(this,a)}finally{asking=false}}};
+ ask('del',(p,i)=>{const x=at(p)[i]||{};return /steps$/.test(p)?`Remove the step ${q(x.n)}?`:`Remove ${q(x.n)} from this recipe?`});
+ ask('delP',i=>`Delete the recipe ${q(S.prods[i].name)}?\n\nYou can press Undo straight after.`);
+ ask('delI',i=>`Delete the ingredient ${q(S.ings[i].n)}?`);
+ ask('delDay',x=>`Delete the sales recorded for ${x}?`);
+ ask('delV',(i,v)=>`Delete version ${v} of ${q(S.prods[i].name)}?\n\nThe other versions get renumbered.`);
+ ask('delNote',()=>'Delete this note?');
+ ask('secDel',(i,k)=>`Remove the section ${q(S.prods[i].secs[k])}?\n\nIts ingredients move to the first section.`);
+ ask('delG',oid=>{const o=S.orders.find(x=>x.oid==oid);return `Delete the order${o&&o.cust?' for '+o.cust:''}?`});
+ ask('bRm',()=>'Remove this purchase?\n\nIngredient prices stay as they are now.');
+ ask('dDel',i=>`Delete the drink ${q(S.dr.items[i].name)}?`);
+ ask('dSzDel',(i,j)=>{const it=S.dr.items[i];return it.sizes.length<2?`${q(it.sizes[j].s)} is the last size, so the whole drink ${q(it.name)} will be deleted. Continue?`:`Remove the size ${q(it.sizes[j].s)}?`});
+ ask('dExDel',(i,j,x)=>`Remove ${q(S.dr.items[i].sizes[j].ex[x].n)}?`);
+ ask('runSet',(k,f)=>f=='del'?`Remove the running cost ${q((runL()[k]||{}).n)}?`:false);
+ ask('rst',()=>`Reset EVERYTHING?\n\nAll recipes, ingredients, orders, sales and purchases will be wiped${typeof sbUser!='undefined'&&sbUser?' on all your devices':''}. Save a backup first.`);
+})();
 </script></body></html>
