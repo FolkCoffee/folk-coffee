@@ -568,6 +568,7 @@ nav button.nv.on{background:var(--now);color:var(--now-fg)}
 .impin{background:var(--bg);color:var(--fg);border-radius:18px;padding:18px 18px 14px;max-width:480px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);margin-bottom:calc(env(safe-area-inset-bottom,0px) + 70px)}
 @media(min-width:861px){.impbox{align-items:center}.impin{margin-bottom:0}}
 .sl-list{border-top:1px solid var(--line)}.sl-row{padding:12px 0;border-bottom:1px solid var(--line)}.sl-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}.sl-h b{font-size:16px;font-weight:500}.sl-s{color:var(--mut);font-size:14px;white-space:nowrap}.sl-f{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}.sl-f label{flex:none;min-width:0}.sl-f input[type=number]{width:100%;text-align:right;font-size:17px}.sl-o{flex-direction:row!important;align-items:center;gap:8px!important;font-size:14px!important;color:var(--fg)!important;padding-bottom:10px;white-space:nowrap}.sl-save{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));z-index:5;padding:12px 0;background:var(--bg)}.sl-save .b{width:100%}.sl-day{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}@media(min-width:900px){.sl-row{display:grid;grid-template-columns:1fr 360px;align-items:center;gap:16px}.sl-h{margin:0}.sl-save{bottom:0}.sl-save .b{width:auto}}.vlist{display:flex;flex-direction:column;gap:10px;margin-top:10px}.vcard{border:1px solid var(--line,#e6dccf);border-radius:12px;padding:12px 14px;min-width:0;overflow-wrap:anywhere}.vcard.cur{border-color:currentColor}.vtop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.vtag{font-size:.8em;padding:1px 8px;border-radius:99px;background:var(--soft,#efe6da)}.vnote{margin-top:6px}.vin{margin-top:8px}.vin summary{cursor:pointer}.vin ul,.vin ol{margin:6px 0 0;padding-left:20px}
+.askbg{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;padding:16px}.askin{background:var(--bg,#fff);color:inherit;border-radius:16px;padding:18px;width:100%;max-width:420px;box-shadow:0 10px 40px rgba(0,0,0,.25)}.askh{font-weight:600;margin:0 0 8px;font-size:1.05em}.askin .row{margin-top:14px;gap:10px}@media(min-width:700px){.askbg{align-items:center}}
 </style></head><body>
 <header><div class="top"><h1 class="wm" style="cursor:pointer" title="Home"><img class="wm-logo hdr" src="brand/folk-logo.png" alt="FOLk"><span class="wm2">Speciality Coffee</span></h1><div id="sub">Bake and cost planner</div></div>
 <nav id="nav"></nav></header>
@@ -1376,7 +1377,7 @@ const sug=p=>{const t=Math.min(+S.set.margin||65,95);return Math.ceil(calc(p).co
 // recipe page: duplicate and delete live here now
 function recipeX(i){const h=recipe(i),p=S.prods[i],c=calc(p),g=mg(p);
  const k=h.indexOf('<div class="pw">');
- const bar=`<div class="noprint rcost"><span>Cost <b>${m(c.cost)}</b></span><span>Price <b>${m(p.price)}</b></span><span class="st-${mst(g)}">${mdot(g)}Margin <b>${g.toFixed(0)}%</b></span>${mst(g)!='ok'?`<span class="mut">price for ${+S.set.margin||65}%: ${m(sug(p))}</span>`:''}<span class="grow"></span><button class="g sm" onclick="dupP(${i})">Duplicate</button><button class="g sm" onclick="if(delP(${i})!==false){vw=null;draw()}">Delete</button></div>`;
+ const bar=`<div class="noprint rcost"><span>Cost <b>${m(c.cost)}</b></span><span>Price <b>${m(p.price)}</b></span><span class="st-${mst(g)}">${mdot(g)}Margin <b>${g.toFixed(0)}%</b></span>${mst(g)!='ok'?`<span class="mut">price for ${+S.set.margin||65}%: ${m(sug(p))}</span>`:''}<span class="grow"></span><button class="g sm" onclick="dupP(${i})">Duplicate</button><button class="g sm" onclick="delP(${i})">Delete</button></div>`;
  return k<0?h:h.slice(0,k)+bar+h.slice(k)}
 // margins: status dot instead of "below target" on every line
 function menu(){
@@ -1907,8 +1908,16 @@ draw();
 
 // ===== Ask before deleting anything =====
 // Every delete asks first. A delete that triggers another one (last drink size -> drink) asks once.
+function askBox(t,ok,go){const o=document.getElementById('askbox');o&&o.remove();const [h,...rest]=String(t).split('\n\n');
+ const el=document.createElement('div');el.id='askbox';el.className='askbg';el.innerHTML=`<div class="askin" role="alertdialog" aria-modal="true"><p class="askh">${esc(h)}</p>${rest.length?`<p class="mut">${esc(rest.join(' '))}</p>`:''}<div class="row"><button class="g grow" data-a="no">Cancel</button><button class="b grow" data-a="ok">${esc(ok)}</button></div></div>`;
+ const close=()=>{el.remove();document.removeEventListener('keydown',k)},k=e=>{if(e.key=='Escape')close()};
+ el.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(e.target===el||(a&&a.dataset.a=='no'))close();else if(a&&a.dataset.a=='ok'){close();go()}});
+ document.addEventListener('keydown',k);document.body.appendChild(el);setTimeout(()=>{const b=el.querySelector('[data-a=no]');b&&b.focus()},30)}
 (function(){let asking=false;const q=t=>`“${String(t||'').trim()||'this'}”`;
- const ask=(fn,msg)=>{const f=window[fn];if(typeof f!='function')return;window[fn]=function(...a){if(asking)return f.apply(this,a);let t=null;try{t=msg(...a)}catch(e){t='Delete this?'}if(t===false)return f.apply(this,a);if(!confirm(t))return false;asking=true;try{return f.apply(this,a)}finally{asking=false}}};
+ const after={delP:()=>{vw=null;ed=null;draw()}};
+ const ask=(fn,msg)=>{const f=window[fn];if(typeof f!='function')return;window[fn]=function(...a){if(asking)return f.apply(this,a);let t=null;try{t=msg(...a)}catch(e){t='Delete this?'}if(t===false)return f.apply(this,a);
+  // the app's own box, not confirm(): some phones and home-screen apps silently block confirm()
+  askBox(t,fn=='rst'?'Reset everything':'Delete',()=>{asking=true;try{f.apply(this,a)}finally{asking=false}after[fn]&&after[fn]()});return false}};
  ask('del',(p,i)=>{const x=at(p)[i]||{};return /steps$/.test(p)?`Remove the step ${q(x.n)}?`:`Remove ${q(x.n)} from this recipe?`});
  ask('delP',i=>`Delete the recipe ${q(S.prods[i].name)}?\n\nYou can press Undo straight after.`);
  ask('delI',i=>`Delete the ingredient ${q(S.ings[i].n)}?`);
