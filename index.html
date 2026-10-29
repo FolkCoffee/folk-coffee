@@ -1514,25 +1514,32 @@ function need(d){const tot=totOf(d),sh={};S.prods.filter(p=>tot[p.id]>0).forEach
 function needW(d){const sh={};workDay(d).ev.filter(e=>e.first&&!e.carry).forEach(e=>{const p=S.prods.find(x=>x.id==e.ps[0].id);if(!p)return;const n=bakeN(p.id,e.ps[0].q);calc(p).lines.forEach(l=>{if(!l.n||!l.g||subOf(l.n))return;const k=key(l.n);sh[k]=sh[k]||{n:l.n,g:0,u:bu(l.n)};sh[k].g+=l.g*n})});return Object.values(sh).sort((a,b)=>a.n.localeCompare(b.n))}
 
 // ---------- whole vs slice ----------
-const sellOf=p=>p.sub?'none':p.sell||(+p.sp>0&&por(p)>1?'slice':'whole');
-const priceTxt=p=>sellOf(p)=='slice'?`${m(p.sp)} <span class="mut">/ slice</span>`:m(p.price);
-function setSell(i,v){const p=S.prods[i];p.sell=v;if(v=='slice'){p.por=por(p)>1?por(p):8;if(!+p.sp)p.sp=Math.round((+p.price||0)/p.por*20)/20;p.price=Math.round(p.sp*p.por*100)/100}else p.sp=0;save();draw()}
-function setSl(i,k,v){const p=S.prods[i];p[k]=Math.max(+v||0,k=='por'?1:0);p.price=Math.round((+p.sp||0)*por(p)*100)/100;save();draw()}
+const sellOf=p=>p.sub?'none':p.sell=='cake'?'whole':p.sell||(+p.sp>0&&por(p)>1?'slice':'whole');
+// what the screen calls it: piece (brownie), cake (loaf sold whole), slice (loaf sold whole AND by the slice)
+const kindOf=p=>p.sub?'none':sellOf(p)=='slice'?'slice':p.sell=='cake'?'cake':'piece';
+const priceTxt=p=>sellOf(p)=='slice'?`${m(p.price)} <span class="mut">whole · ${m(p.sp)} / slice</span>`:m(p.price);
+function setSell(i,v){const p=S.prods[i];p.sell=v;if(v=='slice'){p.por=por(p)>1?por(p):8;if(!+p.sp)p.sp=Math.round((+p.price||0)/p.por*20)/20;if(!+p.price)p.price=Math.round(p.sp*p.por*100)/100}else p.sp=0;save();draw()}
+function setSl(i,k,v){const p=S.prods[i];p[k]=Math.max(+v||0,k=='por'?1:0);if(!+p.price&&k=='sp')p.price=Math.round((+p.sp||0)*por(p)*100)/100;save();draw()}
 
 // ---------- tighter recipe editor ----------
 const stN=new Set();
 function editor(i){
  const p=S.prods[i],c=calc(p),P=`prods.${i}`,pc=p.mode=='pct',bt=p.yt=='batch',g=mg(p),sv=sellOf(p),num=(k,v,cls)=>inp(`${P}.${k}`,v,cls||'',1);
  const bar=`<div class="edbar"><button class="g sm" onclick="edDone(${i})" aria-label="Back">←</button><b class="grow">${esc(p.name)}</b>${p.sub?`<span>${m(c.cost/(+p.unitG||1)*1000)} <span class="mut">/ kg</span></span>`:`<span class="mut">cost</span> <span>${m(c.cost)}</span><span class="st-${mst(g)}">${mdot(g)}${g.toFixed(0)}%</span>`}<button class="b sm" onclick="edDone(${i})">Done</button></div>`;
+ const kd=kindOf(p),U=kd=='piece'?'piece':'cake',Us=U=='piece'?'Pieces':'Cakes',tg=+S.set.margin||65,cs=c.cost/por(p),gs=+p.sp?(p.sp-cs)/p.sp*100:0;
+ const cnt=bt?`<label>${Us} per batch${num('batch',p.batch)}</label>`:`<label>${Us} per batch<input type="number" value="${bN(p)}" disabled title="Worked out from the weight below"></label>`;
  const sell=p.sub?`<p class="mut">Used in ${usedIn(p).map(x=>esc(x.name)).join(', ')||'no recipes yet'}. Add it to a recipe like any ingredient, by its name. Its cost, allergens and prep time follow automatically.</p>`
-  :`<div class="row"><label>At the counter<select onchange="setSell(${i},this.value)"><option value="whole"${sv=='whole'?' selected':''}>Sell each piece whole</option><option value="slice"${sv=='slice'?' selected':''}>Cut each piece into slices</option></select></label>${sv=='slice'?`<label>Slices per ${p.cat=='Drinks'?'unit':'piece'}<input type="number" step="1" value="${por(p)}" onchange="setSl(${i},'por',this.value)"></label><label>Price per slice<input type="number" step="any" value="${+p.sp||0}" onchange="setSl(${i},'sp',this.value)"></label><span class="mut grow">Whole piece = ${m(p.price)} · cost per slice ${m(c.cost/por(p))}</span>`:`<label>Price per piece${num('price',p.price)}</label>`}</div>${g<(+S.set.margin||65)?`<p class="mut sm2">For a ${+S.set.margin||65}% margin: ${sv=='slice'?m(sug(p)/por(p))+' a slice':m(sug(p))}.</p>`:''}`;
+  :`<div class="row"><label>How do you sell it?<select onchange="setSell(${i},this.value)"><option value="whole"${kd=='piece'?' selected':''}>By the piece (brownie, cookie, scone)</option><option value="cake"${kd=='cake'?' selected':''}>Whole cake or loaf</option><option value="slice"${kd=='slice'?' selected':''}>Whole cake/loaf and by the slice</option></select></label></div>
+  <div class="row">${cnt}<label>Price per ${U}${num('price',p.price)}</label>${kd=='slice'?`<label>Slices per cake<input type="number" step="1" value="${por(p)}" onchange="setSl(${i},'por',this.value)"></label><label>Price per slice<input type="number" step="any" value="${+p.sp||0}" onchange="setSl(${i},'sp',this.value)"></label>`:''}</div>
+  ${kd=='slice'?`<p class="mut sm2">Whole: cost ${m(c.cost)}, margin ${g.toFixed(0)}% · Slice: cost ${m(cs)}, margin <span class="st-${mst(gs)}">${gs.toFixed(0)}%</span> · ${por(p)} slices bring in ${m((+p.sp||0)*por(p))}${(+p.sp||0)*por(p)<+p.price?', less than selling it whole':''}</p>`:''}
+  ${g<tg||(kd=='slice'&&gs<tg)?`<p class="mut sm2">For a ${tg}% margin: ${m(sug(p))} a ${U}${kd=='slice'?`, ${m(sug(p)/por(p))} a slice`:''}.</p>`:''}`;
  const yieldR=p.sub?`<div class="row"><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label>${pc?`<label>Flour (g)${num('flourG',p.flourG)}</label>`:''}<label>Makes (g)<input type="number" step="any" value="${esc(p.unitG)}" onchange="setMk(${i},this.value)"></label><span class="mut grow">${p.wAuto===false?`You set this by hand. Ingredients add up to ${estW(p)} g. <button class="lnk" onclick="setMk(${i},'')">Use the ingredient total</button>`:'Fills in from the ingredients. Type your own number if it loses or gains weight, e.g. a reduced caramel.'}</span></div>`
-  :`<div class="row"><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label><label>Count the batch by${sel(P+'.yt',[['weight','Weight of one piece'],['batch','Number of pieces']],p.yt)}</label><label>Weight of one piece (g)${num('unitG',p.unitG)}</label>${bt?`<label>Pieces per batch${num('batch',p.batch)}</label>`:''}${pc&&bt?`<label>Flour per batch (g)${num('flourG',p.flourG)}</label>`:''}</div>`;
+  :`<div class="row"><label>Recipe type${sel(P+'.mode',[['pct','Baker’s %'],['amt','Amounts']],p.mode)}</label><label>Batch size${sel(P+'.yt',[['batch','Number per batch'],['weight','Dough weight ÷ weight of one']],p.yt)}</label><label>Weight of one ${U} (g)${num('unitG',p.unitG)}</label>${pc&&bt?`<label>Flour per batch (g)${num('flourG',p.flourG)}</label>`:''}</div>`;
  const steps=p.steps.map((s,j)=>{const k=p.id+j,op=s.d||stN.has(k);return`<div class="row srow">${inp(`${P}.steps.${j}.n`,s.n,'grow')}${num(`steps.${j}.mins`,s.mins,'smin')}<span class="mut">min</span><button class="g sm${s.d?' on':''}" title="Instructions" aria-label="Instructions" onclick="stN.has('${k}')?stN.delete('${k}'):stN.add('${k}');draw()">✎</button><button class="g sm" onclick="del('${P}.steps',${j})" aria-label="Remove step">×</button></div>${op?`<div class="row sd"><input class="grow" placeholder="Instructions for this step" value="${esc(s.d||'')}" onchange="up('${P}.steps.${j}.d',this.value)"></div>`:''}`}).join('');
  return`<section class="ed">${bar}
  <div class="row">${inp(P+'.name',p.name,'grow big2')}</div>
  <div class="row"><label>Category${sel(P+'.cat',[['Bakery','Bakery'],['Soups','Soups'],['Drinks','Drinks'],['Other','Other']],p.cat||'Bakery')}</label><label class="chip"><input type="checkbox"${p.sub?' checked':''} onchange="setSub(${i},this.checked)"> Use in other recipes (levain, frosting…)</label></div>
- ${sell}<h4>How many it makes</h4>${yieldR}${p.sub?'':batchSum(p,c)}${p.sub?'':preUI(i)}
+ ${sell}<h4>Recipe and weight</h4>${yieldR}${p.sub?'':batchSum(p,c)}${p.sub?'':preUI(i)}
  <h4>Ingredients <span class="mut">${pc?'flour = 100%':p.sub||bt?'for one batch':'for one unit'}</span></h4>${ingEd(i)}
  <h4>Steps <span class="mut">in order, with minutes</span></h4>${steps}<div class="row qrow"><input id="rs-n" class="grow" placeholder="Add step, e.g. Proof" onkeydown="if(event.key=='Enter'){event.preventDefault();$('#rs-m').focus()}"><input id="rs-m" class="smin" type="number" step="any" placeholder="min" onkeydown="if(event.key=='Enter'){event.preventDefault();rsAdd(${i})}"><span class="mut">min</span><button class="b sm" onclick="rsAdd(${i})">Add</button></div>
  <h4>Notes for the person making it</h4><textarea rows="2" onchange="up('${P}.notes',this.value)">${esc(p.notes||'')}</textarea>
@@ -1784,7 +1791,7 @@ function impApply(R){
   const p={id:nid(),name:r.name,cat:r.cat||'Bakery',mode:'amt',yt:'batch',batch:+r.batch||1,unitG:+r.unitG||100,price:+r.price||0,lab:+r.lab||0,flourG:1000,shelf:+r.shelf||3,tray:+r.tray||0,temp:+r.temp||0,store:r.store||'Keep in a cool, dry place.',notes:r.notes||'',ings,steps:(r.steps||[]).map(([n,mins])=>({n,mins}))};
   if(Array.isArray(r.secs)&&r.secs.length>1)p.secs=[...r.secs];
   if(r.sub){p.sub=true;p.batch=1;p.wAuto=true}
-  if(+r.por>1)p.por=+r.por;if(r.sell=='slice'){p.sell='slice';p.sp=+r.sp||0;p.price=Math.round(p.sp*por(p)*100)/100}
+  if(+r.por>1)p.por=+r.por;if(r.sell=='slice'){p.sell='slice';p.sp=+r.sp||0;p.price=+r.price||Math.round(p.sp*por(p)*100)/100}else if(r.sell=='cake')p.sell='cake';
   S.prods.push(p);if(p.sub)p.unitG=estW(p)||p.unitG;ensV(p);if(firstI==null&&!p.sub)firstI=S.prods.length-1});
  return{made,firstI}}
 window.addEventListener('hashchange',impShow);
