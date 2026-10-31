@@ -27,9 +27,25 @@
       <label for="email">Email</label>
       <input id="email" type="email" autocomplete="username" required>
       <label for="pw">Password</label>
-      <input id="pw" type="password" autocomplete="current-password" required>
+      <div class="pw-wrap">
+        <input id="pw" type="password" autocomplete="current-password" required>
+        <button type="button" class="pw-eye" id="pw-eye" aria-label="Show password" aria-pressed="false">Show</button>
+      </div>
       <button class="btn" type="submit">Sign in</button>
     </form>
+    <p style="margin-top:12px"><button class="link" id="forgot">Forgot or want to change your password?</button></p>
+  </section>
+
+  <section id="v-reset" hidden>
+    <h1>Change password</h1>
+    <p class="muted">We'll email a link to set a new password. Open it, choose the new password, then sign in here with it.</p>
+    <form id="f-reset">
+      <label for="reset-email">Staff email</label>
+      <input id="reset-email" type="email" autocomplete="username" required>
+      <button class="btn" type="submit">Send password link</button>
+    </form>
+    <p class="muted" id="reset-done" hidden style="margin-top:14px"></p>
+    <p style="margin-top:8px"><button class="link" id="reset-back">Back</button></p>
   </section>
 
   <section id="v-notstaff" hidden>
@@ -54,7 +70,7 @@
       <button class="btn ghost" id="go-reports">Reports</button>
       <a class="btn ghost" href="../" style="text-decoration:none">Planner</a>
     </div>
-    <p style="margin-top:20px"><button class="link" data-signout>Sign out</button></p>
+    <p style="margin-top:20px"><button class="link" id="change-pw">Change password</button> &nbsp;·&nbsp; <button class="link" data-signout>Sign out</button></p>
   </section>
 
   <section id="v-scan" hidden>
@@ -206,7 +222,7 @@ import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast, store,
   birthdayCoffeeAvailable, isBirthdayToday, formatBirthday, todayIE } from './loyalty.js';
 
 const $ = (s) => document.querySelector(s);
-const VIEWS = ['loading', 'signin', 'notstaff', 'home', 'scan', 'customer', 'vouchers', 'newvoucher', 'voucher', 'reports'];
+const VIEWS = ['loading', 'signin', 'reset', 'notstaff', 'home', 'scan', 'customer', 'vouchers', 'newvoucher', 'voucher', 'reports'];
 const show = (v) => VIEWS.forEach((x) => ($('#v-' + x).hidden = x !== v));
 
 const be = await getBackend('staff');
@@ -225,6 +241,34 @@ $('#f-signin').addEventListener('submit', async (e) => {
   e.preventDefault();
   try { await be.staffSignIn($('#email').value.trim(), $('#pw').value); }
   catch { toast('Wrong email or password', 'err'); }
+});
+$('#pw-eye').addEventListener('click', () => {
+  const pw = $('#pw'), on = pw.type === 'password';
+  pw.type = on ? 'text' : 'password';
+  $('#pw-eye').textContent = on ? 'Hide' : 'Show';
+  $('#pw-eye').setAttribute('aria-label', on ? 'Hide password' : 'Show password');
+  $('#pw-eye').setAttribute('aria-pressed', String(on));
+  pw.focus();
+});
+function openReset(email) {
+  $('#reset-email').value = email || '';
+  $('#reset-done').hidden = true;
+  show('reset');
+}
+$('#forgot').addEventListener('click', () => openReset($('#email').value.trim()));
+$('#change-pw').addEventListener('click', () => openReset(me?.email));
+$('#reset-back').addEventListener('click', () => show(me ? 'home' : 'signin'));
+$('#f-reset').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('#reset-email').value.trim(), btn = e.submitter;
+  if (btn) btn.disabled = true;
+  try {
+    await be.sendPasswordReset(email);
+    $('#reset-done').textContent = `If ${email} is a staff login, a password link is on its way. Check spam too. The link expires after about an hour.`;
+    $('#reset-done').hidden = false;
+  } catch (err) {
+    toast(err?.code === 'auth/invalid-email' ? 'That email looks wrong' : err?.code === 'auth/too-many-requests' ? 'Too many tries, wait a few minutes' : 'Could not send the link', 'err');
+  } finally { if (btn) btn.disabled = false; }
 });
 document.querySelectorAll('[data-signout]').forEach((b) => b.addEventListener('click', () => be.signOut()));
 $('#recheck').addEventListener('click', async () => {
