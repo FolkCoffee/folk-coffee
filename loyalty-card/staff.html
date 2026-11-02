@@ -148,7 +148,7 @@
   <section id="v-vouchers" hidden>
     <h1>Gift vouchers</h1>
     <button class="btn big" id="v-new">New voucher</button>
-    <button class="btn ghost" id="v-scan">Scan voucher code</button>
+    <button class="btn ghost" id="vscan-btn">Scan voucher code</button>
     <div class="or">or type the code</div>
     <form id="f-vfind" class="row">
       <input id="vfind-code" placeholder="FOLK-XXXX-XXXX" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="Voucher code" required>
@@ -297,18 +297,25 @@ async function startScan(camId) {
   const wanted = camId || store.get(CAM_KEY);
   // Read the lens list BEFORE opening the camera: on Android, asking while a
   // camera is running can briefly open a second one and freeze the picture.
+  const gen = scanGen;
   try { if (!cams.length) cams = backCameras(await Html5Qrcode.getCameras()); } catch { cams = []; }
-  scanner = new Html5Qrcode('reader');
+  if (gen !== scanGen) return; // cancelled while asking for camera permission
+  const sc = scanner = new Html5Qrcode('reader');
   try {
     try {
-      await scanner.start(wanted ? { deviceId: { exact: wanted } } : { facingMode: 'environment' }, SCAN_CFG, onScan, () => {});
+      await sc.start(wanted ? { deviceId: { exact: wanted } } : { facingMode: 'environment' }, SCAN_CFG, onScan, () => {});
     } catch (e) {
       if (!wanted) throw e;
       store.del(CAM_KEY); // saved lens no longer exists: fall back to the default back camera
-      await scanner.start({ facingMode: 'environment' }, SCAN_CFG, onScan, () => {});
+      await sc.start({ facingMode: 'environment' }, SCAN_CFG, onScan, () => {});
     }
   } catch {
     $('#scan-msg').textContent = 'Camera unavailable. Allow camera access in your browser settings, or find the customer by email.';
+    return;
+  }
+  if (gen !== scanGen || $('#v-scan').hidden) { // Cancel pressed while the camera was opening: shut it
+    try { await sc.stop(); } catch {} try { sc.clear(); } catch {}
+    if (scanner === sc) scanner = null;
     return;
   }
   await setupCameraControls();
@@ -348,7 +355,9 @@ $('#cam-next').addEventListener('click', () => {
   store.set(CAM_KEY, next);
   startScan(next);
 });
+let scanGen = 0; // bumps on every start/stop, so a camera that finishes opening after Cancel gets shut
 async function stopScan() {
+  scanGen++;
   if (scanner) { try { await scanner.stop(); } catch {} try { scanner.clear(); } catch {} scanner = null; }
 }
 async function onScan(text) {
@@ -480,7 +489,7 @@ async function openVoucherHome() {
   } catch { list.innerHTML = '<p class="muted">Could not load vouchers.</p>'; }
 }
 
-$('#v-scan').addEventListener('click', () => { scanReturn = 'vouchers'; startScan(); });
+$('#vscan-btn').addEventListener('click', () => { scanReturn = 'vouchers'; startScan(); });
 $('#scan').addEventListener('click', () => { scanReturn = 'home'; });
 
 $('#f-vfind').addEventListener('submit', (e) => {
