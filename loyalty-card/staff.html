@@ -300,7 +300,7 @@ async function startScan(camId) {
   const gen = scanGen;
   try { if (!cams.length) cams = backCameras(await Html5Qrcode.getCameras()); } catch { cams = []; }
   if (gen !== scanGen) return; // cancelled while asking for camera permission
-  const sc = scanner = new Html5Qrcode('reader');
+  const sc = scanner = new Html5Qrcode('reader', { experimentalFeatures: { useBarCodeDetectorIfSupported: true } });
   try {
     try {
       await sc.start(wanted ? { deviceId: { exact: wanted } } : { facingMode: 'environment' }, SCAN_CFG, onScan, () => {});
