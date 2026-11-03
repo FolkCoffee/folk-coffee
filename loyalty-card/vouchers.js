@@ -153,6 +153,8 @@ export function voucherLink(v) {
   const b64 = btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   return new URL('voucher.html?d=' + b64, location.href).href;
 }
+// Staff print page: same details, printed on the FOLk DL voucher design
+export const voucherPrintLink = (v) => voucherLink(v).replace('/voucher.html?', '/print-voucher.html?');
 export function readVoucherLink(param) {
   try {
     const b64 = param.replace(/-/g, '+').replace(/_/g, '/');

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="only light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Print FOLk Gift Voucher</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../icons/icon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@400;600&family=Inter+Tight:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style id="page-size">@page { size: 210mm 297mm; margin: 0; }</style>
+<style>
+  /* Printed gift voucher: front and back, DL (210 × 99 mm). Same design as the "FOLk Gift Vouchers" canvas. */
+  :root { --ink: #111110; --paper: #f5f3ee; --muted: #55524b; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e4dc; color: var(--ink); font-family: 'Inter Tight', system-ui, sans-serif;
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .saira { font-family: 'Saira Condensed', 'Arial Narrow', sans-serif; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .caps { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+
+  /* toolbar (screen only) */
+  .bar { position: sticky; top: 0; z-index: 2; background: var(--ink); color: #fff; padding: 12px 16px;
+         display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
+  .bar button { font: 600 15px 'Inter Tight', system-ui, sans-serif; border-radius: 10px; padding: 11px 16px; cursor: pointer;
+                border: 1.5px solid #fff; background: #fff; color: var(--ink); min-height: 44px; }
+  .bar button.ghost { background: transparent; color: #fff; }
+  .bar button[aria-pressed="true"] { background: #fff; color: var(--ink); }
+  .bar .seg { display: flex; gap: 6px; align-items: center; }
+  .hint { width: 100%; text-align: center; font-size: 13px; color: #cfcbc1; margin: 0; }
+  .sheets { padding: 20px 16px 48px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .sheet { width: 794px; max-width: 100%; }
+  .scaler { transform-origin: top left; }
+
+  /* one face: 794 × 374 px = 210 × 99 mm */
+  .face { width: 794px; height: 374px; overflow: hidden; background: var(--paper); position: relative; }
+  .cut { width: 794px; border-top: 1px dashed #9a968c; margin-top: 0; font-size: 10px; color: #9a968c; text-align: center; padding-top: 4px; display: none; }
+
+  /* front */
+  .front { display: flex; }
+  .front .dark { flex: 0 0 470px; background: var(--ink); color: #fff; padding: 40px 44px; display: flex; flex-direction: column; justify-content: space-between; }
+  .front .top { display: flex; align-items: center; justify-content: space-between; }
+  .front .logo { display: flex; align-items: center; gap: 10px; }
+  .front .logo img { height: 30px; width: auto; filter: invert(1); }
+  .front .logo span { font-size: 31px; line-height: 1; }
+  .front h1 { margin: 0; font-weight: 600; font-size: 92px; line-height: .88; text-transform: uppercase; }
+  .front .where { margin: 0; font-size: 15px; line-height: 1.4; color: #e4e1da; }
+  .front .worth { flex: 1; position: relative; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; }
+  .front .ring { position: absolute; right: -56px; top: -56px; }
+  .front .amount { font-weight: 600; font-size: 132px; line-height: .9; }
+  .front .worth p { margin: 0; font-size: 14px; color: var(--muted); text-align: center; line-height: 1.4; }
+
+  /* back */
+  .back { padding: 30px 44px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .back .cols { display: flex; gap: 36px; flex: 1; min-height: 0; }
+  .back .write { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .back .line { display: flex; align-items: flex-end; gap: 12px; }
+  .back .lbl { font-size: 22px; font-weight: 600; text-transform: uppercase; width: 52px; flex: none; }
+  .back .fill { flex: 1; min-width: 0; border-bottom: 1.5px solid var(--ink); height: 28px; font-size: 21px; line-height: 26px;
+                padding-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .back .msg { border-bottom: 1.5px solid #b9b5ac; height: 22px; font-size: 14px; line-height: 20px; color: #33312c;
+               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .back .box { flex: 0 0 278px; background: #fff; border: 2px solid var(--ink); border-radius: 16px; padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .back .val { display: flex; justify-content: space-between; align-items: baseline; }
+  .back .val b { font-size: 36px; font-weight: 600; line-height: 1; }
+  .back .code { font-size: 20px; font-weight: 600; letter-spacing: .05em; border: 1.5px dashed var(--ink); border-radius: 8px; padding: 5px 8px; text-align: center; white-space: nowrap; }
+  .back .dates { display: flex; gap: 12px; align-items: center; }
+  .back .qr { width: 66px; height: 66px; flex: none; }
+  .back .qr canvas, .back .qr img { width: 66px !important; height: 66px !important; display: block; }
+  .back .dl { flex: 1; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #33312c; }
+  .back .dl div { display: flex; justify-content: space-between; }
+  .back .terms { margin: 0; font-size: 11.5px; line-height: 1.45; color: #45423c; }
+  .back .foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #cfcbc1; padding-top: 9px; font-size: 12px; color: #45423c; }
+  .back .foot .logo { display: flex; align-items: center; gap: 8px; }
+  .back .foot img { height: 16px; width: auto; }
+  .back .foot .saira { font-size: 17px; color: var(--ink); line-height: 1; }
+
+  .bad { max-width: 440px; margin: 60px auto; padding: 0 16px; text-align: center; }
+
+  @media print {
+    body { background: #fff; }
+    .bar, .bad { display: none !important; }
+    .sheets { padding: 0; gap: 0; display: block; }
+    .sheet { width: auto; max-width: none; height: auto !important; break-after: page; page-break-after: always; }
+    .sheet:last-child { break-after: auto; page-break-after: auto; }
+    .scaler { transform: none !important; height: auto !important; }
+    body.a4 .cut { display: block; }
+  }
+</style>
+</head>
+<body class="a4">
+<div class="bar" id="bar" hidden>
+  <button id="print" type="button">Print voucher</button>
+  <div class="seg" role="group" aria-label="Paper size">
+    <button class="ghost" type="button" data-paper="a4" aria-pressed="true">A4 paper</button>
+    <button class="ghost" type="button" data-paper="dl" aria-pressed="false">DL card</button>
+  </div>
+  <button class="ghost" type="button" id="close">Back to till</button>
+  <p class="hint" id="hint"></p>
+</div>
+<div class="bad" id="bad" hidden>
+  <h1 class="saira">Voucher not found</h1>
+  <p>Open this page from the voucher in the staff till.</p>
+</div>
+
+<div class="sheets" id="sheets" hidden>
+  <!-- FRONT -->
+  <div class="sheet"><div class="scaler">
+    <div class="face front">
+      <div class="dark">
+        <div class="top">
+          <div class="logo"><img src="../brand/folk-logo.png" alt="FOLk"><span class="saira">Coffee</span></div>
+          <span class="caps" style="color:#bdbab3">Gift voucher</span>
+        </div>
+        <h1 class="saira">A coffee<br>on us.</h1>
+        <p class="where">Speciality coffee &amp; fresh bakes<br>Millstreet</p>
+      </div>
+      <div class="worth">
+        <svg class="ring" width="230" height="230" viewBox="0 0 230 230" aria-hidden="true"><circle cx="115" cy="115" r="104" fill="none" stroke="#111110" stroke-width="2" stroke-dasharray="7 7"/></svg>
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#111110" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6z"/><path d="M17 11h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M8 3v2.5M12 3v2.5"/></svg>
+        <span class="caps" style="margin-top:8px">Worth</span>
+        <span class="amount saira" data-f="amount"></span>
+        <p>to spend on coffee, cakes<br>and beans at FOLk</p>
+      </div>
+    </div>
+    <div class="cut">cut along the line</div>
+  </div></div>
+
+  <!-- BACK -->
+  <div class="sheet"><div class="scaler">
+    <div class="face back">
+      <div class="cols">
+        <div class="write">
+          <div class="line"><span class="lbl saira">To</span><span class="fill saira" data-f="to"></span></div>
+          <div class="line"><span class="lbl saira">From</span><span class="fill saira" data-f="from"></span></div>
+          <span class="lbl saira" style="width:auto;margin-top:2px">Message</span>
+          <span class="msg" data-f="msg1"></span>
+          <span class="msg" data-f="msg2"></span>
+        </div>
+        <div class="box">
+          <div class="val"><span class="caps">Value</span><b class="saira" data-f="amount"></b></div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span class="caps">Voucher code</span>
+            <span class="code mono" data-f="code"></span>
+          </div>
+          <div class="dates">
+            <div class="qr" id="qr" role="img" aria-label="QR code of the voucher code"></div>
+            <div class="dl">
+              <div><span>Issued</span><span data-f="issued"></span></div>
+              <div><span>Valid until</span><b data-f="expires"></b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="terms">Spend it in store at FOLk Coffee, West End, Millstreet, all at once or over several visits: any balance stays on your voucher. Valid for 5 years from the issue date. Not exchangeable for cash.</p>
+      <div class="foot">
+        <div class="logo"><img src="../brand/folk-logo.png" alt="FOLk"><span class="saira">Coffee</span></div>
+        <span>@folk.coffee · folkspecialitycoffee@gmail.com · 087 743 6625</span>
+      </div>
+    </div>
+    <div class="cut">cut along the line</div>
+  </div></div>
+</div>
+
+<script type="module">
+import { readVoucherLink, euro, formatDate, VOUCHER_QR_PREFIX } from './vouchers.js';
+const $ = (s) => document.querySelector(s);
+const params = new URLSearchParams(location.search);
+const v = readVoucherLink(params.get('d') || '');
+
+if (!v) { $('#bad').hidden = false; }
+else {
+  document.title = `Print voucher ${v.code}`;
+  const msg = (v.message || '').trim();
+  // split the message over the two lines (roughly 34 characters each)
+  let m1 = msg, m2 = '';
+  if (msg.length > 34) { const cut = msg.lastIndexOf(' ', 34); const at = cut > 10 ? cut : 34; m1 = msg.slice(0, at); m2 = msg.slice(at).trim(); }
+  const fields = { amount: euro(v.amount), to: v.toName || '', from: v.fromName || '', msg1: m1, msg2: m2,
+    code: v.code, issued: formatDate(v.issued), expires: formatDate(v.expires) };
+  document.querySelectorAll('[data-f]').forEach((el) => { el.textContent = fields[el.dataset.f] ?? ''; });
+  try { new QRCode($('#qr'), { text: VOUCHER_QR_PREFIX + v.code, width: 264, height: 264, colorDark: '#111110', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); } catch {}
+
+  $('#bar').hidden = false; $('#sheets').hidden = false;
+
+  // paper size
+  const HINT = {
+    a4: 'A4: print double-sided (flip on long edge), then cut along the dashed line. Or print page 1, turn the sheet over, and print page 2.',
+    dl: 'DL card (210 × 99 mm): load the card in the printer and print double-sided, flip on long edge.',
+  };
+  function setPaper(p) {
+    $('#page-size').textContent = p === 'dl' ? '@page { size: 210mm 99mm; margin: 0; }' : '@page { size: 210mm 297mm; margin: 0; }';
+    document.body.classList.toggle('a4', p === 'a4');
+    document.querySelectorAll('[data-paper]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.paper === p)));
+    $('#hint').textContent = HINT[p];
+    try { localStorage.setItem('folk-voucher-paper', p); } catch {}
+  }
+  let saved = 'a4'; try { saved = localStorage.getItem('folk-voucher-paper') || 'a4'; } catch {}
+  setPaper(saved === 'dl' ? 'dl' : 'a4');
+  document.querySelectorAll('[data-paper]').forEach((b) => b.addEventListener('click', () => setPaper(b.dataset.paper)));
+
+  // fit the preview on a phone screen
+  function scale() {
+    const avail = Math.min(794, document.documentElement.clientWidth - 32), k = avail / 794;
+    document.querySelectorAll('.scaler').forEach((s) => { s.style.transform = k < 1 ? `scale(${k})` : ''; s.parentElement.style.height = k < 1 ? `${s.offsetHeight * k}px` : ''; });
+  }
+  addEventListener('resize', scale);
+
+  const ready = Promise.all([
+    document.fonts.ready,
+    ...[...document.images].map((i) => i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; })),
+  ]);
+  ready.then(scale);
+  $('#print').addEventListener('click', async () => { await ready; print(); });
+  $('#close').addEventListener('click', () => { if (history.length > 1) history.back(); else location.href = 'staff.html'; });
+}
+</script>
+</body>
+</html>

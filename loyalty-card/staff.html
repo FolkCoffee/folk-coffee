@@ -197,7 +197,8 @@
     </form>
     <div class="notice" style="margin-top:14px">
       <b>Giving it to the customer</b>
-      <p class="muted" style="margin:6px 0 0">Paper voucher: write the code and dates on the back of the card. Digital: email it, or share the image by WhatsApp.</p>
+      <p class="muted" style="margin:6px 0 0">Paper voucher: print it with the code, dates and QR filled in. Digital: email it, or share the image by WhatsApp.</p>
+      <button class="btn" id="vc-print">Print voucher</button>
       <form id="f-vemail" class="row" style="margin-top:12px">
         <input id="vc-email" type="email" placeholder="customer@email.com" autocomplete="off" aria-label="Customer email" required>
         <button class="btn" type="submit" id="vc-send" style="flex:0 0 90px;margin-top:0">Email</button>
@@ -216,7 +217,7 @@
 
 <script type="module">
 import { VOUCHER_QR_PREFIX, AMOUNTS, normalizeCode, euro, toCents, formatDate, isExpired, voucherImage,
-  isEmail, emailReady, sendVoucherEmail, mailtoLink } from './vouchers.js';
+  isEmail, emailReady, sendVoucherEmail, mailtoLink, voucherPrintLink } from './vouchers.js';
 import { emailjsConfig } from './config.js';
 import { getBackend, GOAL, DEMO, QR_PREFIX, renderStamps, toast, store,
   birthdayCoffeeAvailable, isBirthdayToday, formatBirthday, todayIE } from './loyalty.js';
@@ -629,6 +630,7 @@ $('#f-vemail').addEventListener('submit', (e) => {
   if (!isEmail(to)) return toast('Check the email address', 'err');
   if (vData) emailVoucher(vData, to);
 });
+$('#vc-print').addEventListener('click', () => { if (vData) location.href = voucherPrintLink(vData); });
 $('#vc-share').addEventListener('click', async (e) => {
   const btn = e.currentTarget; btn.disabled = true;
   try {
