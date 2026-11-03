@@ -1,9 +1,10 @@
 // FOLk planner: open offline. App files: network first, fall back to the saved copy.
 // Libraries and fonts: saved copy first. Sync requests (Supabase) are never cached.
+// Only clears its own old caches (folk-v*): the loyalty card keeps its own (folk-card-*).
 const C='folk-v2';
 const CORE=['./','./index.html','./start.html','./manifest.webmanifest','./brand/folk-logo.png','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(CORE)).catch(()=>{}));self.skipWaiting()});
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith('folk-v')&&x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{
  const r=e.request,u=new URL(r.url);
  if(r.method!=='GET'||/supabase\.co$/.test(u.hostname))return;

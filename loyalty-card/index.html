@@ -8,20 +8,34 @@
 <meta name="theme-color" content="#111110">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="../icons/icon-32.png">
-<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<link rel="apple-touch-icon" href="../icons/card-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="FOLk Card">
+<!-- iPhone launch screens: cream with the FOLk logo, same as the loading screen -->
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width: 420px) and (device-height: 912px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1260x2736.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash/iphone-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash/iphone-1242x2208.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash/iphone-750x1334.png">
+<link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash/iphone-640x1136.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@300;400;500;600&family=Inter+Tight:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
-<body>
+<body class="is-loading">
 <div class="demo" id="demo" hidden>Demo mode: nothing is saved online yet. <a href="staff.html" style="color:#fff">Open staff page</a></div>
 <main class="wrap">
   <header class="brand"><div class="logo"><img src="../brand/folk-logo.png" alt="FOLk"><span>Coffee</span></div><div class="tag">Millstreet</div></header>
 
-  <section id="v-loading"><div class="spinner"></div></section>
+  <section id="v-loading" class="boot" aria-label="Loading your card"><img class="boot-logo" src="../brand/folk-logo.png" alt="FOLk"><div class="boot-bar"><span></span></div></section>
 
   <section id="v-signin" hidden>
     <h1>Your coffee card, on your phone.</h1>
@@ -109,13 +123,26 @@ const signupBday = fillBirthdayPickers($('#b-day'), $('#b-mon'));
 const laterBday = fillBirthdayPickers($('#b-day2'), $('#b-mon2'));
 let myUid = null, myEmail = '', vUnsub = null;
 const VIEWS = ['loading', 'signin', 'sent', 'confirm', 'card', 'error'];
-const show = (v) => VIEWS.forEach((x) => ($('#v-' + x).hidden = x !== v));
+const show = (v) => { VIEWS.forEach((x) => ($('#v-' + x).hidden = x !== v)); document.body.classList.toggle('is-loading', v === 'loading'); };
+const shown = (v) => !$('#v-' + v).hidden;
 const fail = (msg) => { $('#err-msg').textContent = msg; show('error'); };
 
 let be, unsub = null, last = null, qrFor = null, busy = false;
 
+// Show the last saved card straight away (works with no signal), then update it live.
+const saved = (() => { try { return JSON.parse(store.get('folk-card') || 'null'); } catch { return null; } })();
+if (saved?.uid && saved.c && !location.search) {
+  draw(saved.uid, saved.c);
+  if (Array.isArray(saved.v)) drawVouchers(saved.v);
+  last = null;
+}
+const offline = () => toast('No signal: showing your saved card. Your code still works.');
+
 try { be = await getBackend('customer'); }
-catch { fail('We could not connect. Check your internet connection and try again.'); throw 0; }
+catch {
+  if (shown('card')) offline(); else fail('We could not connect. Check your internet connection and try again.');
+  throw 0;
+}
 if (DEMO) $('#demo').hidden = false;
 
 // Returning from the email link
@@ -132,8 +159,9 @@ be.onAuth(async (user) => {
   if (unsub) { unsub(); unsub = null; }
   if (vUnsub) { vUnsub(); vUnsub = null; }
   last = null;
-  if (!user) { if (!busy && !be.isEmailLink()) show('signin'); return; }
-  show('loading');
+  if (!user) { store.del('folk-card'); if (!busy && !be.isEmailLink()) show('signin'); return; }
+  const haveSaved = saved?.uid === user.uid && shown('card');
+  if (!haveSaved) show('loading');
   try {
     if (!(await be.getCard(user.uid))) {
       const name = store.get('folk-name') || user.name.split(' ')[0] || 'Coffee lover';
@@ -144,7 +172,9 @@ be.onAuth(async (user) => {
     myUid = user.uid; myEmail = (user.email || '').toLowerCase();
     unsub = be.watchCard(user.uid, (c) => c && draw(user.uid, c));
     vUnsub = be.watchMyVouchers(myEmail, drawVouchers);
-  } catch (e) { fail('We could not load your card. ' + (e.message || '')); }
+  } catch (e) {
+    if (haveSaved) offline(); else fail('We could not load your card. ' + (e.message || ''));
+  }
 });
 
 function draw(uid, c) {
@@ -173,7 +203,13 @@ function draw(uid, c) {
     else if ((c.rewardsRedeemed || 0) > (last.rewardsRedeemed || 0)) toast(c.birthdayYear !== last.birthdayYear ? 'Happy birthday, enjoy! 🎂' : 'Enjoy your free coffee! 🎉', 'ok');
   }
   last = { ...c };
+  saveCard(uid, c);
   show('card');
+}
+function saveCard(uid, c, v) {
+  const prev = (() => { try { return JSON.parse(store.get('folk-card') || 'null'); } catch { return null; } })();
+  const keep = ({ name, stamps, totalStamps, rewardsRedeemed, birthday, birthdayYear }) => ({ name, stamps, totalStamps, rewardsRedeemed, birthday, birthdayYear });
+  store.set('folk-card', JSON.stringify({ uid, c: c ? keep(c) : prev?.c, v: v ?? (prev?.uid === uid ? prev.v : undefined) }));
 }
 
 $('#f-signin').addEventListener('submit', async (e) => {
@@ -224,6 +260,7 @@ function drawVouchers(list) {
     box.appendChild(row);
   }
   $('#my-vouchers-empty').hidden = list.length > 0;
+  if (myUid) saveCard(myUid, null, list.map(({ code, balance, amount, expires, issued, fromName }) => ({ code, balance, amount, expires, issued, fromName })));
 }
 $('#f-claim').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -235,7 +272,11 @@ $('#f-claim').addEventListener('submit', async (e) => {
   catch (err) { toast(err.message || 'Could not add that voucher', 'err'); }
   btn.disabled = false;
 });
-$('#signout').addEventListener('click', () => { qrFor = null; be.signOut(); });
+$('#signout').addEventListener('click', () => { qrFor = null; store.del('folk-card'); be.signOut(); });
+</script>
+<script>
+// Keep the card working with bad or no signal (see sw.js)
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 </script>
 </body>
 </html>

@@ -2,11 +2,13 @@
   "name": "FOLk Coffee Card",
   "short_name": "FOLk Card",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f5f3ee",
   "theme_color": "#111110",
   "icons": [
-    { "src": "../icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "../icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "../icons/card-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "../icons/card-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "../icons/card-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

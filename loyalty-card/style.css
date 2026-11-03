@@ -143,3 +143,14 @@ h2.sub { font-family: 'Saira Condensed', 'Arial Narrow', sans-serif; font-weight
 .result.dim { opacity: .55; }
 .rstats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 0; }
 .rstats .stat b { font-size: 28px; }
+
+/* launch / loading screen: matches the home-screen launch image (cream, FOLk logo centred) */
+body.is-loading .brand { visibility: hidden; }
+.boot { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--paper); z-index: 5; }
+.boot[hidden] { display: none !important; }
+.boot-logo { width: min(44vw, 190px); height: auto; display: block; }
+.boot-bar { position: absolute; left: 50%; top: calc(50% + min(22vw, 95px) * .47 + 34px); width: 64px; height: 2px; margin-left: -32px; background: var(--line); border-radius: 2px; overflow: hidden; opacity: 0; animation: bootin .3s ease .6s forwards; }
+.boot-bar span { display: block; width: 40%; height: 100%; background: var(--ink); border-radius: 2px; animation: boot 1.1s ease-in-out infinite; }
+@keyframes boot { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+@keyframes bootin { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .boot-bar span { animation: none; width: 100%; opacity: .5; } }
