@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="color-scheme" content="only light">
+<meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FOLk Coffee Card</title>
 <meta name="theme-color" content="#111110">
@@ -80,8 +80,9 @@
     </div>
     <div class="bday-banner" id="c-bday-today" hidden>🎂 Happy birthday! Your coffee is on us today. Show your code at the till.</div>
     <div class="qr-box">
-      <div class="qr" id="qr"></div>
+      <div class="qr" id="qr" role="button" aria-label="Show code full screen"></div>
       <p>Show this code at the till to collect your stamp.</p>
+      <button class="btn" id="qr-open" type="button">Show code full screen</button>
     </div>
     <div class="stats">
       <div class="stat"><b id="c-total">0</b><span>coffees so far</span></div>
@@ -105,6 +106,14 @@
     <p class="muted" style="margin-top:18px">Tip: add this page to your home screen (Share → Add to Home Screen) so your card is always one tap away.</p>
     <button class="link" id="signout">Sign out</button>
   </section>
+
+  <div class="qr-full" id="qr-full" hidden role="dialog" aria-label="Your code">
+    <div class="qr-big" id="qr-big"></div>
+    <div class="qr-name" id="qr-full-name"></div>
+    <p>Hold your phone up to the till camera.</p>
+    <p>Turn your screen brightness up if it doesn't scan.</p>
+    <button class="btn" id="qr-close" type="button">Done</button>
+  </div>
 
   <section id="v-error" hidden>
     <h1>Something went wrong</h1>
@@ -137,6 +146,30 @@ if (saved?.uid && saved.c && !location.search) {
   last = null;
 }
 const offline = () => toast('No signal: showing your saved card. Your code still works.');
+
+// Full-screen white code, screen kept awake while it's showing
+let wake = null;
+async function openFull() {
+  if (!qrFor) return;
+  $('#qr-full').hidden = false;
+  try { wake = await navigator.wakeLock?.request('screen'); } catch {}
+  history.pushState({ qrFull: 1 }, ''); // phone Back button closes it
+}
+function closeFull(fromBack) {
+  if ($('#qr-full').hidden) return;
+  $('#qr-full').hidden = true;
+  try { wake?.release(); } catch {} wake = null;
+  if (!fromBack && history.state?.qrFull) history.back();
+}
+$('#qr-open').addEventListener('click', openFull);
+$('#qr').addEventListener('click', openFull);
+$('#qr-close').addEventListener('click', () => closeFull());
+$('#qr-full').addEventListener('click', (e) => { if (e.target.id === 'qr-full') closeFull(); });
+addEventListener('popstate', () => closeFull(true));
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && !$('#qr-full').hidden && !wake) { try { wake = await navigator.wakeLock?.request('screen'); } catch {} }
+  if (document.visibilityState === 'hidden') wake = null; // the browser drops it; ask again on return
+});
 
 try { be = await getBackend('customer'); }
 catch {
@@ -189,10 +222,13 @@ function draw(uid, c) {
   $('#c-bday-add').hidden = !!c.birthday;
   $('#c-bday').hidden = !c.birthday;
   $('#c-bday').textContent = c.birthday ? `🎂 Birthday: ${formatBirthday(c.birthday)}. Free coffee on the day.` : '';
+  $('#qr-full-name').textContent = c.name;
   if (qrFor !== uid) {
-    $('#qr').innerHTML = '';
+    $('#qr').innerHTML = ''; $('#qr-big').innerHTML = '';
     if (window.QRCode) {
-      new QRCode($('#qr'), { text: QR_PREFIX + uid, width: 420, height: 420, colorDark: '#111110', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+      const qrOpts = { text: QR_PREFIX + uid, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M };
+      new QRCode($('#qr'), { ...qrOpts, width: 420, height: 420 });
+      new QRCode($('#qr-big'), { ...qrOpts, width: 720, height: 720 });
       qrFor = uid;
     } else {
       $('#qr').innerHTML = '<p>Code could not load. Pull down to refresh, or give staff your email.</p>';
@@ -272,7 +308,7 @@ $('#f-claim').addEventListener('submit', async (e) => {
   catch (err) { toast(err.message || 'Could not add that voucher', 'err'); }
   btn.disabled = false;
 });
-$('#signout').addEventListener('click', () => { qrFor = null; store.del('folk-card'); be.signOut(); });
+$('#signout').addEventListener('click', () => { qrFor = null; closeFull(); store.del('folk-card'); be.signOut(); });
 </script>
 <script>
 // Keep the card working with bad or no signal (see sw.js)

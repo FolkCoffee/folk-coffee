@@ -2,7 +2,7 @@
 // Our own files: network first, but fall back to the saved copy after 2.5s or when offline.
 // Libraries and fonts (versioned): saved copy first.
 // Sign-in and card data (Firebase) are never cached here.
-const C = 'folk-card-v2';
+const C = 'folk-card-v3';
 const CORE = [
   './', './index.html', './style.css', './loyalty.js', './vouchers.js', './print-voucher.html', './config.js', './manifest.json',
   '../brand/folk-logo.png', '../icons/card-180.png', '../icons/card-192.png', '../icons/card-512.png',

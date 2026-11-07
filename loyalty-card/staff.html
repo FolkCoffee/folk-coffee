@@ -13,6 +13,8 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- reads codes a customer's phone has turned white-on-black (dark mode) -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 </head>
 <body>
 <div class="demo" id="demo" hidden>Demo mode: nothing is saved online yet. <a href="index.html" style="color:#fff">Open customer page</a></div>
@@ -319,7 +321,34 @@ async function startScan(camId) {
     if (scanner === sc) scanner = null;
     return;
   }
+  scanDone = false;
+  startInvertedReader(gen);
   await setupCameraControls();
+}
+
+// Backup reader: some phones force "dark mode" on the customer's card and turn
+// the code white-on-black. The main scanner can't read that, so a few times a
+// second we also check the camera picture for an inverted code.
+function startInvertedReader(gen) {
+  if (!window.jsQR) return;
+  const cv = document.createElement('canvas');
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  const tick = () => {
+    if (gen !== scanGen || scanDone) return;
+    const v = document.querySelector('#reader video');
+    if (v && v.readyState >= 2 && v.videoWidth) {
+      const k = Math.min(1, 640 / Math.max(v.videoWidth, v.videoHeight));
+      cv.width = Math.round(v.videoWidth * k); cv.height = Math.round(v.videoHeight * k);
+      try {
+        ctx.drawImage(v, 0, 0, cv.width, cv.height);
+        const img = ctx.getImageData(0, 0, cv.width, cv.height);
+        const hit = jsQR(img.data, img.width, img.height, { inversionAttempts: 'invertFirst' });
+        if (hit?.data) onScan(hit.data);
+      } catch {}
+    }
+    setTimeout(tick, 250);
+  };
+  setTimeout(tick, 400);
 }
 
 async function setupCameraControls() {
@@ -356,18 +385,22 @@ $('#cam-next').addEventListener('click', () => {
   store.set(CAM_KEY, next);
   startScan(next);
 });
+let scanDone = false;
 let scanGen = 0; // bumps on every start/stop, so a camera that finishes opening after Cancel gets shut
 async function stopScan() {
   scanGen++;
   if (scanner) { try { await scanner.stop(); } catch {} try { scanner.clear(); } catch {} scanner = null; }
 }
 async function onScan(text) {
+  if (scanDone) return; // both readers can see the same code at once
   if (text.startsWith(VOUCHER_QR_PREFIX)) {
     const code = normalizeCode(text.slice(VOUCHER_QR_PREFIX.length));
     if (!code) return;
+    scanDone = true;
     await stopScan(); navigator.vibrate?.(60); openVoucher(code); return;
   }
   if (!text.startsWith(QR_PREFIX)) { $('#scan-msg').textContent = "That isn't a FOLk code."; return; }
+  scanDone = true;
   await stopScan();
   navigator.vibrate?.(60);
   openCard(text.slice(QR_PREFIX.length));

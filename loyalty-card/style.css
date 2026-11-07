@@ -1,11 +1,18 @@
 :root {
-  color-scheme: only light;
+  color-scheme: light dark;
   --ink: #111110;
   --paper: #f5f3ee;
   --line: #d8d4ca;
   --muted: #6a665e;
   --ok: #1f7a4a;
   --err: #b3261e;
+}
+/* The page says it supports dark mode so phones don't run their own "darken
+   websites" filter over it (that filter inverts the QR code and tills can't
+   read it). Our "dark" look is deliberately the same light look. */
+@media (prefers-color-scheme: dark) {
+  :root { --ink: #111110; --paper: #f5f3ee; --line: #d8d4ca; --muted: #6a665e; }
+  html, body { background: #f5f3ee; color: #111110; }
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -93,6 +100,21 @@ input:focus, select:focus { outline: none; border-color: var(--ink); }
 .qr { display: inline-block; }
 .qr img, .qr canvas { display: block; width: 210px !important; height: 210px !important; }
 .qr-box p { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
+.qr-box .qr { cursor: pointer; }
+.qr-box .btn { margin-top: 12px; }
+
+/* full-screen white code: easiest for the till camera to read */
+.qr-full {
+  position: fixed; inset: 0; z-index: 20; background: #fff; color: #111110;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom)); text-align: center;
+}
+.qr-full[hidden] { display: none !important; }
+.qr-full .qr-big { background: #fff; padding: 18px; }
+.qr-full .qr-big img, .qr-full .qr-big canvas { display: block; width: min(86vw, 62vh) !important; height: min(86vw, 62vh) !important; }
+.qr-full .qr-name { font-family: 'Saira Condensed', 'Arial Narrow', sans-serif; font-size: 28px; margin: 6px 0 2px; }
+.qr-full p { margin: 4px 0 0; font-size: 15px; color: #6a665e; }
+.qr-full .btn { max-width: 320px; margin-top: 22px; }
 
 .stats { display: flex; gap: 10px; margin-top: 14px; }
 .stat { flex: 1; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 12px; }
